@@ -1149,6 +1149,96 @@ CREATE TABLE IF NOT EXISTS voice_recordings (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 35. Workflow Executions Table (Durable Sagas)
+CREATE TABLE IF NOT EXISTS workflow_executions (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    workflow_type VARCHAR(100) NOT NULL,
+    correlation_id VARCHAR(100) NOT NULL,
+    idempotency_key VARCHAR(255) NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'RUNNING',
+    current_step VARCHAR(100),
+    payload_json JSONB NOT NULL DEFAULT '{}',
+    result_json JSONB DEFAULT '{}',
+    error_details TEXT,
+    retry_count INT NOT NULL DEFAULT 0,
+    max_retries INT NOT NULL DEFAULT 3,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    completed_at TIMESTAMPTZ,
+    CONSTRAINT chk_workflow_status CHECK (status IN ('RUNNING', 'COMPLETED', 'FAILED', 'CANCELLED', 'COMPENSATING', 'COMPENSATED')),
+    CONSTRAINT uq_workflow_tenant_idempotency UNIQUE (tenant_id, idempotency_key)
+);
+
+-- 36. Workflow Step Logs (Audit and Compensation Traceability)
+CREATE TABLE IF NOT EXISTS workflow_step_logs (
+    id VARCHAR(36) PRIMARY KEY,
+    workflow_id VARCHAR(36) NOT NULL REFERENCES workflow_executions(id) ON DELETE CASCADE,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    step_name VARCHAR(100) NOT NULL,
+    step_type VARCHAR(30) NOT NULL DEFAULT 'ACTION',
+    status VARCHAR(30) NOT NULL DEFAULT 'STARTED',
+    input_json JSONB DEFAULT '{}',
+    output_json JSONB DEFAULT '{}',
+    error_message TEXT,
+    duration_ms INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    CONSTRAINT chk_workflow_step_type CHECK (step_type IN ('ACTION', 'COMPENSATION')),
+    CONSTRAINT chk_workflow_step_status CHECK (status IN ('STARTED', 'COMPLETED', 'FAILED'))
+);
+
+-- 37. Notification Templates Table
+CREATE TABLE IF NOT EXISTS notification_templates (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    template_code VARCHAR(100) NOT NULL,
+    channel_type VARCHAR(30) NOT NULL,
+    message_class VARCHAR(30) NOT NULL DEFAULT 'TRANSACTIONAL',
+    language VARCHAR(10) NOT NULL DEFAULT 'fr-FR',
+    subject_template VARCHAR(255),
+    body_template TEXT NOT NULL,
+    variables_json JSONB DEFAULT '[]',
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    CONSTRAINT chk_notif_tmpl_class CHECK (message_class IN ('MARKETING', 'TRANSACTIONAL', 'SERVICE', 'SECURITY')),
+    CONSTRAINT uq_notif_tmpl UNIQUE (tenant_id, template_code, channel_type, language)
+);
+
+-- 38. Notification Logs Table (Delivery Auditing)
+CREATE TABLE IF NOT EXISTS notification_logs (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    template_id VARCHAR(36) REFERENCES notification_templates(id) ON DELETE SET NULL,
+    recipient_identifier VARCHAR(255) NOT NULL,
+    channel_type VARCHAR(30) NOT NULL,
+    message_class VARCHAR(30) NOT NULL DEFAULT 'TRANSACTIONAL',
+    subject VARCHAR(255),
+    content TEXT NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+    error_reason TEXT,
+    retry_count INT NOT NULL DEFAULT 0,
+    metadata_json JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    sent_at TIMESTAMPTZ,
+    CONSTRAINT chk_notif_log_status CHECK (status IN ('PENDING', 'SENT', 'DELIVERED', 'FAILED', 'CANCELLED')),
+    CONSTRAINT chk_notif_log_class CHECK (message_class IN ('MARKETING', 'TRANSACTIONAL', 'SERVICE', 'SECURITY'))
+);
+
+-- 39. Automation Rules Table (Event-Driven Rules)
+CREATE TABLE IF NOT EXISTS automation_rules (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    name VARCHAR(150) NOT NULL,
+    trigger_event VARCHAR(100) NOT NULL,
+    condition_json JSONB DEFAULT '{}',
+    action_type VARCHAR(100) NOT NULL,
+    action_config_json JSONB DEFAULT '{}',
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+
 -- Indexes for Step 04 Performance
 CREATE INDEX IF NOT EXISTS idx_accounts_tenant ON accounts(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_contacts_account ON contacts(account_id);
@@ -1223,6 +1313,15 @@ CREATE INDEX IF NOT EXISTS idx_voice_transcripts_session ON voice_transcripts(se
 CREATE INDEX IF NOT EXISTS idx_voice_recordings_tenant ON voice_recordings(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_voice_recordings_session ON voice_recordings(session_id);
 CREATE INDEX IF NOT EXISTS idx_voice_recordings_expires ON voice_recordings(expires_at);
+
+-- Indexes for Step 07 Workflows, Notifications & Automations
+CREATE INDEX IF NOT EXISTS idx_workflow_executions_tenant_status ON workflow_executions(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_workflow_executions_correlation ON workflow_executions(tenant_id, correlation_id);
+CREATE INDEX IF NOT EXISTS idx_workflow_step_logs_wf ON workflow_step_logs(workflow_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_notif_templates_lookup ON notification_templates(tenant_id, template_code, channel_type);
+CREATE INDEX IF NOT EXISTS idx_notif_logs_tenant_status ON notification_logs(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_notif_logs_recipient ON notification_logs(tenant_id, recipient_identifier);
+CREATE INDEX IF NOT EXISTS idx_automation_rules_trigger ON automation_rules(tenant_id, trigger_event) WHERE is_active = true;
 
 -- 4. Enable Row-Level Security (RLS) on all tenant-partitioned tables
 ALTER TABLE organization_sites ENABLE ROW LEVEL SECURITY;
@@ -1401,6 +1500,21 @@ ALTER TABLE voice_transcripts FORCE ROW LEVEL SECURITY;
 
 ALTER TABLE voice_recordings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE voice_recordings FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE workflow_executions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE workflow_executions FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE workflow_step_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE workflow_step_logs FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE notification_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_templates FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE notification_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_logs FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE automation_rules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE automation_rules FORCE ROW LEVEL SECURITY;
 
 -- 5. Define RLS Isolation Policies
 CREATE POLICY tenant_isolation_sites ON organization_sites
@@ -1724,6 +1838,31 @@ CREATE POLICY tenant_isolation_voice_recordings ON voice_recordings
     USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
     WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
 
+CREATE POLICY tenant_isolation_workflow_executions ON workflow_executions
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_workflow_step_logs ON workflow_step_logs
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_notification_templates ON notification_templates
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_notification_logs ON notification_logs
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_automation_rules ON automation_rules
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
 -- 6. Grant least-privilege DML permissions to sales_app_user
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO sales_app_user;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO sales_app_user;
@@ -1765,5 +1904,9 @@ INSERT INTO permissions (id, code, description, domain) VALUES
     ('perm_support_manage', 'support:manage', 'Manage support tickets, warranties and return authorizations', 'SUPPORT'),
     ('perm_support_read', 'support:read', 'View support tickets and return authorizations', 'SUPPORT'),
     ('perm_scheduling_manage', 'scheduling:manage', 'Manage appointment slots and staff calendars', 'SCHEDULING'),
-    ('perm_scheduling_read', 'scheduling:read', 'View appointments and booking availability', 'SCHEDULING')
+    ('perm_scheduling_read', 'scheduling:read', 'View appointments and booking availability', 'SCHEDULING'),
+    ('perm_workflows_manage', 'workflows:manage', 'Manage, trigger and retry durable workflows', 'WORKFLOWS'),
+    ('perm_workflows_read', 'workflows:read', 'View workflow executions and step logs', 'WORKFLOWS'),
+    ('perm_notifications_manage', 'notifications:manage', 'Manage notification templates and send broadcasts', 'NOTIFICATIONS'),
+    ('perm_integrations_manage', 'integrations:manage', 'Configure external integrations and n8n webhooks', 'INTEGRATIONS')
 ON CONFLICT (code) DO NOTHING;

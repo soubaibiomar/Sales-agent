@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Integrations & n8n Peripheral Barrier — Sales AI Platform</title>
+  <style>
+    :root {
+      --primary: #0A3A2A;
+      --primary-hover: #064E3B;
+      --primary-tint: #E6F4EA;
+      --accent: #10B981;
+      --bg-neutral: #FFFFFF;
+      --bg-page: #F8FAFC;
+      --border-muted: #E2E8F0;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --status-success: #16A34A;
+      --status-warning: #D97706;
+      --status-danger: #DC2626;
+      --status-info: #2563EB;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
+    .sidebar { width: 260px; background-color: var(--primary); color: #FFFFFF; display: flex; flex-direction: column; padding: 1.5rem 1rem; border-right: 1px solid var(--border-muted); }
+    .brand-title { font-size: 1.15rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.25rem; }
+    .brand-subtitle { font-size: 0.75rem; color: #A7F3D0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2rem; }
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+    .nav-item { padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.875rem; cursor: pointer; color: #E2E8F0; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
+    .nav-item:hover, .nav-item.active { background: rgba(255, 255, 255, 0.18); color: #FFFFFF; font-weight: 600; }
+    
+    .main-area { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    .topbar { height: 64px; background: var(--bg-neutral); border-bottom: 1px solid var(--border-muted); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
+    .topbar h1 { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+    .content { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+    
+    .panel { background: var(--bg-neutral); border-radius: 8px; border: 1px solid var(--border-muted); padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-muted); padding-bottom: 0.75rem; }
+    .panel-title { font-size: 1rem; font-weight: 700; color: var(--primary); }
+    
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #F8FAFC; padding: 0.75rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); text-align: left; }
+    td { padding: 0.85rem 0.75rem; border-bottom: 1px solid var(--border-muted); font-size: 0.85rem; }
+    tr:hover { background: #F1F5F9; }
+    
+    .badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+    .badge-success { background: #DCFCE7; color: var(--status-success); }
+    .badge-pending { background: #FEF3C7; color: var(--status-warning); }
+    .badge-danger { background: #FEE2E2; color: var(--status-danger); }
+    .badge-info { background: #DBEAFE; color: var(--status-info); }
+    
+    .btn { padding: 0.45rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-outline { background: transparent; border: 1px solid var(--border-muted); color: var(--text-main); }
+    .btn-danger { background: var(--status-danger); color: #fff; }
+    
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+    .stat-card { background: var(--bg-neutral); border: 1px solid var(--border-muted); border-radius: 8px; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.35rem; }
+    .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+    .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand-title">Sales AI Platform</div>
+    <div class="brand-subtitle">Commercial Operations</div>
+    <ul class="nav-list">
+      <li><a class="nav-item" href="index.html"><span>📊</span> Dashboard</a></li>
+      <li><a class="nav-item" href="inbox.html"><span>💬</span> Omnichannel Inbox</a></li>
+      <li><a class="nav-item" href="pipeline.html"><span>🚀</span> Pipeline Kanban</a></li>
+      <li><a class="nav-item" href="catalog.html"><span>📦</span> Catalog & Pricing</a></li>
+      <li><a class="nav-item" href="quote_builder.html"><span>📝</span> Quote Builder</a></li>
+      <li><a class="nav-item" href="approvals.html"><span>⚖️</span> Approvals Center</a></li>
+      <li><a class="nav-item" href="orders.html"><span>🛒</span> Orders & Checkout</a></li>
+      <li><a class="nav-item" href="invoices.html"><span>📄</span> Invoices & Ledger</a></li>
+      <li><a class="nav-item" href="inventory.html"><span>🏭</span> Inventory & Warehouses</a></li>
+      <li><a class="nav-item" href="workflows.html"><span>⚡</span> Durable Workflows</a></li>
+      <li><a class="nav-item" href="notifications.html"><span>🔔</span> Notifications & Opt-Out</a></li>
+      <li><a class="nav-item active" href="integrations.html"><span>🔌</span> Integrations & n8n</a></li>
+    </ul>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <h1>External Integrations & n8n Peripheral Barrier</h1>
+      <span class="badge badge-success" style="padding: 0.4rem 0.8rem;">Invariant 7 & ADR-007 Enforced</span>
+    </header>
+
+    <div class="content">
+      <!-- Status Cards -->
+      <div class="grid-3">
+        <div class="stat-card">
+          <span class="stat-label">n8n Security Barrier</span>
+          <span class="stat-value" style="color: var(--status-success);">ENFORCED</span>
+          <span style="font-size: 0.75rem; color: var(--status-success);">Commercial mutations strictly blocked (403)</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Transactional Outbox Backlog</span>
+          <span class="stat-value" id="outboxPendingCount">0</span>
+          <span style="font-size: 0.75rem; color: var(--status-info);">Pending reliable event delivery</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Dead-Letter Queue (DLQ)</span>
+          <span class="stat-value" id="dlqCount" style="color: var(--status-danger);">0</span>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">Quarantined events needing manual triage</span>
+        </div>
+      </div>
+
+      <!-- Invariant 7 / ADR-007 Security Barrier Tester -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">🛡️ Peripheral n8n Security Barrier Verification (Invariant 7)</div>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Verify n8n identity is rejected from executing financial/inventory state changes</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Under <strong>Invariant 7</strong> and <strong>ADR-007</strong>, n8n is strictly peripheral (notifications, non-critical webhooks).
+          No n8n workflow or service account can ever modify prices, approve discounts, mark orders paid, refund payments, or adjust inventory.
+        </p>
+
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <button class="btn btn-outline" onclick="verifyBarrier('quotes:approve')">🚫 Test quotes:approve (Must 403)</button>
+          <button class="btn btn-outline" onclick="verifyBarrier('orders:mark_paid')">🚫 Test orders:mark_paid (Must 403)</button>
+          <button class="btn btn-outline" onclick="verifyBarrier('inventory:adjust')">🚫 Test inventory:adjust (Must 403)</button>
+          <button class="btn btn-outline" onclick="verifyBarrier('payments:refund')">🚫 Test payments:refund (Must 403)</button>
+          <button class="btn btn-primary" onclick="verifyBarrier('leads:enrich_summary')">✅ Test leads:enrich_summary (Allowed Peripheral)</button>
+        </div>
+        <div id="barrierResult" style="margin-top: 1rem; padding: 0.75rem; border-radius: 6px; display: none; font-size: 0.85rem;"></div>
+      </div>
+
+      <!-- Transactional Outbox & DLQ Table -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Transactional Outbox & DLQ Events</div>
+          <button class="btn btn-outline" onclick="loadOutbox()">🔄 Refresh</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Event ID</th>
+              <th>Topic / Event Type</th>
+              <th>Status</th>
+              <th>Retry Count</th>
+              <th>Created At</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="outboxBody">
+            <tr>
+              <td><code>outbox-ev-401</code></td>
+              <td><code>order.created</code></td>
+              <td><span class="badge badge-success">PUBLISHED</span></td>
+              <td>0</td>
+              <td>2 mins ago</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td><code>outbox-ev-402</code></td>
+              <td><code>customer.notification</code></td>
+              <td><span class="badge badge-pending">PENDING</span></td>
+              <td>0</td>
+              <td>Just now</td>
+              <td><button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.75rem;">Dispatch Now</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    async function verifyBarrier(action) {
+      const resultDiv = document.getElementById('barrierResult');
+      resultDiv.style.display = 'block';
+      resultDiv.style.background = '#F8FAFC';
+      resultDiv.innerHTML = 'Testing barrier for action: <code>' + action + '</code>...';
+
+      try {
+        const res = await fetch('/api/v1/integrations/n8n/verify-barrier', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Tenant-ID': 'tenant-acme-corp'
+          },
+          body: JSON.stringify({ action: action })
+        });
+        const data = await res.json();
+        if (data.allowed) {
+          resultDiv.style.background = '#DCFCE7';
+          resultDiv.style.color = '#16A34A';
+          resultDiv.innerHTML = `✅ <strong>PERMITTED PERIPHERAL ACTION:</strong> Action <code>${action}</code> was accepted as a non-commercial task.`;
+        } else {
+          resultDiv.style.background = '#FEE2E2';
+          resultDiv.style.color = '#DC2626';
+          resultDiv.innerHTML = `🛡️ <strong>BLOCKED BY SECURITY BARRIER (HTTP 403):</strong> ${data.detail}`;
+        }
+      } catch (err) {
+        resultDiv.style.background = '#FEE2E2';
+        resultDiv.style.color = '#DC2626';
+        resultDiv.innerHTML = 'Error: ' + err.message;
+      }
+    }
+
+    async function loadOutbox() {
+      try {
+        const res = await fetch('/api/v1/integrations/outbox', {
+          headers: { 'X-Tenant-ID': 'tenant-acme-corp' }
+        });
+        if (res.ok) {
+          const list = await res.json();
+          const tbody = document.getElementById('outboxBody');
+          if (list.length > 0) {
+            tbody.innerHTML = list.map(item => `
+              <tr>
+                <td><code>${item.id}</code></td>
+                <td><code>${item.event_type}</code></td>
+                <td><span class="badge ${item.status === 'PUBLISHED' ? 'badge-success' : (item.status === 'FAILED' ? 'badge-danger' : 'badge-pending')}">${item.status}</span></td>
+                <td>${item.retry_count}</td>
+                <td>${new Date(item.created_at).toLocaleTimeString()}</td>
+                <td>${item.status === 'DEAD_LETTER' || item.status === 'FAILED' ? `<button class="btn btn-outline" onclick="retryEvent('${item.id}')" style="padding: 2px 8px; font-size: 0.75rem;">Retry DLQ</button>` : '—'}</td>
+              </tr>
+            `).join('');
+          }
+        }
+      } catch (e) {
+        console.warn("Could not load outbox dynamically:", e);
+      }
+    }
+
+    async function retryEvent(id) {
+      try {
+        const res = await fetch(`/api/v1/integrations/outbox/${id}/retry`, {
+          method: 'POST',
+          headers: { 'X-Tenant-ID': 'tenant-acme-corp' }
+        });
+        if (res.ok) {
+          alert("Event requeued from DLQ successfully!");
+          loadOutbox();
+        }
+      } catch (err) {
+        alert("Retry failed: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>

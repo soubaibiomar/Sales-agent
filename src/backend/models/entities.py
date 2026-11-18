@@ -1370,3 +1370,135 @@ class VoiceRecording(Base):
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
     session = relationship("VoiceSession", back_populates="recordings")
+
+
+# ============================================================================
+# Step 07: Workflows, Notifications, and Automations Entities
+# ============================================================================
+
+class WorkflowExecution(Base):
+    __tablename__ = "workflow_executions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    workflow_type = Column(String(100), nullable=False)
+    correlation_id = Column(String(100), nullable=False, index=True)
+    idempotency_key = Column(String(255), nullable=False, index=True)
+    status = Column(String(30), default="RUNNING", nullable=False, index=True)
+    current_step = Column(String(100), nullable=True)
+    payload_json = Column(JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=False)
+    result_json = Column(JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=True)
+    error_details = Column(Text, nullable=True)
+    retry_count = Column(Integer, default=0, nullable=False)
+    max_retries = Column(Integer, default=3, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+
+    step_logs = relationship("WorkflowStepLog", back_populates="workflow", cascade="all, delete-orphan")
+
+    @property
+    def error_message(self) -> Optional[str]:
+        return self.error_details
+
+    @error_message.setter
+    def error_message(self, val: Optional[str]):
+        self.error_details = val
+
+    @property
+    def context_payload(self) -> Dict[str, Any]:
+        return {"step_outputs": self.result_json or {}}
+
+    @context_payload.setter
+    def context_payload(self, val: Dict[str, Any]):
+        self.result_json = val.get("step_outputs", val)
+
+
+class WorkflowStepLog(Base):
+    __tablename__ = "workflow_step_logs"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    workflow_id = Column(String(36), ForeignKey("workflow_executions.id", ondelete="CASCADE"), nullable=False, index=True)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    step_name = Column(String(100), nullable=False)
+    step_type = Column(String(30), default="ACTION", nullable=False)  # ACTION, COMPENSATION
+    status = Column(String(30), default="STARTED", nullable=False)    # STARTED, COMPLETED, FAILED
+    input_json = Column(JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=True)
+    output_json = Column(JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=True)
+    error_message = Column(Text, nullable=True)
+    duration_ms = Column(Integer, default=0, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    workflow = relationship("WorkflowExecution", back_populates="step_logs")
+
+    @property
+    def output_payload(self) -> Optional[Dict[str, Any]]:
+        return self.output_json
+
+    @output_payload.setter
+    def output_payload(self, val: Optional[Dict[str, Any]]):
+        self.output_json = val
+
+    @property
+    def execution_duration_ms(self) -> float:
+        return float(self.duration_ms)
+
+    @execution_duration_ms.setter
+    def execution_duration_ms(self, val: float):
+        self.duration_ms = int(val)
+
+
+class NotificationTemplate(Base):
+    __tablename__ = "notification_templates"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    template_code = Column(String(100), nullable=False, index=True)
+    channel_type = Column(String(30), nullable=False)  # EMAIL, WHATSAPP, IN_APP
+    message_class = Column(String(30), default="TRANSACTIONAL", nullable=False)  # MARKETING, TRANSACTIONAL, SERVICE, SECURITY
+    language = Column(String(10), default="fr-FR", nullable=False)
+    subject_template = Column(String(255), nullable=True)
+    body_template = Column(Text, nullable=False)
+    variables_json = Column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    logs = relationship("NotificationLog", back_populates="template")
+
+
+class NotificationLog(Base):
+    __tablename__ = "notification_logs"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    template_id = Column(String(36), ForeignKey("notification_templates.id", ondelete="SET NULL"), nullable=True)
+    recipient_identifier = Column(String(255), nullable=False, index=True)
+    channel_type = Column(String(30), nullable=False)
+    message_class = Column(String(30), default="TRANSACTIONAL", nullable=False)
+    subject = Column(String(255), nullable=True)
+    content = Column(Text, nullable=False)
+    status = Column(String(30), default="PENDING", nullable=False, index=True)  # PENDING, SENT, DELIVERED, FAILED, CANCELLED
+    error_reason = Column(Text, nullable=True)
+    retry_count = Column(Integer, default=0, nullable=False)
+    metadata_json = Column(JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    sent_at = Column(DateTime(timezone=True), nullable=True)
+
+    template = relationship("NotificationTemplate", back_populates="logs")
+
+
+class AutomationRule(Base):
+    __tablename__ = "automation_rules"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(150), nullable=False)
+    trigger_event = Column(String(100), nullable=False, index=True)
+    condition_json = Column(JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=True)
+    action_type = Column(String(100), nullable=False)
+    action_config_json = Column(JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+

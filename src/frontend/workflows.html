@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Durable Workflows & Sagas — Sales AI Platform</title>
+  <style>
+    :root {
+      --primary: #0A3A2A;
+      --primary-hover: #064E3B;
+      --primary-tint: #E6F4EA;
+      --accent: #10B981;
+      --bg-neutral: #FFFFFF;
+      --bg-page: #F8FAFC;
+      --border-muted: #E2E8F0;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --status-success: #16A34A;
+      --status-warning: #D97706;
+      --status-danger: #DC2626;
+      --status-info: #2563EB;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
+    .sidebar { width: 260px; background-color: var(--primary); color: #FFFFFF; display: flex; flex-direction: column; padding: 1.5rem 1rem; border-right: 1px solid var(--border-muted); }
+    .brand-title { font-size: 1.15rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.25rem; }
+    .brand-subtitle { font-size: 0.75rem; color: #A7F3D0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2rem; }
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+    .nav-item { padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.875rem; cursor: pointer; color: #E2E8F0; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
+    .nav-item:hover, .nav-item.active { background: rgba(255, 255, 255, 0.18); color: #FFFFFF; font-weight: 600; }
+    
+    .main-area { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    .topbar { height: 64px; background: var(--bg-neutral); border-bottom: 1px solid var(--border-muted); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
+    .topbar h1 { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+    .content { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+    
+    .panel { background: var(--bg-neutral); border-radius: 8px; border: 1px solid var(--border-muted); padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-muted); padding-bottom: 0.75rem; }
+    .panel-title { font-size: 1rem; font-weight: 700; color: var(--primary); }
+    
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #F8FAFC; padding: 0.75rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); text-align: left; }
+    td { padding: 0.85rem 0.75rem; border-bottom: 1px solid var(--border-muted); font-size: 0.85rem; }
+    tr:hover { background: #F1F5F9; }
+    
+    .badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+    .badge-success { background: #DCFCE7; color: var(--status-success); }
+    .badge-running { background: #FEF3C7; color: var(--status-warning); }
+    .badge-failed { background: #FEE2E2; color: var(--status-danger); }
+    .badge-compensated { background: #EDE9FE; color: #7C3AED; }
+    .badge-info { background: #DBEAFE; color: var(--status-info); }
+    
+    .btn { padding: 0.45rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-outline { background: transparent; border: 1px solid var(--border-muted); color: var(--text-main); }
+    .btn-outline:hover { background: #E2E8F0; }
+    .btn-danger { background: var(--status-danger); color: #fff; }
+    
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.75rem; }
+    .form-group label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
+    .form-group input, .form-group select, .form-group textarea {
+      padding: 0.5rem; border: 1px solid var(--border-muted); border-radius: 6px; font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand-title">Sales AI Platform</div>
+    <div class="brand-subtitle">Commercial Operations</div>
+    <ul class="nav-list">
+      <li><a class="nav-item" href="index.html"><span>📊</span> Dashboard</a></li>
+      <li><a class="nav-item" href="inbox.html"><span>💬</span> Omnichannel Inbox</a></li>
+      <li><a class="nav-item" href="pipeline.html"><span>🚀</span> Pipeline Kanban</a></li>
+      <li><a class="nav-item" href="catalog.html"><span>📦</span> Catalog & Pricing</a></li>
+      <li><a class="nav-item" href="quote_builder.html"><span>📝</span> Quote Builder</a></li>
+      <li><a class="nav-item" href="approvals.html"><span>⚖️</span> Approvals Center</a></li>
+      <li><a class="nav-item" href="orders.html"><span>🛒</span> Orders & Checkout</a></li>
+      <li><a class="nav-item" href="invoices.html"><span>📄</span> Invoices & Ledger</a></li>
+      <li><a class="nav-item" href="inventory.html"><span>🏭</span> Inventory & Warehouses</a></li>
+      <li><a class="nav-item active" href="workflows.html"><span>⚡</span> Durable Workflows</a></li>
+      <li><a class="nav-item" href="notifications.html"><span>🔔</span> Notifications & Opt-Out</a></li>
+      <li><a class="nav-item" href="integrations.html"><span>🔌</span> Integrations & n8n</a></li>
+    </ul>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <h1>Durable Workflows & Sagas Engine</h1>
+      <div>
+        <button class="btn btn-outline" onclick="triggerCrashRecovery()">🔄 Resume Interrupted Workflows</button>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- Trigger Workflow -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Execute Transactional Saga</div>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Durable, Idempotent & Fully Compensating</span>
+        </div>
+        <form id="workflowForm" onsubmit="handleTriggerWorkflow(event)">
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="sagaType">Saga / Workflow Type</label>
+              <select id="sagaType" required>
+                <option value="CHECKOUT_SAGA">CHECKOUT_SAGA (Reserve Stock -> Payment Intent -> Commit)</option>
+                <option value="STOCK_EXPIRY">STOCK_EXPIRY (Scan & Expire Stale Stock Holds)</option>
+                <option value="QUOTE_APPROVAL_ESCALATION">QUOTE_APPROVAL_ESCALATION (Escalate / Auto-expire Quotes)</option>
+                <option value="FULFILLMENT_DISPATCH">FULFILLMENT_DISPATCH (Progress Shipment -> WhatsApp Alert)</option>
+                <option value="RMA_TRIAGE">RMA_TRIAGE (Triage Return -> Restock -> Refund)</option>
+                <option value="DAILY_RECONCILIATION">DAILY_RECONCILIATION (Audit Inventory Ledger Consistency)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="idempotencyKey">Idempotency Key (Optional)</label>
+              <input type="text" id="idempotencyKey" placeholder="auto-generated UUID if blank">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="payloadJson">Payload (JSON)</label>
+            <textarea id="payloadJson" rows="3" style="font-family: monospace;">{"order_id": "ord-sample-001", "payment_method": "stripe", "simulate_payment_failure": false}</textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">⚡ Dispatch Workflow Execution</button>
+        </form>
+      </div>
+
+      <!-- Executions Table -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Workflow Execution History</div>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">PostgreSQL Durable State Machine</span>
+        </div>
+        <table id="executionsTable">
+          <thead>
+            <tr>
+              <th>Execution ID</th>
+              <th>Workflow Name</th>
+              <th>Status</th>
+              <th>Current Step</th>
+              <th>Retries</th>
+              <th>Started At</th>
+              <th>Completed At</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="executionsBody">
+            <tr>
+              <td><code>wf-exec-88910</code></td>
+              <td><strong>CHECKOUT_SAGA</strong></td>
+              <td><span class="badge badge-success">COMPLETED</span></td>
+              <td>commit_order_and_ledger</td>
+              <td>0</td>
+              <td>Just now</td>
+              <td>Just now</td>
+              <td><button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.75rem;">View Steps</button></td>
+            </tr>
+            <tr>
+              <td><code>wf-exec-88909</code></td>
+              <td><strong>CHECKOUT_SAGA</strong></td>
+              <td><span class="badge badge-compensated">COMPENSATED</span></td>
+              <td>release_reservation</td>
+              <td>1</td>
+              <td>10 mins ago</td>
+              <td>10 mins ago</td>
+              <td><button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.75rem;">View Steps</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Automation Rules -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Active Automation Rules</div>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Event-Driven Sagas & Triggers</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Rule Name</th>
+              <th>Trigger Event</th>
+              <th>Target Workflow</th>
+              <th>Enabled</th>
+              <th>Created At</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Auto-expire Quote on SLA Breached</td>
+              <td><code>quote.expired</code></td>
+              <td><code>QUOTE_APPROVAL_ESCALATION</code></td>
+              <td><span class="badge badge-success">ACTIVE</span></td>
+              <td>2026-11-18</td>
+            </tr>
+            <tr>
+              <td>Checkout Fulfillment Saga Trigger</td>
+              <td><code>order.paid</code></td>
+              <td><code>FULFILLMENT_DISPATCH</code></td>
+              <td><span class="badge badge-success">ACTIVE</span></td>
+              <td>2026-11-18</td>
+            </tr>
+            <tr>
+              <td>Hourly Stock Reservation Cleanup</td>
+              <td><code>cron.hourly</code></td>
+              <td><code>STOCK_EXPIRY</code></td>
+              <td><span class="badge badge-success">ACTIVE</span></td>
+              <td>2026-11-18</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    async function handleTriggerWorkflow(e) {
+      e.preventDefault();
+      const sagaType = document.getElementById('sagaType').value;
+      const idempotencyKey = document.getElementById('idempotencyKey').value || 'wf-' + Math.random().toString(36).substring(2, 9);
+      let payload = {};
+      try {
+        payload = JSON.parse(document.getElementById('payloadJson').value);
+      } catch (err) {
+        alert("Invalid JSON payload");
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/v1/workflows/executions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Tenant-ID': 'tenant-acme-corp'
+          },
+          body: JSON.stringify({
+            workflow_type: sagaType,
+            workflow_name: sagaType,
+            idempotency_key: idempotencyKey,
+            input_payload: payload
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert("Workflow dispatched! ID: " + data.id + " Status: " + data.status);
+          loadExecutions();
+        } else {
+          alert("Error: " + (data.detail || JSON.stringify(data)));
+        }
+      } catch (err) {
+        alert("Network error: " + err.message);
+      }
+    }
+
+    async function triggerCrashRecovery() {
+      try {
+        const res = await fetch('/api/v1/workflows/recovery/resume', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Tenant-ID': 'tenant-acme-corp'
+          }
+        });
+        const data = await res.json();
+        alert("Crash recovery executed! Resumed: " + data.resumed_count + " workflows.");
+        loadExecutions();
+      } catch (err) {
+        alert("Recovery error: " + err.message);
+      }
+    }
+
+    async function loadExecutions() {
+      try {
+        const res = await fetch('/api/v1/workflows/executions', {
+          headers: { 'X-Tenant-ID': 'tenant-acme-corp' }
+        });
+        if (res.ok) {
+          const list = await res.json();
+          const tbody = document.getElementById('executionsBody');
+          if (list.length > 0) {
+            tbody.innerHTML = list.map(item => `
+              <tr>
+                <td><code>${item.id}</code></td>
+                <td><strong>${item.workflow_type}</strong></td>
+                <td><span class="badge ${getStatusBadge(item.status)}">${item.status}</span></td>
+                <td>${item.current_step || '—'}</td>
+                <td>${item.retry_count}</td>
+                <td>${new Date(item.started_at).toLocaleTimeString()}</td>
+                <td>${item.completed_at ? new Date(item.completed_at).toLocaleTimeString() : 'In Progress'}</td>
+                <td><button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.75rem;">View</button></td>
+              </tr>
+            `).join('');
+          }
+        }
+      } catch (e) {
+        console.warn("Could not load executions dynamically:", e);
+      }
+    }
+
+    function getStatusBadge(status) {
+      if (status === 'COMPLETED') return 'badge-success';
+      if (status === 'RUNNING') return 'badge-running';
+      if (status === 'FAILED') return 'badge-failed';
+      if (status === 'COMPENSATED') return 'badge-compensated';
+      return 'badge-info';
+    }
+  </script>
+</body>
+</html>

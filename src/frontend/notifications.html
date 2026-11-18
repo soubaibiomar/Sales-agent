@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Omnichannel Notifications & Opt-Outs — Sales AI Platform</title>
+  <style>
+    :root {
+      --primary: #0A3A2A;
+      --primary-hover: #064E3B;
+      --primary-tint: #E6F4EA;
+      --accent: #10B981;
+      --bg-neutral: #FFFFFF;
+      --bg-page: #F8FAFC;
+      --border-muted: #E2E8F0;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --status-success: #16A34A;
+      --status-warning: #D97706;
+      --status-danger: #DC2626;
+      --status-info: #2563EB;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
+    .sidebar { width: 260px; background-color: var(--primary); color: #FFFFFF; display: flex; flex-direction: column; padding: 1.5rem 1rem; border-right: 1px solid var(--border-muted); }
+    .brand-title { font-size: 1.15rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.25rem; }
+    .brand-subtitle { font-size: 0.75rem; color: #A7F3D0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2rem; }
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+    .nav-item { padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.875rem; cursor: pointer; color: #E2E8F0; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
+    .nav-item:hover, .nav-item.active { background: rgba(255, 255, 255, 0.18); color: #FFFFFF; font-weight: 600; }
+    
+    .main-area { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    .topbar { height: 64px; background: var(--bg-neutral); border-bottom: 1px solid var(--border-muted); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
+    .topbar h1 { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+    .content { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+    
+    .panel { background: var(--bg-neutral); border-radius: 8px; border: 1px solid var(--border-muted); padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-muted); padding-bottom: 0.75rem; }
+    .panel-title { font-size: 1rem; font-weight: 700; color: var(--primary); }
+    
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #F8FAFC; padding: 0.75rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); text-align: left; }
+    td { padding: 0.85rem 0.75rem; border-bottom: 1px solid var(--border-muted); font-size: 0.85rem; }
+    tr:hover { background: #F1F5F9; }
+    
+    .badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+    .badge-delivered { background: #DCFCE7; color: var(--status-success); }
+    .badge-queued { background: #DBEAFE; color: var(--status-info); }
+    .badge-cancelled { background: #FEE2E2; color: var(--status-danger); }
+    .badge-suppressed { background: #FEF3C7; color: var(--status-warning); }
+    
+    .btn { padding: 0.45rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-outline { background: transparent; border: 1px solid var(--border-muted); color: var(--text-main); }
+    
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.75rem; }
+    .form-group label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
+    .form-group input, .form-group select, .form-group textarea {
+      padding: 0.5rem; border: 1px solid var(--border-muted); border-radius: 6px; font-size: 0.85rem;
+    }
+    .stat-card { background: var(--bg-neutral); border: 1px solid var(--border-muted); border-radius: 8px; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.35rem; }
+    .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+    .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand-title">Sales AI Platform</div>
+    <div class="brand-subtitle">Commercial Operations</div>
+    <ul class="nav-list">
+      <li><a class="nav-item" href="index.html"><span>📊</span> Dashboard</a></li>
+      <li><a class="nav-item" href="inbox.html"><span>💬</span> Omnichannel Inbox</a></li>
+      <li><a class="nav-item" href="pipeline.html"><span>🚀</span> Pipeline Kanban</a></li>
+      <li><a class="nav-item" href="catalog.html"><span>📦</span> Catalog & Pricing</a></li>
+      <li><a class="nav-item" href="quote_builder.html"><span>📝</span> Quote Builder</a></li>
+      <li><a class="nav-item" href="approvals.html"><span>⚖️</span> Approvals Center</a></li>
+      <li><a class="nav-item" href="orders.html"><span>🛒</span> Orders & Checkout</a></li>
+      <li><a class="nav-item" href="invoices.html"><span>📄</span> Invoices & Ledger</a></li>
+      <li><a class="nav-item" href="inventory.html"><span>🏭</span> Inventory & Warehouses</a></li>
+      <li><a class="nav-item" href="workflows.html"><span>⚡</span> Durable Workflows</a></li>
+      <li><a class="nav-item active" href="notifications.html"><span>🔔</span> Notifications & Opt-Out</a></li>
+      <li><a class="nav-item" href="integrations.html"><span>🔌</span> Integrations & n8n</a></li>
+    </ul>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <h1>Omnichannel Notifications & Opt-Outs</h1>
+      <span class="badge badge-delivered" style="padding: 0.4rem 0.8rem;">Moroccan Law 09-08 & GDPR Compliant</span>
+    </header>
+
+    <div class="content">
+      <!-- Compliance & Rules Overview -->
+      <div class="grid-3">
+        <div class="stat-card">
+          <span class="stat-label">Quiet Hours Guard</span>
+          <span class="stat-value">21:00 – 09:00</span>
+          <span style="font-size: 0.75rem; color: var(--status-warning);">Marketing suppressed & Sundays locked</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Multi-Script STOP Support</span>
+          <span class="stat-value">4 Languages</span>
+          <span style="font-size: 0.75rem; color: var(--status-success);">STOP, BARAKA, HBS, قف</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Frequency Cap Policy</span>
+          <span class="stat-value">1 / 24 Hours</span>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">Max 1 marketing notification per day</span>
+        </div>
+      </div>
+
+      <!-- Send Notification Form -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Dispatch Notification</div>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Subject to quiet hours, opt-outs, and transactional priority</span>
+        </div>
+        <form id="notifyForm" onsubmit="handleSendNotification(event)">
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="recipient">Recipient (Email or E.164 Phone)</label>
+              <input type="text" id="recipient" value="+212612345678" required>
+            </div>
+            <div class="form-group">
+              <label for="channel">Channel</label>
+              <select id="channel" required>
+                <option value="WHATSAPP">WhatsApp</option>
+                <option value="EMAIL">Email</option>
+                <option value="IN_APP">In-App</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="msgClass">Message Classification</label>
+              <select id="msgClass" required>
+                <option value="TRANSACTIONAL">TRANSACTIONAL (Order/Payment - High Priority)</option>
+                <option value="MARKETING">MARKETING (Offers/Promotions - Governed by Quiet Hours)</option>
+                <option value="SERVICE">SERVICE (Operational Update)</option>
+                <option value="SECURITY">SECURITY (OTPs & Critical Alerts)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="templateName">Template</label>
+              <select id="templateName">
+                <option value="ORDER_CONFIRMED">ORDER_CONFIRMED</option>
+                <option value="QUOTE_APPROVAL_REQUIRED">QUOTE_APPROVAL_REQUIRED</option>
+                <option value="APPOINTMENT_REMINDER">APPOINTMENT_REMINDER</option>
+                <option value="MARKETING_PROMOTION">MARKETING_PROMOTION</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="templateVariables">Variables (JSON)</label>
+            <textarea id="templateVariables" rows="2" style="font-family: monospace;">{"order_id": "ORD-2026-001", "total": "1,450.00 MAD", "delivery_date": "2026-11-20"}</textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">📤 Enqueue / Dispatch Notification</button>
+        </form>
+      </div>
+
+      <!-- Multi-Script Opt-out Tester -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Inbound Opt-Out (STOP) Simulator</div>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Simulate inbound SMS/WhatsApp customer opt-out</span>
+        </div>
+        <div style="display: flex; gap: 0.75rem; align-items: flex-end;">
+          <div class="form-group" style="flex: 1; margin-bottom: 0;">
+            <label for="optoutRecipient">Customer Phone / Email</label>
+            <input type="text" id="optoutRecipient" value="+212612345678">
+          </div>
+          <div class="form-group" style="flex: 1; margin-bottom: 0;">
+            <label for="optoutText">Inbound Message Body</label>
+            <input type="text" id="optoutText" value="Baraka safi ma tbqach tsaft lia">
+          </div>
+          <button class="btn btn-outline" onclick="simulateOptOut()">🚫 Record STOP Opt-Out</button>
+        </div>
+      </div>
+
+      <!-- Delivery Logs Table -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Recent Notification Logs</div>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Delivery status & compliance outcomes</span>
+        </div>
+        <table id="logsTable">
+          <thead>
+            <tr>
+              <th>Log ID</th>
+              <th>Recipient</th>
+              <th>Channel</th>
+              <th>Class</th>
+              <th>Status</th>
+              <th>Reason / Detail</th>
+              <th>Created At</th>
+            </tr>
+          </thead>
+          <tbody id="logsBody">
+            <tr>
+              <td><code>notif-log-102</code></td>
+              <td>+212612345678</td>
+              <td><strong>WHATSAPP</strong></td>
+              <td><span class="badge" style="background:#DBEAFE; color:#2563EB;">TRANSACTIONAL</span></td>
+              <td><span class="badge badge-delivered">DELIVERED</span></td>
+              <td>Dispatched via WhatsApp Channel</td>
+              <td>1 min ago</td>
+            </tr>
+            <tr>
+              <td><code>notif-log-101</code></td>
+              <td>+212698765432</td>
+              <td><strong>WHATSAPP</strong></td>
+              <td><span class="badge" style="background:#FEF3C7; color:#D97706;">MARKETING</span></td>
+              <td><span class="badge badge-cancelled">CANCELLED</span></td>
+              <td>Quiet hours active (Moroccan local time / Sunday)</td>
+              <td>5 mins ago</td>
+            </tr>
+            <tr>
+              <td><code>notif-log-100</code></td>
+              <td>+212600112233</td>
+              <td><strong>SMS</strong></td>
+              <td><span class="badge" style="background:#FEF3C7; color:#D97706;">MARKETING</span></td>
+              <td><span class="badge badge-suppressed">SUPPRESSED</span></td>
+              <td>Recipient opted out via STOP / Baraka</td>
+              <td>12 mins ago</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    async function handleSendNotification(e) {
+      e.preventDefault();
+      const recipient = document.getElementById('recipient').value;
+      const channel = document.getElementById('channel').value;
+      const msgClass = document.getElementById('msgClass').value;
+      const templateName = document.getElementById('templateName').value;
+      let variables = {};
+      try {
+        variables = JSON.parse(document.getElementById('templateVariables').value);
+      } catch (err) {
+        alert("Invalid JSON in variables");
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/v1/notifications/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Tenant-ID': 'tenant-acme-corp'
+          },
+          body: JSON.stringify({
+            recipient,
+            channel,
+            message_class: msgClass,
+            template_name: templateName,
+            variables
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`Notification processed! Status: ${data.status}\n${data.error_reason ? 'Reason: ' + data.error_reason : ''}`);
+          loadLogs();
+        } else {
+          alert("Error: " + (data.detail || JSON.stringify(data)));
+        }
+      } catch (err) {
+        alert("Network error: " + err.message);
+      }
+    }
+
+    async function simulateOptOut() {
+      const recipient = document.getElementById('optoutRecipient').value;
+      const text = document.getElementById('optoutText').value;
+      try {
+        const res = await fetch('/api/v1/notifications/opt-out', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Tenant-ID': 'tenant-acme-corp'
+          },
+          body: JSON.stringify({
+            recipient,
+            channel: 'WHATSAPP',
+            inbound_message_text: text
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(data.opted_out ? `Opt-out successfully registered via keyword '${data.matched_keyword}'!` : 'No opt-out keyword detected in message.');
+        } else {
+          alert("Error: " + (data.detail || JSON.stringify(data)));
+        }
+      } catch (err) {
+        alert("Network error: " + err.message);
+      }
+    }
+
+    async function loadLogs() {
+      try {
+        const res = await fetch('/api/v1/notifications/history', {
+          headers: { 'X-Tenant-ID': 'tenant-acme-corp' }
+        });
+        if (res.ok) {
+          const list = await res.json();
+          const tbody = document.getElementById('logsBody');
+          if (list.length > 0) {
+            tbody.innerHTML = list.map(item => `
+              <tr>
+                <td><code>${item.id}</code></td>
+                <td>${item.recipient}</td>
+                <td><strong>${item.channel}</strong></td>
+                <td><span class="badge" style="background:#DBEAFE; color:#2563EB;">${item.message_class}</span></td>
+                <td><span class="badge ${item.status === 'DELIVERED' ? 'badge-delivered' : (item.status === 'CANCELLED' ? 'badge-cancelled' : 'badge-suppressed')}">${item.status}</span></td>
+                <td>${item.error_reason || 'Dispatched successfully'}</td>
+                <td>${new Date(item.created_at).toLocaleTimeString()}</td>
+              </tr>
+            `).join('');
+          }
+        }
+      } catch (e) {
+        console.warn("Could not load dynamic logs:", e);
+      }
+    }
+  </script>
+</body>
+</html>
