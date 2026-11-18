@@ -23,6 +23,12 @@ class OutboxStatus:
     DEAD_LETTER = "DEAD_LETTER"
     CANCELLED = "CANCELLED"
 
+class OutboxMessageClass:
+    MARKETING = "MARKETING"
+    TRANSACTIONAL = "TRANSACTIONAL"
+    SERVICE = "SERVICE"
+    SECURITY = "SECURITY"
+
 class OutboxService:
     """Enterprise domain service for transactional outbox dispatch and DLQ management."""
 
@@ -36,6 +42,7 @@ class OutboxService:
         payload_dict: Dict[str, Any],
         conversation_id: Optional[str] = None,
         is_high_priority: bool = False,
+        message_class: str = OutboxMessageClass.TRANSACTIONAL,
         max_retries: int = 3,
         now: Optional[datetime] = None
     ) -> OutboxEvent:
@@ -47,9 +54,9 @@ class OutboxService:
         payload_json = json.dumps(payload_dict, default=str)
 
         bind = session.bind or engine
-        if bind and bind.dialect.name == "postgresql":
+        if bind and getattr(bind.dialect, "name", None) == "postgresql":
             await session.execute(
-                text("SELECT set_config('app.current_tenant_id', :t, false)"),
+                text("SELECT set_config('app.current_tenant_id', :t, true)"),
                 {"t": str(tenant_id)}
             )
 
@@ -59,6 +66,7 @@ class OutboxService:
             conversation_id=conversation_id,
             event_type=event_type,
             channel_type=channel_type,
+            message_class=message_class,
             recipient_identifier=recipient_identifier,
             payload_json=payload_json,
             status=OutboxStatus.PENDING,
@@ -67,6 +75,7 @@ class OutboxService:
             next_retry_at=current_time,
             last_error=None,
             is_high_priority=is_high_priority,
+            claim_token=None,
             created_at=current_time
         )
         session.add(outbox_event)
@@ -85,24 +94,36 @@ class OutboxService:
         tenant_id: Optional[str] = None
     ) -> List[OutboxEvent]:
         """
-        Fetches and dispatches pending or retriable outbox events with row locking and claim leasing.
-        Order: High-priority first (bypassing normal delays), then oldest created.
-        On failure: increments retry count with exponential backoff (base * 2^retry).
-        On max retries: transitions to DEAD_LETTER and emits AuditEvent.
+        Three-Phase Leased Outbox Dispatcher with Fencing Tokens (MED-01, HIGH-01, CRIT-02).
+        
+        Phase A (Claim & Commit in short DB Tx):
+          - Locks eligible rows with FOR UPDATE SKIP LOCKED.
+          - Assigns a cryptographic claim_token, lease expiration, and PROCESSING status.
+          - Commits immediately, releasing all DB locks and connection before network I/O.
+          
+        Phase B (Network I/O with ZERO held DB locks):
+          - Pre-dispatch opt-out suppression check (only suppresses MARKETING class messages!).
+          - Dispatches via external provider callable without any active database transaction.
+          
+        Phase C (Finalize & Commit with Fencing Token in short DB Tx):
+          - In a new short transaction, updates rows matching WHERE id = :id AND claim_token = :token.
+          - Transitions to DELIVERED or schedules exponential backoff / DEAD_LETTER.
+          - Fencing token rejects stale worker commits if lease expired and was re-claimed.
         """
         current_time = now or datetime.now(timezone.utc)
         worker = worker_id or f"outbox_worker_{uuid.uuid4().hex[:8]}"
         lease_expires = current_time + timedelta(seconds=lease_duration_seconds)
-
         bind = session.bind or engine
-        if tenant_id and bind and bind.dialect.name == "postgresql":
+
+        # -------------------------------------------------------------
+        # PHASE A: Claim & Commit in short DB transaction
+        # -------------------------------------------------------------
+        if tenant_id and bind and getattr(bind.dialect, "name", None) == "postgresql":
             await session.execute(
-                text("SELECT set_config('app.current_tenant_id', :t, false)"),
+                text("SELECT set_config('app.current_tenant_id', :t, true)"),
                 {"t": str(tenant_id)}
             )
 
-        # Finding P1-1: Select pending/failed events whose retry time has arrived,
-        # OR processing events whose lease has expired (stale worker recovery)
         eligibility = or_(
             and_(
                 OutboxEvent.status.in_([OutboxStatus.PENDING, OutboxStatus.FAILED]),
@@ -127,46 +148,61 @@ class OutboxService:
         if tenant_id:
             stmt = stmt.where(OutboxEvent.tenant_id == tenant_id)
 
-        # Pessimistic Row-Locking with SKIP LOCKED on PostgreSQL
-        if bind and bind.dialect.name == "postgresql":
+        if bind and getattr(bind.dialect, "name", None) == "postgresql":
             stmt = stmt.with_for_update(skip_locked=True)
 
         res = await session.execute(stmt)
-        events = list(res.scalars().all())
+        claimed_events = list(res.scalars().all())
 
-        dispatched_events = []
-        for event in events:
-            # Finding P1-2: Pre-dispatch opt-out check for non-safety/non-high-priority events
-            if not event.is_high_priority:
+        if not claimed_events:
+            return []
+
+        # Assign fencing tokens and claim leases
+        claimed_data = []
+        for ev in claimed_events:
+            token = str(uuid.uuid4())
+            ev.status = OutboxStatus.PROCESSING
+            ev.claimed_by = worker
+            ev.claim_token = token
+            ev.claim_expires_at = lease_expires
+            claimed_data.append((ev.id, token, ev))
+
+        await session.flush()
+        await session.commit()  # Locks released before network calls!
+
+        # -------------------------------------------------------------
+        # PHASE B: External Network I/O (NO DB LOCKS / TRANSACTIONS HELD)
+        # -------------------------------------------------------------
+        results = []
+        for event_id, token, ev in claimed_data:
+            is_suppressed = False
+            # Check opt-out: only suppress MARKETING messages (HIGH-01)
+            if ev.message_class == OutboxMessageClass.MARKETING:
+                if tenant_id and bind and getattr(bind.dialect, "name", None) == "postgresql":
+                    await session.execute(
+                        text("SELECT set_config('app.current_tenant_id', :t, true)"),
+                        {"t": str(ev.tenant_id)}
+                    )
                 id_stmt = select(ChannelIdentity).where(
-                    ChannelIdentity.tenant_id == event.tenant_id,
-                    ChannelIdentity.channel_type == event.channel_type,
-                    ChannelIdentity.identifier == event.recipient_identifier
+                    ChannelIdentity.tenant_id == ev.tenant_id,
+                    ChannelIdentity.channel_type == ev.channel_type,
+                    ChannelIdentity.identifier == ev.recipient_identifier
                 )
                 id_res = await session.execute(id_stmt)
                 identity = id_res.scalars().first()
                 if identity and identity.is_opted_out:
-                    event.status = OutboxStatus.CANCELLED
-                    event.last_error = "Suppressed: recipient has opted out (STOP directive)"
-                    event.claimed_by = None
-                    event.claim_expires_at = None
-                    event.processed_at = current_time
-                    dispatched_events.append(event)
-                    continue
+                    is_suppressed = True
 
-            # Claim lease
-            event.status = OutboxStatus.PROCESSING
-            event.claimed_by = worker
-            event.claim_expires_at = lease_expires
-            await session.flush()
+            if is_suppressed:
+                results.append((event_id, token, OutboxStatus.CANCELLED, "Suppressed: recipient has opted out (STOP directive)", True))
+                continue
 
             success = True
             error_msg = None
-
             if dispatcher_callable:
                 try:
-                    result = await dispatcher_callable(event)
-                    if not result:
+                    res_bool = await dispatcher_callable(ev)
+                    if not res_bool:
                         success = False
                         error_msg = "Dispatcher returned false/unsuccessful"
                 except Exception as exc:
@@ -175,49 +211,84 @@ class OutboxService:
             else:
                 success = True
 
-            event.claimed_by = None
-            event.claim_expires_at = None
-
             if success:
-                event.status = OutboxStatus.DELIVERED
-                event.processed_at = current_time
-                event.last_error = None
+                results.append((event_id, token, OutboxStatus.DELIVERED, None, False))
             else:
-                event.retry_count += 1
-                event.last_error = error_msg
+                results.append((event_id, token, OutboxStatus.FAILED, error_msg, False))
 
-                if event.retry_count >= event.max_retries:
-                    event.status = OutboxStatus.DEAD_LETTER
-                    event.processed_at = current_time
+        # -------------------------------------------------------------
+        # PHASE C: Finalize State with Fencing Token in short DB Tx
+        # -------------------------------------------------------------
+        if tenant_id and bind and getattr(bind.dialect, "name", None) == "postgresql":
+            await session.execute(
+                text("SELECT set_config('app.current_tenant_id', :t, true)"),
+                {"t": str(tenant_id)}
+            )
+
+        finalized_events = []
+        for event_id, token, outcome_status, error_msg, is_suppressed in results:
+            fetch_stmt = select(OutboxEvent).where(
+                OutboxEvent.id == event_id,
+                OutboxEvent.claim_token == token
+            )
+            if bind and getattr(bind.dialect, "name", None) == "postgresql":
+                fetch_stmt = fetch_stmt.with_for_update()
+
+            fetch_res = await session.execute(fetch_stmt)
+            event_row = fetch_res.scalars().first()
+
+            if not event_row:
+                # Fencing token mismatch / lease expired and re-claimed by another worker!
+                # Discard stale result to prevent overwriting active owner
+                continue
+
+            event_row.claimed_by = None
+            event_row.claim_token = None
+            event_row.claim_expires_at = None
+
+            if is_suppressed:
+                event_row.status = OutboxStatus.CANCELLED
+                event_row.last_error = error_msg
+                event_row.processed_at = current_time
+            elif outcome_status == OutboxStatus.DELIVERED:
+                event_row.status = OutboxStatus.DELIVERED
+                event_row.processed_at = current_time
+                event_row.last_error = None
+            else:
+                event_row.retry_count += 1
+                event_row.last_error = error_msg
+                if event_row.retry_count >= event_row.max_retries:
+                    event_row.status = OutboxStatus.DEAD_LETTER
+                    event_row.processed_at = current_time
 
                     audit = AuditEvent(
                         id=str(uuid.uuid4()),
-                        tenant_id=event.tenant_id,
+                        tenant_id=event_row.tenant_id,
                         actor_id="system_outbox_dispatcher",
                         event_type="OUTBOX_DEAD_LETTER",
                         resource_type="OUTBOX_EVENT",
-                        resource_id=event.id,
+                        resource_id=event_row.id,
                         action="DEAD_LETTER_EXHAUSTED",
                         status="FAILURE",
                         payload_json=json.dumps({
                             "error": error_msg,
-                            "retry_count": event.retry_count,
-                            "channel_type": event.channel_type,
-                            "recipient": event.recipient_identifier,
-                            "event_type": event.event_type
+                            "retry_count": event_row.retry_count,
+                            "channel_type": event_row.channel_type,
+                            "recipient": event_row.recipient_identifier,
+                            "event_type": event_row.event_type
                         })
                     )
                     session.add(audit)
                 else:
-                    event.status = OutboxStatus.FAILED
-                    delay_seconds = backoff_base_seconds ** event.retry_count
-                    event.next_retry_at = current_time + timedelta(seconds=delay_seconds)
+                    event_row.status = OutboxStatus.FAILED
+                    delay_seconds = backoff_base_seconds ** event_row.retry_count
+                    event_row.next_retry_at = current_time + timedelta(seconds=delay_seconds)
 
-            dispatched_events.append(event)
+            finalized_events.append(event_row)
 
         await session.flush()
         await session.commit()
-        return dispatched_events
+        return finalized_events
 
     @staticmethod
     async def get_dead_letter_events(

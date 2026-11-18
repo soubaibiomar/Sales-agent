@@ -12,7 +12,7 @@ from typing import Optional, List, Callable
 from dataclasses import dataclass
 from fastapi import Request, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 import jwt
 
@@ -106,34 +106,47 @@ async def get_security_context(
 
     # Database state verification (Revocation, Active status)
     async with AsyncSessionLocal() as session:
-        # 1. Check token revocation list
-        rev_stmt = select(SessionRevocation).where(SessionRevocation.token_jti == jti)
-        rev_res = await session.execute(rev_stmt)
-        if rev_res.scalars().first():
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail={"error": "Token has been revoked", "correlation_id": correlation_id}
+        bind = session.bind
+        if bind and getattr(bind.dialect, "name", None) == "postgresql":
+            await session.execute(
+                text("SELECT set_config('app.current_tenant_id', :tenant_id, true)"),
+                {"tenant_id": str(tenant_id)}
             )
+        try:
+            # 1. Check token revocation list
+            rev_stmt = select(SessionRevocation).where(SessionRevocation.token_jti == jti)
+            rev_res = await session.execute(rev_stmt)
+            if rev_res.scalars().first():
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail={"error": "Token has been revoked", "correlation_id": correlation_id}
+                )
 
-        # 2. Check user active status
-        user_stmt = select(User).where(User.id == user_id, User.tenant_id == tenant_id)
-        user_res = await session.execute(user_stmt)
-        user = user_res.scalars().first()
-        if not user or not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail={"error": "User account is disabled or does not exist", "correlation_id": correlation_id}
-            )
+            # 2. Check user active status
+            user_stmt = select(User).where(User.id == user_id, User.tenant_id == tenant_id)
+            user_res = await session.execute(user_stmt)
+            user = user_res.scalars().first()
+            if not user or not user.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail={"error": "User account is disabled or does not exist", "correlation_id": correlation_id}
+                )
 
-        # 3. Check tenant active status
-        tenant_stmt = select(Tenant).where(Tenant.id == tenant_id)
-        tenant_res = await session.execute(tenant_stmt)
-        tenant = tenant_res.scalars().first()
-        if not tenant or not tenant.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail={"error": "Tenant account is inactive or disabled", "correlation_id": correlation_id}
-            )
+            # 3. Check tenant active status
+            tenant_stmt = select(Tenant).where(Tenant.id == tenant_id)
+            tenant_res = await session.execute(tenant_stmt)
+            tenant = tenant_res.scalars().first()
+            if not tenant or not tenant.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail={"error": "Tenant account is inactive or disabled", "correlation_id": correlation_id}
+                )
+        finally:
+            if bind and getattr(bind.dialect, "name", None) == "postgresql":
+                try:
+                    await session.execute(text("RESET app.current_tenant_id;"))
+                except Exception:
+                    pass
 
     # Bind active tenant into execution context variable
     current_tenant_id_ctx.set(tenant_id)

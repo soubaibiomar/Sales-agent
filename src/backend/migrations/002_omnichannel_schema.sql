@@ -100,6 +100,7 @@ CREATE TABLE IF NOT EXISTS outbox_events (
     conversation_id VARCHAR(36) REFERENCES conversations(id) ON DELETE CASCADE,
     event_type VARCHAR(50) NOT NULL, -- DISPATCH_MESSAGE, NOTIFICATION, SAFETY_ALERT
     channel_type VARCHAR(30) NOT NULL, -- WHATSAPP, EMAIL, WEB_CHAT, VOICE_SIP
+    message_class VARCHAR(30) NOT NULL DEFAULT 'TRANSACTIONAL', -- MARKETING, TRANSACTIONAL, SERVICE, SECURITY
     recipient_identifier VARCHAR(255) NOT NULL,
     payload_json TEXT NOT NULL,
     status VARCHAR(30) NOT NULL DEFAULT 'PENDING', -- PENDING, PROCESSING, DELIVERED, FAILED, DEAD_LETTER
@@ -109,12 +110,29 @@ CREATE TABLE IF NOT EXISTS outbox_events (
     last_error TEXT,
     is_high_priority BOOLEAN NOT NULL DEFAULT FALSE,
     claimed_by VARCHAR(100),
+    claim_token VARCHAR(100),
     claim_expires_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    processed_at TIMESTAMP WITH TIME ZONE
+    processed_at TIMESTAMP WITH TIME ZONE,
+    CONSTRAINT chk_outbox_message_class CHECK (message_class IN ('MARKETING', 'TRANSACTIONAL', 'SERVICE', 'SECURITY'))
 );
 
--- 8. Indexes for Query Performance & Tenant Filtering
+-- 8. Tenant Channel Integrations Table (Provider Asset binding & verification)
+CREATE TABLE IF NOT EXISTS tenant_channel_integrations (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    channel_type VARCHAR(30) NOT NULL,
+    provider_account_id VARCHAR(255),
+    provider_asset_id VARCHAR(255) NOT NULL,
+    webhook_secret VARCHAR(255),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    config_json TEXT DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_channel_provider_asset UNIQUE (channel_type, provider_asset_id)
+);
+
+-- 9. Indexes for Query Performance & Tenant Filtering
 CREATE INDEX IF NOT EXISTS idx_contacts_tenant ON contacts(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_channel_identities_tenant ON channel_identities(tenant_id, channel_type, identifier);
 CREATE INDEX IF NOT EXISTS idx_conversations_tenant_status ON conversations(tenant_id, status);
@@ -123,4 +141,6 @@ CREATE INDEX IF NOT EXISTS idx_raw_events_tenant_status ON inbound_raw_events(te
 CREATE INDEX IF NOT EXISTS idx_messages_conv_created ON conversation_messages(conversation_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_attachments_msg ON message_attachments(message_id);
 CREATE INDEX IF NOT EXISTS idx_outbox_tenant_status ON outbox_events(tenant_id, status, next_retry_at);
-CREATE INDEX IF NOT EXISTS idx_outbox_claim ON outbox_events(status, claim_expires_at);
+CREATE INDEX IF NOT EXISTS idx_outbox_claim ON outbox_events(status, claim_expires_at, message_class);
+CREATE INDEX IF NOT EXISTS idx_channel_integrations_tenant ON tenant_channel_integrations(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_channel_integrations_asset ON tenant_channel_integrations(channel_type, provider_asset_id);

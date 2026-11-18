@@ -90,7 +90,7 @@ async def _ensure_tenant_context(session: AsyncSession, tenant_id: str) -> None:
     bind = session.bind or engine
     if bind and bind.dialect.name == "postgresql":
         await session.execute(
-            text("SELECT set_config('app.current_tenant_id', :tenant_id, false)"),
+            text("SELECT set_config('app.current_tenant_id', :tenant_id, true)"),
             {"tenant_id": str(tenant_id)}
         )
 
@@ -124,7 +124,6 @@ class ConversationService:
             # Mark as DUPLICATE and return
             existing.processing_status = "DUPLICATE"
             await session.flush()
-            await session.commit()
             return existing
 
         payload_json = json.dumps(payload_dict, default=str)
@@ -140,7 +139,6 @@ class ConversationService:
         )
         session.add(raw_event)
         await session.flush()
-        await session.commit()
         return raw_event
 
     @staticmethod
@@ -250,13 +248,14 @@ class ConversationService:
             )
             session.add(audit)
 
-            # Finding P1-2: Cancel any pre-queued marketing/non-safety outbox messages for this recipient & channel
+            # HIGH-01: Cancel ONLY pre-queued MARKETING messages for this recipient & channel.
+            # Transactional notifications (orders, invoices, security, tracking) MUST NOT be cancelled!
             pending_outbox_stmt = select(OutboxEvent).where(
                 OutboxEvent.tenant_id == event.tenant_id,
                 OutboxEvent.channel_type == event.channel_type,
                 OutboxEvent.recipient_identifier == event.sender_identifier,
                 OutboxEvent.status.in_(["PENDING", "FAILED"]),
-                OutboxEvent.is_high_priority == False
+                OutboxEvent.message_class == "MARKETING"
             )
             bind = session.bind or engine
             if bind and bind.dialect.name == "postgresql":
@@ -400,11 +399,11 @@ class ConversationService:
                 },
                 conversation_id=conversation.id,
                 is_high_priority=True,
+                message_class="SERVICE",
                 now=now
             )
 
         await session.flush()
-        await session.commit()
         return msg
 
     @staticmethod
@@ -472,7 +471,6 @@ class ConversationService:
         session.add(audit)
 
         await session.flush()
-        await session.commit()
         return conv
 
     @staticmethod
@@ -520,7 +518,6 @@ class ConversationService:
         )
         session.add(sys_msg)
         await session.flush()
-        await session.commit()
         return conv
 
     @staticmethod
@@ -590,11 +587,11 @@ class ConversationService:
             payload_dict={"text": content},
             conversation_id=conv.id,
             is_high_priority=False,
+            message_class="TRANSACTIONAL",
             now=now
         )
 
         await session.flush()
-        await session.commit()
         return msg
 
     @staticmethod
@@ -655,9 +652,9 @@ class ConversationService:
             payload_dict={"text": content, "attachments": attachments or []},
             conversation_id=conv.id,
             is_high_priority=False,
+            message_class="TRANSACTIONAL",
             now=now
         )
 
         await session.flush()
-        await session.commit()
         return msg

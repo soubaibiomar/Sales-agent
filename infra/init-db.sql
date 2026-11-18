@@ -235,6 +235,7 @@ CREATE TABLE IF NOT EXISTS outbox_events (
     conversation_id VARCHAR(36) REFERENCES conversations(id) ON DELETE CASCADE,
     event_type VARCHAR(50) NOT NULL,
     channel_type VARCHAR(30) NOT NULL,
+    message_class VARCHAR(30) NOT NULL DEFAULT 'TRANSACTIONAL',
     recipient_identifier VARCHAR(255) NOT NULL,
     payload_json TEXT NOT NULL,
     status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
@@ -244,9 +245,26 @@ CREATE TABLE IF NOT EXISTS outbox_events (
     last_error TEXT,
     is_high_priority BOOLEAN NOT NULL DEFAULT false,
     claimed_by VARCHAR(100),
+    claim_token VARCHAR(100),
     claim_expires_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
-    processed_at TIMESTAMPTZ
+    processed_at TIMESTAMPTZ,
+    CONSTRAINT chk_outbox_message_class CHECK (message_class IN ('MARKETING', 'TRANSACTIONAL', 'SERVICE', 'SECURITY'))
+);
+
+-- Tenant Channel Integrations Table (Provider Asset binding & verification)
+CREATE TABLE IF NOT EXISTS tenant_channel_integrations (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    channel_type VARCHAR(30) NOT NULL,
+    provider_account_id VARCHAR(255),
+    provider_asset_id VARCHAR(255) NOT NULL,
+    webhook_secret VARCHAR(255),
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    config_json TEXT DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    CONSTRAINT uq_channel_provider_asset UNIQUE (channel_type, provider_asset_id)
 );
 
 -- Indexes for Omnichannel Performance
@@ -258,7 +276,9 @@ CREATE INDEX IF NOT EXISTS idx_raw_events_tenant_status ON inbound_raw_events(te
 CREATE INDEX IF NOT EXISTS idx_messages_conv_created ON conversation_messages(conversation_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_attachments_msg ON message_attachments(message_id);
 CREATE INDEX IF NOT EXISTS idx_outbox_tenant_status ON outbox_events(tenant_id, status, next_retry_at);
-CREATE INDEX IF NOT EXISTS idx_outbox_claim ON outbox_events(status, claim_expires_at);
+CREATE INDEX IF NOT EXISTS idx_outbox_claim ON outbox_events(status, claim_expires_at, message_class);
+CREATE INDEX IF NOT EXISTS idx_channel_integrations_tenant ON tenant_channel_integrations(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_channel_integrations_asset ON tenant_channel_integrations(channel_type, provider_asset_id);
 
 -- 4. Enable Row-Level Security (RLS) on all tenant-partitioned tables
 ALTER TABLE organization_sites ENABLE ROW LEVEL SECURITY;

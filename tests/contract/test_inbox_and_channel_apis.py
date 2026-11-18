@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from sqlalchemy.pool import StaticPool
 
 from src.backend.main import app
-from src.backend.models.entities import Base, Tenant, User, Role, UserRole, Contact, Conversation, ConversationMessage
+from src.backend.models.entities import Base, Tenant, User, Role, UserRole, Contact, Conversation, ConversationMessage, TenantChannelIntegration
 from src.backend.core.security import SecurityService
 from src.backend.core.config import settings
 from src.backend.core.database import get_db_session
@@ -49,6 +49,17 @@ async def get_api_test_env():
             is_verified=True
         )
         session.add(user)
+
+        # Seed WhatsApp channel integration binding
+        integ = TenantChannelIntegration(
+            id="tci_api_01",
+            tenant_id="t_api_01",
+            channel_type="WHATSAPP",
+            provider_asset_id="wa_acc_01",
+            webhook_secret=settings.whatsapp_webhook_secret,
+            is_active=True
+        )
+        session.add(integ)
 
         # Seed an existing conversation in Tenant Alpha
         contact = Contact(id="c_api_01", tenant_id="t_api_01", display_name="Client Alpha", primary_phone="+212611223344")

@@ -5,9 +5,12 @@
 **Sprint:** 2 — Connect  
 **Date:** 2026-11-18  
 **Author:** Lead Software Architect, Senior Backend Engineer, Security Engineer, AI Systems Engineer  
-**Status:** **REMEDIATION COMPLETE** (145/145 Tests Passing — Ready for Independent Codex Re-Audit)  
-**Remediation Report:** [reports/STEP_03_REMEDIATION_REPORT.md](file:///c:/Users/omar/Documents/Sales%20agent/reports/STEP_03_REMEDIATION_REPORT.md)  
-**Evidence Artifact:** `evidence/step-03-remediation/test_run.log`  
+**Status:** **REMEDIATION ROUND 2 COMPLETE** (153/153 Tests Passing — Ready for Independent Codex Re-Audit)  
+**Round 2 Remediation Report:** [reports/STEP_03_REMEDIATION_ROUND_2.md](file:///c:/Users/omar/Documents/Sales%20agent/reports/STEP_03_REMEDIATION_ROUND_2.md)  
+**Round 1 Remediation Report:** [reports/STEP_03_REMEDIATION_REPORT.md](file:///c:/Users/omar/Documents/Sales%20agent/reports/STEP_03_REMEDIATION_REPORT.md)  
+**Evidence Artifacts:**
+- Full Regression Test Log: `evidence/step-03-remediation-round-2/test_run.log`
+- Canonical Parity Verification Log: `evidence/step-03-remediation-round-2/canonical_parity.log`  
 
 ---
 
@@ -43,7 +46,7 @@ The platform normalizes inbound and outbound traffic across four primary commerc
   - `sales-ai-minio`: MinIO Object Storage on `127.0.0.1:9000` (Healthy)
   - `ollama`: Ollama v0.5.12 on `127.0.0.1:11434` (Healthy)
 - **Starting Test Baseline:** 79/79 tests passing.
-- **Current Test Count:** 136/136 tests passing.
+- **Current Test Count:** 153/153 tests passing (including 17/17 live PostgreSQL tests in `test_step03_real_postgres.py`).
 
 ---
 
@@ -225,27 +228,29 @@ python -m pytest tests/ -v
 ```
 
 ### 7.1 Measured Execution Summary
-- **Total Test Cases Executed:** 136
-- **Passed:** 136 (100%)
+- **Total Test Cases Executed:** 153
+- **Passed:** 153 (100%)
 - **Failed:** 0
 - **Errors:** 0
 - **Skipped:** 0
-- **Measured Duration:** 47.45 seconds (Full Regression Suite)
-- **Evidence Log Path:** [evidence/step-03/test_run.log](file:///c:/Users/omar/Documents/Sales%20agent/evidence/step-03/test_run.log)
+- **Measured Duration:** 47.44 seconds (Full Regression Suite)
+- **Evidence Log Path:** [evidence/step-03-remediation-round-2/test_run.log](file:///c:/Users/omar/Documents/Sales%20agent/evidence/step-03-remediation-round-2/test_run.log)
+- **Canonical Parity Verification Log:** [evidence/step-03-remediation-round-2/canonical_parity.log](file:///c:/Users/omar/Documents/Sales%20agent/evidence/step-03-remediation-round-2/canonical_parity.log)
 
 ### 7.2 Breakdown by Test Module
-1. `tests/contract/test_channel_adapters.py`: **8 passed** (WhatsApp HMAC signature verification, text and media payload parsing, Email SPF/DKIM verification, HTML XSS stripping, WebChat normalization, Voice/SIP recording consent).
-2. `tests/contract/test_inbox_and_channel_apis.py`: **4 passed** (WhatsApp challenge verification, webhook duplicate replay rejection, WebChat send endpoint, Unified Inbox conversation listing, timeline, and agent reply).
-3. `tests/contract/test_outbox_and_dlq.py`: **5 passed** (Transactional outbox enqueue, successful dispatch, exponential backoff retries, dead-letter queue exhaustion with AuditEvent emission, high-priority safety bypass, manual redrive).
-4. `tests/contract/test_out_of_order_messages.py`: **3 passed** (Out-of-order timeline sorting, non-regressing `last_message_at`, monotonic version incrementation, stale AI turn rejection on version mismatch, out-of-order STOP immediate AI silencing).
-5. `tests/unit/test_deterministic_stop.py`: **18 passed** (Multilingual STOP regex matrix across English, French, Standard Arabic, and Moroccan Darija/Arabizi; channel opt-out and AI silencing).
-6. `tests/concurrency/test_conversation_races.py`: **4 passed** (Monotonic version incrementation, stale AI turn cancellation on customer message race, human takeover cancelling in-flight AI turn, burst handling).
-7. `tests/security/test_channel_security.py`: **13 passed** (Durable raw event deduplication, anti-SSRF IP blocking across private/loopback/metadata ranges, MIME whitelist validation, file size limits, PII credit card redaction).
-8. `tests/integration/test_omnichannel_rls.py`: **2 passed** (Real PostgreSQL 16 RLS tests connecting as `sales_app_user` on port 5432 verifying zero cross-tenant leakage on all 7 omnichannel tables including `outbox_events`).
-9. `tests/integration/test_postgres_rls.py`: **10 passed** (Live PostgreSQL Step 02 RLS regression covering all 13 policies).
-10. `tests/step01/`: **27 passed** (Architecture, repo hygiene, requirements traceability, security controls, hardware lifecycle).
-11. `tests/security/test_auth_and_rbac.py` & `test_backup_restore.py` & `test_ai_model_governance.py`: **28 passed** (Step 02 regression).
-12. `tests/unit/`: **14 passed** (Local AI constraints, telemetry, multilingual language matrix).
+1. `tests/integration/test_step03_real_postgres.py`: **17 passed** (Direct real PostgreSQL 16 tests verifying all 5 Round 2 audit defects: CRIT-01 cross-tenant route URL parameter swap 403, unregistered asset 404, deactivated asset 403; CRIT-02 connection pool context wipe on checkin and `is_local=true` transaction isolation; HIGH-01 selective STOP cancellation of marketing messages while preserving transactional notices; MED-01 3-phase outbox lease/commit releasing DB locks before network callable and fencing token protection; MED-02 composable domain transaction rollback on error; concurrent inbound version bursts, unprivileged staff inbox RBAC).
+2. `tests/contract/test_channel_adapters.py`: **8 passed** (WhatsApp HMAC signature verification, text and media payload parsing, Email SPF/DKIM verification, HTML XSS stripping, WebChat normalization, Voice/SIP recording consent).
+3. `tests/contract/test_inbox_and_channel_apis.py`: **4 passed** (WhatsApp challenge verification, webhook duplicate replay rejection, WebChat send endpoint, Unified Inbox conversation listing, timeline, and agent reply).
+4. `tests/contract/test_outbox_and_dlq.py`: **5 passed** (Transactional outbox enqueue, successful dispatch, exponential backoff retries, dead-letter queue exhaustion with AuditEvent emission, high-priority safety bypass, manual redrive).
+5. `tests/contract/test_out_of_order_messages.py`: **3 passed** (Out-of-order timeline sorting, non-regressing `last_message_at`, monotonic version incrementation, stale AI turn rejection on version mismatch, out-of-order STOP immediate AI silencing).
+6. `tests/unit/test_deterministic_stop.py`: **18 passed** (Multilingual STOP regex matrix across English, French, Standard Arabic, and Moroccan Darija/Arabizi; channel opt-out and AI silencing).
+7. `tests/concurrency/test_conversation_races.py`: **4 passed** (Monotonic version incrementation, stale AI turn cancellation on customer message race, human takeover cancelling in-flight AI turn, burst handling).
+8. `tests/security/test_channel_security.py`: **13 passed** (Durable raw event deduplication, anti-SSRF IP blocking across private/loopback/metadata ranges, MIME whitelist validation, file size limits, PII credit card redaction).
+9. `tests/integration/test_omnichannel_rls.py`: **2 passed** (Real PostgreSQL 16 RLS tests connecting as `sales_app_user` on port 5432 verifying zero cross-tenant leakage on all 7 omnichannel tables including `outbox_events`).
+10. `tests/integration/test_postgres_rls.py`: **10 passed** (Live PostgreSQL Step 02 RLS regression covering all 13 policies).
+11. `tests/step01/`: **27 passed** (Architecture, repo hygiene, requirements traceability, security controls, hardware lifecycle).
+12. `tests/security/test_auth_and_rbac.py` & `test_backup_restore.py` & `test_ai_model_governance.py`: **28 passed** (Step 02 regression).
+13. `tests/unit/`: **14 passed** (Local AI constraints, telemetry, multilingual language matrix).
 
 ---
 
@@ -306,17 +311,20 @@ In accordance with the STEP 03 acceptance gate specification (*"PASS only if eve
 - **Out-of-order message handling:** Proven by chronological timeline ordering and stale AI turn rejection.
 - **Human ownership & consent unbypassable:** Proven by `StaleTurnError` on AI submission, atomic handoff, and multilingual STOP opt-out.
 - **PostgreSQL 16 RLS & Webhook Tenant Context:** Proven on all 13 tables with live tests under unprivileged `sales_app_user`.
-- **Outbox Concurrency & Worker Leasing:** Verified with `SKIP LOCKED`, claim expiration, and standing worker daemon.
-- **STOP Opt-out Purge:** Verified cancellation of pre-queued marketing messages and pre-dispatch suppression guard.
+- **Provider Asset Binding (CRIT-01):** Proven by route URL parameter swap returning 403, unregistered assets returning 404, and deactivated integrations returning 403.
+- **Connection Pool Context Hygiene (CRIT-02):** Proven by engine checkin hook resetting GUC context and subsequent pool checkout finding zero context and reading zero rows.
+- **Selective STOP Cancellation (HIGH-01):** Proven by STOP directive purging only MARKETING messages while preserving TRANSACTIONAL, SERVICE, and SECURITY messages.
+- **Outbox Concurrency & 3-Phase Leasing (MED-01):** Proven by claim token generation and transaction commit prior to external dispatch network callable, plus fencing token rejection of stale workers.
+- **Domain Service Transaction Composability (MED-02):** Proven by `flush()` usage across ConversationService and clean atomic rollback of multi-operation transactions.
 - **Canonical DB Parity:** Proven 100% identical between `infra/init-db.sql` and live active database.
-- **Test Suite:** 145 passing assertions in 45.37s.
+- **Test Suite:** 153 passing assertions in 47.44s (100% pass, 0 failed, 0 skipped).
 
-### **FINAL VERDICT: REMEDIATION COMPLETE**
+### **FINAL VERDICT: REMEDIATION ROUND 2 COMPLETE**
 
 ---
 
 ## 11. NEXT-STEP ELIGIBILITY
 
-STEP 03 critical remediation is complete and verified against live PostgreSQL 16.  
+STEP 03 Round 2 critical remediation is complete and verified against live PostgreSQL 16.  
 In accordance with strict project rules:  
-**STEP 04 IS STRICTLY BLOCKED** until the independent Codex re-audit inspects `reports/STEP_03_REMEDIATION_REPORT.md` and issues an official PASS verdict.
+**STEP 04 IS STRICTLY BLOCKED** until the independent Codex re-audit inspects `reports/STEP_03_REMEDIATION_ROUND_2.md` and issues an official PASS verdict.

@@ -263,6 +263,7 @@ class OutboxEvent(Base):
     conversation_id = Column(String(36), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=True, index=True)
     event_type = Column(String(50), nullable=False)  # DISPATCH_MESSAGE, NOTIFICATION, SAFETY_ALERT
     channel_type = Column(String(30), nullable=False)  # WHATSAPP, EMAIL, WEB_CHAT, VOICE_SIP
+    message_class = Column(String(30), nullable=False, default="TRANSACTIONAL")  # MARKETING, TRANSACTIONAL, SERVICE, SECURITY
     recipient_identifier = Column(String(255), nullable=False)
     payload_json = Column(Text, nullable=False)
     status = Column(String(30), nullable=False, default="PENDING")  # PENDING, PROCESSING, DELIVERED, FAILED, DEAD_LETTER
@@ -272,8 +273,31 @@ class OutboxEvent(Base):
     last_error = Column(Text, nullable=True)
     is_high_priority = Column(Boolean, nullable=False, default=False)
     claimed_by = Column(String(100), nullable=True)
+    claim_token = Column(String(100), nullable=True)
     claim_expires_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     processed_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class TenantChannelIntegration(Base):
+    __tablename__ = "tenant_channel_integrations"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    channel_type = Column(String(30), nullable=False)  # WHATSAPP, EMAIL, WEB_CHAT, VOICE_SIP
+    provider_account_id = Column(String(255), nullable=True)
+    provider_asset_id = Column(String(255), nullable=False)  # phone_number_id, email, SIP trunk / caller
+    webhook_secret = Column(String(255), nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True)
+    config_json = Column(Text, nullable=False, default="{}")
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("channel_type", "provider_asset_id", name="uq_channel_provider_asset"),
+    )
+
+    tenant = relationship("Tenant")
+
 
 

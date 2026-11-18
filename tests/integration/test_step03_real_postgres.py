@@ -65,11 +65,16 @@ def seed_real_pg_tenant():
                  t_inactive, "Inactive Tenant", f"slug-{t_inactive}", False)
             )
             # 2. Users under active tenant
-            cur.execute("SELECT set_config('app.current_tenant_id', %s, false);", (t_active,))
+            cur.execute("SELECT set_config('app.current_tenant_id', %s, true);", (t_active,))
             cur.execute(
                 "INSERT INTO users (id, tenant_id, email, hashed_password, full_name, is_active, mfa_enabled) VALUES (%s, %s, %s, %s, %s, %s, %s), (%s, %s, %s, %s, %s, %s, %s);",
                 (cust_id, t_active, f"customer_{cust_id}@test.com", "hash", "Customer User", True, False,
                  rep_id, t_active, f"rep_{rep_id}@test.com", "hash", "Rep User", True, True)
+            )
+            # 3. Channel Integration for WhatsApp pn_1
+            cur.execute(
+                "INSERT INTO tenant_channel_integrations (id, tenant_id, channel_type, provider_asset_id, webhook_secret, is_active) VALUES (%s, %s, %s, %s, %s, %s);",
+                (f"tci_{uuid.uuid4().hex[:8]}", t_active, "WHATSAPP", "pn_1", settings.whatsapp_webhook_secret, True)
             )
             conn.commit()
 
@@ -335,7 +340,7 @@ async def test_real_pg_outbox_stale_claim_recovery(seed_real_pg_tenant):
     stale_event_id = str(uuid.uuid4())
     async with real_pg_session_factory() as session_factory:
         async with session_factory() as session:
-            await session.execute(text("SELECT set_config('app.current_tenant_id', :t, false)"), {"t": tenant_id})
+            await session.execute(text("SELECT set_config('app.current_tenant_id', :t, true)"), {"t": tenant_id})
             stale_ev = OutboxEvent(
                 id=stale_event_id,
                 tenant_id=tenant_id,
@@ -370,7 +375,7 @@ async def test_real_pg_outbox_stale_claim_recovery(seed_real_pg_tenant):
 
         # Verify event is now DELIVERED and lease cleared
         async with session_factory() as session:
-            await session.execute(text("SELECT set_config('app.current_tenant_id', :t, false)"), {"t": tenant_id})
+            await session.execute(text("SELECT set_config('app.current_tenant_id', :t, true)"), {"t": tenant_id})
             res = await session.execute(select(OutboxEvent).where(OutboxEvent.id == stale_event_id))
             ev = res.scalars().first()
             assert ev.status == OutboxStatus.DELIVERED
@@ -401,7 +406,7 @@ async def test_real_pg_stop_cancels_pre_queued_marketing_outbox(seed_real_pg_ten
         async with session_factory() as session:
             await ConversationService.process_normalized_event(session=session, event=norm)
 
-        # 2. Marketing campaign enqueues 2 promotional messages for this customer
+        # 2. Marketing campaign enqueues 2 promotional messages + 1 transactional order receipt
         promo_ids = []
         async with session_factory() as session:
             for i in range(2):
@@ -412,9 +417,23 @@ async def test_real_pg_stop_cancels_pre_queued_marketing_outbox(seed_real_pg_ten
                     recipient_identifier=recipient,
                     event_type="PROMOTIONAL_OFFER",
                     payload_dict={"text": f"Remise speciale {i+1}0% sur les serveurs"},
-                    is_high_priority=False
+                    is_high_priority=False,
+                    message_class="MARKETING"
                 )
                 promo_ids.append(ev.id)
+
+            # Transactional notification (invoice/order)
+            tx_ev = await OutboxService.enqueue_outbound_event(
+                session=session,
+                tenant_id=tenant_id,
+                channel_type="WHATSAPP",
+                recipient_identifier=recipient,
+                event_type="ORDER_CONFIRMATION",
+                payload_dict={"order_id": "ord_12345", "amount": 15000},
+                is_high_priority=False,
+                message_class="TRANSACTIONAL"
+            )
+            tx_id = tx_ev.id
             await session.commit()
 
         # 3. Customer sends STOP in Moroccan Darija: "baraka 3afak"
@@ -432,15 +451,21 @@ async def test_real_pg_stop_cancels_pre_queued_marketing_outbox(seed_real_pg_ten
         )
         async with session_factory() as session:
             await ConversationService.process_normalized_event(session=session, event=stop_event)
+            await session.commit()
 
-        # 4. Verify promotional outbox events are CANCELLED
+        # 4. Verify promotional outbox events are CANCELLED, but TRANSACTIONAL remains PENDING
         async with session_factory() as session:
-            await session.execute(text("SELECT set_config('app.current_tenant_id', :t, false)"), {"t": tenant_id})
+            await session.execute(text("SELECT set_config('app.current_tenant_id', :t, true)"), {"t": tenant_id})
             res = await session.execute(select(OutboxEvent).where(OutboxEvent.id.in_(promo_ids)))
             cancelled = res.scalars().all()
             for ev in cancelled:
                 assert ev.status == OutboxStatus.CANCELLED
                 assert "Suppressed due to STOP" in ev.last_error
+
+            res_tx = await session.execute(select(OutboxEvent).where(OutboxEvent.id == tx_id))
+            tx_event = res_tx.scalars().first()
+            assert tx_event is not None
+            assert tx_event.status == OutboxStatus.PENDING, "Transactional notification must NOT be cancelled on STOP!"
 
             # 5. Verify high-priority STOP ACK exists
             res_ack = await session.execute(
@@ -483,7 +508,8 @@ async def test_real_pg_outbox_pre_dispatch_opt_out_suppression(seed_real_pg_tena
                 recipient_identifier=recipient,
                 event_type="NEWSLETTER",
                 payload_dict={"text": "Monthly newsletter"},
-                is_high_priority=False
+                is_high_priority=False,
+                message_class="MARKETING"
             )
             await session.commit()
             ev_id = ev.id
@@ -505,7 +531,7 @@ async def test_real_pg_outbox_pre_dispatch_opt_out_suppression(seed_real_pg_tena
 
         # Must be marked CANCELLED
         async with session_factory() as session:
-            await session.execute(text("SELECT set_config('app.current_tenant_id', :t, false)"), {"t": tenant_id})
+            await session.execute(text("SELECT set_config('app.current_tenant_id', :t, true)"), {"t": tenant_id})
             res = await session.execute(select(OutboxEvent).where(OutboxEvent.id == ev_id))
             ev = res.scalars().first()
             assert ev.status == OutboxStatus.CANCELLED
@@ -534,6 +560,7 @@ async def test_real_pg_concurrent_inbound_bursts_version_serialization(seed_real
         )
         async with session_factory() as session:
             msg1 = await ConversationService.process_normalized_event(session=session, event=norm1)
+            await session.commit()
             conv_id = msg1.conversation_id
             assert msg1.conversation_version == 1
 
@@ -565,7 +592,9 @@ async def test_real_pg_concurrent_inbound_bursts_version_serialization(seed_real
 
         async def proc_burst(event):
             async with session_factory() as s:
-                return await ConversationService.process_normalized_event(session=s, event=event)
+                res = await ConversationService.process_normalized_event(session=s, event=event)
+                await s.commit()
+                return res
 
         msg_a, msg_b = await asyncio.gather(proc_burst(norm2), proc_burst(norm3))
 
@@ -575,7 +604,7 @@ async def test_real_pg_concurrent_inbound_bursts_version_serialization(seed_real
 
         # Verify conversation row in database has version 3
         async with session_factory() as session:
-            await session.execute(text("SELECT set_config('app.current_tenant_id', :t, false)"), {"t": tenant_id})
+            await session.execute(text("SELECT set_config('app.current_tenant_id', :t, true)"), {"t": tenant_id})
             res = await session.execute(select(Conversation).where(Conversation.id == conv_id))
             conv = res.scalars().first()
             assert conv.version == 3
@@ -701,9 +730,503 @@ async def test_real_pg_standing_outbox_worker_daemon(seed_real_pg_tenant):
 
             # Verify status in DB
             async with session_factory() as session:
-                await session.execute(text("SELECT set_config('app.current_tenant_id', :t, false)"), {"t": tenant_id})
+                await session.execute(text("SELECT set_config('app.current_tenant_id', :t, true)"), {"t": tenant_id})
                 res = await session.execute(select(OutboxEvent).where(OutboxEvent.id == ev_id))
                 ev_db = res.scalars().first()
                 assert ev_db.status == OutboxStatus.DELIVERED
         finally:
             await daemon.stop()
+
+
+# =============================================================================
+# ROUND 2 SECURITY & DURABILITY REMEDIATION TEST SUITE
+# =============================================================================
+
+@pytest.mark.asyncio
+async def test_real_pg_crit01_cross_tenant_url_swap_rejected_403(seed_real_pg_tenant):
+    """
+    CRIT-01: Verifies that swapped route parameter (/webhooks/whatsapp/{tenant_B})
+    with Tenant A's signed payload and provider asset is rejected with 403 Forbidden.
+    """
+    tenant_a = seed_real_pg_tenant["active_tenant_id"]
+    tenant_b = f"t_pg_b_{uuid.uuid4().hex[:8]}"
+
+    # Seed Tenant B in live database
+    with psycopg.connect(PG_SYNC_CONN) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO tenants (id, name, slug, is_active) VALUES (%s, %s, %s, %s);",
+                (tenant_b, "Tenant Bravo", f"slug-{tenant_b}", True)
+            )
+            conn.commit()
+
+    try:
+        # Payload containing Tenant A's asset ('pn_1')
+        wamid = f"wamid_swap_{uuid.uuid4().hex[:12]}"
+        payload = {
+            "object": "whatsapp_business_account",
+            "entry": [{
+                "id": "entry_swap",
+                "changes": [{
+                    "value": {
+                        "messaging_product": "whatsapp",
+                        "metadata": {"display_phone_number": "+212600000000", "phone_number_id": "pn_1"},
+                        "contacts": [{"profile": {"name": "Hacker Cross"}, "wa_id": "212699887766"}],
+                        "messages": [{
+                            "from": "212699887766",
+                            "id": wamid,
+                            "timestamp": str(int(datetime.now(timezone.utc).timestamp())),
+                            "text": {"body": "Inject into Tenant B"},
+                            "type": "text"
+                        }]
+                    },
+                    "field": "messages"
+                }]
+            }]
+        }
+        body_bytes = json.dumps(payload).encode("utf-8")
+        sig = hmac.new(settings.whatsapp_webhook_secret.encode("utf-8"), body_bytes, hashlib.sha256).hexdigest()
+        headers = {
+            "Content-Type": "application/json",
+            "X-Hub-Signature-256": f"sha256={sig}"
+        }
+
+        async with real_pg_session_factory() as session_factory:
+            transport = ASGITransport(app=app)
+            async with AsyncClient(transport=transport, base_url="http://test") as client:
+                # POST to Tenant B's webhook URL
+                resp = await client.post(f"/api/v1/channels/webhooks/whatsapp/{tenant_b}", content=body_bytes, headers=headers)
+                assert resp.status_code == 403, f"Expected 403 Forbidden for cross-tenant swap, got {resp.status_code}: {resp.text}"
+                assert "Cross-tenant injection rejected" in resp.json()["detail"]
+
+            # Verify zero rows in Tenant B
+            async with session_factory() as session:
+                await session.execute(text("SELECT set_config('app.current_tenant_id', :t, true)"), {"t": tenant_b})
+                raws = (await session.execute(select(InboundRawEvent).where(InboundRawEvent.tenant_id == tenant_b))).scalars().all()
+                assert len(raws) == 0, "No raw events should be created in Tenant B"
+                convs = (await session.execute(select(Conversation).where(Conversation.tenant_id == tenant_b))).scalars().all()
+                assert len(convs) == 0, "No conversations should be created in Tenant B"
+    finally:
+        with psycopg.connect(PG_SYNC_CONN) as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM tenants WHERE id = %s;", (tenant_b,))
+                conn.commit()
+
+
+@pytest.mark.asyncio
+async def test_real_pg_crit01_unknown_provider_asset_rejected_404(seed_real_pg_tenant):
+    """
+    CRIT-01: Verifies that a webhook with an unregistered provider asset ID returns 404 Not Found.
+    """
+    tenant_id = seed_real_pg_tenant["active_tenant_id"]
+    wamid = f"wamid_unk_{uuid.uuid4().hex[:12]}"
+    payload = {
+        "object": "whatsapp_business_account",
+        "entry": [{
+            "id": "entry_unk",
+            "changes": [{
+                "value": {
+                    "messaging_product": "whatsapp",
+                    "metadata": {"display_phone_number": "+212600000000", "phone_number_id": "pn_nonexistent_999"},
+                    "contacts": [{"profile": {"name": "Anon"}, "wa_id": "212699887766"}],
+                    "messages": [{
+                        "from": "212699887766",
+                        "id": wamid,
+                        "timestamp": str(int(datetime.now(timezone.utc).timestamp())),
+                        "text": {"body": "Unknown asset text"},
+                        "type": "text"
+                    }]
+                },
+                "field": "messages"
+            }]
+        }]
+    }
+    body_bytes = json.dumps(payload).encode("utf-8")
+    sig = hmac.new(settings.whatsapp_webhook_secret.encode("utf-8"), body_bytes, hashlib.sha256).hexdigest()
+    headers = {
+        "Content-Type": "application/json",
+        "X-Hub-Signature-256": f"sha256={sig}"
+    }
+
+    async with real_pg_session_factory() as session_factory:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.post(f"/api/v1/channels/webhooks/whatsapp/{tenant_id}", content=body_bytes, headers=headers)
+            assert resp.status_code == 404, f"Expected 404 for unknown asset, got {resp.status_code}: {resp.text}"
+            assert "No integration registered" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_real_pg_crit01_deactivated_integration_rejected_403(seed_real_pg_tenant):
+    """
+    CRIT-01: Verifies that a webhook targeting a deactivated channel integration returns 403 Forbidden.
+    """
+    tenant_id = seed_real_pg_tenant["active_tenant_id"]
+    deact_asset = f"pn_deact_{uuid.uuid4().hex[:6]}"
+
+    with psycopg.connect(PG_SYNC_CONN) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO tenant_channel_integrations (id, tenant_id, channel_type, provider_asset_id, webhook_secret, is_active) VALUES (%s, %s, %s, %s, %s, %s);",
+                (f"tci_{uuid.uuid4().hex[:8]}", tenant_id, "WHATSAPP", deact_asset, settings.whatsapp_webhook_secret, False)
+            )
+            conn.commit()
+
+    wamid = f"wamid_deact_{uuid.uuid4().hex[:12]}"
+    payload = {
+        "object": "whatsapp_business_account",
+        "entry": [{
+            "id": "entry_deact",
+            "changes": [{
+                "value": {
+                    "messaging_product": "whatsapp",
+                    "metadata": {"display_phone_number": "+212600000000", "phone_number_id": deact_asset},
+                    "contacts": [{"profile": {"name": "Anon"}, "wa_id": "212699887766"}],
+                    "messages": [{
+                        "from": "212699887766",
+                        "id": wamid,
+                        "timestamp": str(int(datetime.now(timezone.utc).timestamp())),
+                        "text": {"body": "Deactivated asset text"},
+                        "type": "text"
+                    }]
+                },
+                "field": "messages"
+            }]
+        }]
+    }
+    body_bytes = json.dumps(payload).encode("utf-8")
+    sig = hmac.new(settings.whatsapp_webhook_secret.encode("utf-8"), body_bytes, hashlib.sha256).hexdigest()
+    headers = {
+        "Content-Type": "application/json",
+        "X-Hub-Signature-256": f"sha256={sig}"
+    }
+
+    async with real_pg_session_factory() as session_factory:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.post(f"/api/v1/channels/webhooks/whatsapp/{tenant_id}", content=body_bytes, headers=headers)
+            assert resp.status_code == 403, f"Expected 403 for deactivated integration, got {resp.status_code}: {resp.text}"
+            assert "deactivated" in resp.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_real_pg_crit02_connection_pool_zero_leakage_after_webhook(seed_real_pg_tenant):
+    """
+    CRIT-02: Verifies that after a webhook sets app.current_tenant_id, connection checkin
+    completely resets the GUC parameter so subsequent checkouts have zero tenant context leakage.
+    """
+    tenant_id = seed_real_pg_tenant["active_tenant_id"]
+
+    # 1. Send legitimate webhook that sets tenant context
+    wamid = f"wamid_leaktest_{uuid.uuid4().hex[:12]}"
+    payload = {
+        "object": "whatsapp_business_account",
+        "entry": [{
+            "id": "entry_leak",
+            "changes": [{
+                "value": {
+                    "messaging_product": "whatsapp",
+                    "metadata": {"display_phone_number": "+212600000000", "phone_number_id": "pn_1"},
+                    "contacts": [{"profile": {"name": "Pool Tester"}, "wa_id": "212611998877"}],
+                    "messages": [{
+                        "from": "212611998877",
+                        "id": wamid,
+                        "timestamp": str(int(datetime.now(timezone.utc).timestamp())),
+                        "text": {"body": "Check connection pool reset"},
+                        "type": "text"
+                    }]
+                },
+                "field": "messages"
+            }]
+        }]
+    }
+    body_bytes = json.dumps(payload).encode("utf-8")
+    sig = hmac.new(settings.whatsapp_webhook_secret.encode("utf-8"), body_bytes, hashlib.sha256).hexdigest()
+    headers = {
+        "Content-Type": "application/json",
+        "X-Hub-Signature-256": f"sha256={sig}"
+    }
+
+    async with real_pg_session_factory() as session_factory:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.post(f"/api/v1/channels/webhooks/whatsapp/{tenant_id}", content=body_bytes, headers=headers)
+            assert resp.status_code == 200
+
+        # 2. Check out connection directly from engine pool WITHOUT setting tenant context
+        async with session_factory() as session:
+            # Query setting
+            res = await session.execute(text("SELECT current_setting('app.current_tenant_id', true)"))
+            val = res.scalar()
+            assert val in (None, ""), f"Connection pool leaked tenant context! Expected empty, got: {val!r}"
+
+            # Query contacts under RLS - must return 0 rows
+            contacts = (await session.execute(select(Contact))).scalars().all()
+            assert len(contacts) == 0, f"RLS leakage! Unauthenticated session read {len(contacts)} contacts from pool connection!"
+
+
+@pytest.mark.asyncio
+async def test_real_pg_high01_stop_cancels_only_marketing_preserves_transactional(seed_real_pg_tenant):
+    """
+    HIGH-01: Verifies that STOP directive cancels ONLY MARKETING messages.
+    TRANSACTIONAL (invoices, order status) and SECURITY (PIN) messages are strictly preserved and delivered.
+    """
+    tenant_id = seed_real_pg_tenant["active_tenant_id"]
+    recipient = f"+2126{uuid.uuid4().int % 100000000:08d}"
+
+    async with real_pg_session_factory() as session_factory:
+        # 1. Enqueue 3 messages with different classes
+        async with session_factory() as session:
+            mkt_ev = await OutboxService.enqueue_outbound_event(
+                session=session,
+                tenant_id=tenant_id,
+                channel_type="WHATSAPP",
+                recipient_identifier=recipient,
+                event_type="PROMOTIONAL_OFFER",
+                payload_dict={"offer": "50% off"},
+                is_high_priority=False,
+                message_class="MARKETING"
+            )
+            tx_ev = await OutboxService.enqueue_outbound_event(
+                session=session,
+                tenant_id=tenant_id,
+                channel_type="WHATSAPP",
+                recipient_identifier=recipient,
+                event_type="ORDER_INVOICE",
+                payload_dict={"invoice_id": "inv_999", "amount": 2500},
+                is_high_priority=False,
+                message_class="TRANSACTIONAL"
+            )
+            sec_ev = await OutboxService.enqueue_outbound_event(
+                session=session,
+                tenant_id=tenant_id,
+                channel_type="WHATSAPP",
+                recipient_identifier=recipient,
+                event_type="SECURITY_ALERT",
+                payload_dict={"alert": "Password changed"},
+                is_high_priority=False,
+                message_class="SECURITY"
+            )
+            await session.commit()
+            mkt_id, tx_id, sec_id = mkt_ev.id, tx_ev.id, sec_ev.id
+
+        # 2. Inbound STOP directive in French ("ARRET")
+        stop_event = NormalizedInboundEvent(
+            tenant_id=tenant_id,
+            channel_type="WHATSAPP",
+            provider_event_id=f"evt_stop_fr_{uuid.uuid4().hex[:8]}",
+            sender_identifier=recipient,
+            sender_name="Karim Tazi",
+            content="ARRET s'il vous plait",
+            event_type="MESSAGE",
+            attachments=[],
+            raw_payload={},
+            timestamp=datetime.now(timezone.utc)
+        )
+        async with session_factory() as session:
+            await ConversationService.process_normalized_event(session=session, event=stop_event)
+            await session.commit()
+
+        # 3. Assert outbox states: MARKETING is CANCELLED; TRANSACTIONAL and SECURITY are PENDING
+        async with session_factory() as session:
+            await session.execute(text("SELECT set_config('app.current_tenant_id', :t, true)"), {"t": tenant_id})
+
+            mkt = (await session.execute(select(OutboxEvent).where(OutboxEvent.id == mkt_id))).scalars().first()
+            assert mkt.status == OutboxStatus.CANCELLED, f"MARKETING message should be CANCELLED, got {mkt.status}"
+
+            tx = (await session.execute(select(OutboxEvent).where(OutboxEvent.id == tx_id))).scalars().first()
+            assert tx.status == OutboxStatus.PENDING, f"TRANSACTIONAL message must remain PENDING, got {tx.status}"
+
+            sec = (await session.execute(select(OutboxEvent).where(OutboxEvent.id == sec_id))).scalars().first()
+            assert sec.status == OutboxStatus.PENDING, f"SECURITY message must remain PENDING, got {sec.status}"
+
+        # 4. Dispatch pending events - TRANSACTIONAL and SECURITY must be DELIVERED!
+        dispatched_ids = []
+        async def mock_dispatcher(ev: OutboxEvent) -> bool:
+            dispatched_ids.append(ev.id)
+            return True
+
+        async with session_factory() as session:
+            dispatched = await OutboxService.dispatch_pending_events(
+                session=session,
+                tenant_id=tenant_id,
+                dispatcher_callable=mock_dispatcher
+            )
+
+        assert mkt_id not in dispatched_ids
+        assert tx_id in dispatched_ids
+        assert sec_id in dispatched_ids
+
+
+@pytest.mark.asyncio
+async def test_real_pg_med01_outbox_three_phase_claim_commit_before_network_io(seed_real_pg_tenant):
+    """
+    MED-01: Verifies that Phase A commits claims and releases DB row locks BEFORE
+    external provider network calls (dispatcher_callable) execute.
+    """
+    tenant_id = seed_real_pg_tenant["active_tenant_id"]
+
+    async with real_pg_session_factory() as session_factory:
+        async with session_factory() as session:
+            ev = await OutboxService.enqueue_outbound_event(
+                session=session,
+                tenant_id=tenant_id,
+                channel_type="EMAIL",
+                recipient_identifier="fast_claim@test.com",
+                event_type="DISPATCH_MESSAGE",
+                payload_dict={"text": "Test 3-phase lease"}
+            )
+            await session.commit()
+            ev_id = ev.id
+
+        phase_b_db_asserted = False
+
+        async def slow_network_call_dispatcher(event: OutboxEvent) -> bool:
+            nonlocal phase_b_db_asserted
+            # Inspect database from a separate connection during network I/O
+            with psycopg.connect(PG_SYNC_CONN) as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT set_config('app.current_tenant_id', %s, true);", (tenant_id,))
+                    cur.execute(
+                        "SELECT status, claimed_by, claim_token FROM outbox_events WHERE id = %s;",
+                        (event.id,)
+                    )
+                    row = cur.fetchone()
+                    assert row is not None
+                    status, claimed_by, claim_token = row
+                    # Row must already be PROCESSING with claim_token committed in DB!
+                    assert status == "PROCESSING", f"Expected PROCESSING in DB during Phase B, got {status}"
+                    assert claimed_by is not None
+                    assert claim_token is not None
+                    phase_b_db_asserted = True
+            await asyncio.sleep(0.05)
+            return True
+
+        async with session_factory() as session:
+            dispatched = await OutboxService.dispatch_pending_events(
+                session=session,
+                tenant_id=tenant_id,
+                dispatcher_callable=slow_network_call_dispatcher,
+                worker_id="phase_test_worker"
+            )
+
+        assert phase_b_db_asserted, "Phase B DB inspection did not execute!"
+        assert any(d.id == ev_id for d in dispatched)
+
+        # In DB, verify finalized DELIVERED status and cleared claims
+        async with session_factory() as session:
+            await session.execute(text("SELECT set_config('app.current_tenant_id', :t, true)"), {"t": tenant_id})
+            res = await session.execute(select(OutboxEvent).where(OutboxEvent.id == ev_id))
+            ev_final = res.scalars().first()
+            assert ev_final.status == OutboxStatus.DELIVERED
+            assert ev_final.claim_token is None
+            assert ev_final.claimed_by is None
+
+
+@pytest.mark.asyncio
+async def test_real_pg_med01_stale_worker_fencing_token_rejection(seed_real_pg_tenant):
+    """
+    MED-01: Verifies fencing token protection. If Worker 1 takes too long and Worker 2
+    re-claims the expired lease, Worker 1's stale finalize is rejected.
+    """
+    tenant_id = seed_real_pg_tenant["active_tenant_id"]
+
+    async with real_pg_session_factory() as session_factory:
+        # 1. Enqueue outbox event
+        async with session_factory() as session:
+            ev = await OutboxService.enqueue_outbound_event(
+                session=session,
+                tenant_id=tenant_id,
+                channel_type="EMAIL",
+                recipient_identifier="fencing@test.com",
+                event_type="NOTIFICATION",
+                payload_dict={"text": "Fencing token test"}
+            )
+            await session.commit()
+            ev_id = ev.id
+
+        # 2. Worker 1 claims with short lease (1 second)
+        now = datetime.now(timezone.utc)
+        worker_1_token = None
+
+        async def worker_1_slow_dispatcher(event: OutboxEvent) -> bool:
+            nonlocal worker_1_token
+            worker_1_token = event.claim_token
+            # Simulate worker 1 hanging while lease expires and worker 2 takes over
+            with psycopg.connect(PG_SYNC_CONN) as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT set_config('app.current_tenant_id', %s, true);", (tenant_id,))
+                    # Force lease expiration and re-claim by Worker 2
+                    cur.execute(
+                        "UPDATE outbox_events SET claimed_by = 'worker_2', claim_token = 'token_w2_active' WHERE id = %s;",
+                        (event.id,)
+                    )
+                    conn.commit()
+            return True
+
+        # Dispatch via Worker 1
+        async with session_factory() as session:
+            dispatched = await OutboxService.dispatch_pending_events(
+                session=session,
+                tenant_id=tenant_id,
+                dispatcher_callable=worker_1_slow_dispatcher,
+                worker_id="worker_1"
+            )
+
+        # Worker 1's finalization matched 0 rows because claim_token was overwritten by Worker 2!
+        # Verify Worker 2's token and state was NOT overwritten by Worker 1
+        with psycopg.connect(PG_SYNC_CONN) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT set_config('app.current_tenant_id', %s, true);", (tenant_id,))
+                cur.execute(
+                    "SELECT status, claimed_by, claim_token FROM outbox_events WHERE id = %s;",
+                    (ev_id,)
+                )
+                row = cur.fetchone()
+                assert row is not None
+                status, claimed_by, claim_token = row
+                assert claim_token == "token_w2_active", "Worker 1 stale update overwrote Worker 2's active claim!"
+                assert claimed_by == "worker_2"
+
+
+@pytest.mark.asyncio
+async def test_real_pg_med02_domain_service_composable_transaction_rollback(seed_real_pg_tenant):
+    """
+    MED-02: Verifies that ConversationService methods do not prematurely commit,
+    enabling atomic multi-step operations that rollback cleanly on failure.
+    """
+    tenant_id = seed_real_pg_tenant["active_tenant_id"]
+    recipient = f"+2126{uuid.uuid4().int % 100000000:08d}"
+
+    event = NormalizedInboundEvent(
+        tenant_id=tenant_id,
+        channel_type="WHATSAPP",
+        provider_event_id=f"evt_rollback_{uuid.uuid4().hex[:8]}",
+        sender_identifier=recipient,
+        sender_name="Rollback Tester",
+        content="Should be rolled back",
+        event_type="MESSAGE",
+        attachments=[],
+        raw_payload={},
+        timestamp=datetime.now(timezone.utc)
+    )
+
+    async with real_pg_session_factory() as session_factory:
+        async with session_factory() as session:
+            # 1. Process event inside transaction
+            msg = await ConversationService.process_normalized_event(session=session, event=event)
+            assert msg.id is not None
+            conv_id = msg.conversation_id
+
+            # 2. Rollback the transaction explicitly (simulating caller error or downstream failure)
+            await session.rollback()
+
+        # 3. In a fresh transaction, verify NOTHING was persisted to PostgreSQL
+        async with session_factory() as session:
+            await session.execute(text("SELECT set_config('app.current_tenant_id', :t, true)"), {"t": tenant_id})
+            res_conv = await session.execute(select(Conversation).where(Conversation.id == conv_id))
+            assert res_conv.scalars().first() is None, "Conversation was committed prematurely! Rollback failed."
+
+            res_msg = await session.execute(select(ConversationMessage).where(ConversationMessage.id == msg.id))
+            assert res_msg.scalars().first() is None, "Message was committed prematurely! Rollback failed."
+

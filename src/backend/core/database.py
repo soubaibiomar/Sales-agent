@@ -8,7 +8,7 @@ from typing import AsyncGenerator, Optional
 from sqlalchemy.ext.asyncio import (
     create_async_engine, async_sessionmaker, AsyncSession, AsyncEngine
 )
-from sqlalchemy import text
+from sqlalchemy import text, event
 from src.backend.core.config import settings
 from src.backend.models.entities import Base
 
@@ -28,7 +28,24 @@ def create_engine_instance(url: Optional[str] = None) -> AsyncEngine:
         engine_kwargs["pool_size"] = 10
         engine_kwargs["max_overflow"] = 20
 
-    return create_async_engine(db_url, **engine_kwargs)
+    eng = create_async_engine(db_url, **engine_kwargs)
+
+    @event.listens_for(eng.sync_engine, "checkin")
+    def _receive_connection_checkin(dbapi_connection, connection_record):
+        """
+        Global defense-in-depth: guarantees that any connection returned to the pool
+        has its PostgreSQL tenant context wiped, even if an unhandled crash or custom query
+        set a session-level GUC parameter.
+        """
+        if "postgresql" in db_url:
+            try:
+                cur = dbapi_connection.cursor()
+                cur.execute("RESET app.current_tenant_id;")
+                cur.close()
+            except Exception:
+                pass
+
+    return eng
 
 engine: AsyncEngine = create_engine_instance()
 AsyncSessionLocal = async_sessionmaker(
@@ -106,7 +123,7 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
             await session.rollback()
             raise
         finally:
-            if active_tenant and session.bind and session.bind.dialect.name == "postgresql":
+            if session.bind and getattr(session.bind.dialect, "name", None) == "postgresql":
                 try:
                     await session.execute(text("RESET app.current_tenant_id"))
                 except Exception:
