@@ -719,6 +719,10 @@ class SalesOrder(Base):
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
     payment_intents = relationship("PaymentIntent", back_populates="order", cascade="all, delete-orphan")
     invoices = relationship("Invoice", back_populates="order", cascade="all, delete-orphan")
+    shipments = relationship("Shipment", back_populates="order", cascade="all, delete-orphan")
+    support_tickets = relationship("SupportTicket", back_populates="order")
+    warranty_claims = relationship("WarrantyClaim", back_populates="order")
+    return_authorizations = relationship("ReturnAuthorization", back_populates="order")
     __table_args__ = (UniqueConstraint("tenant_id", "order_number", name="uq_tenant_order_number"),)
 
 
@@ -865,3 +869,437 @@ class InvoiceItem(Base):
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
     invoice = relationship("Invoice", back_populates="items")
+
+
+# =============================================================================
+# Step 06: Procurement, Multi-Warehouse Operations, Logistics, Support & Scheduling
+# =============================================================================
+
+class Supplier(Base):
+    __tablename__ = "suppliers"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    supplier_code = Column(String(64), nullable=False)
+    name = Column(String(255), nullable=False)
+    contact_name = Column(String(255), nullable=True)
+    email = Column(String(255), nullable=True)
+    phone = Column(String(50), nullable=True)
+    payment_terms = Column(String(100), default="NET_30")
+    currency = Column(String(10), default="MAD")
+    address_json = Column(JSON().with_variant(JSONB, "postgresql"), default=dict)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    products = relationship("SupplierProduct", back_populates="supplier", cascade="all, delete-orphan")
+    purchase_orders = relationship("PurchaseOrder", back_populates="supplier")
+    __table_args__ = (UniqueConstraint("tenant_id", "supplier_code", name="uq_suppliers_tenant_code"),)
+
+
+class SupplierProduct(Base):
+    __tablename__ = "supplier_products"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    supplier_id = Column(String(36), ForeignKey("suppliers.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
+    sku = Column(String(100), nullable=False)
+    supplier_sku = Column(String(100), nullable=True)
+    unit_cost_cents = Column(BigInteger, nullable=False)
+    currency = Column(String(10), default="MAD", nullable=False)
+    lead_time_days = Column(Integer, default=7, nullable=False)
+    min_order_quantity = Column(Integer, default=1, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    supplier = relationship("Supplier", back_populates="products")
+    product = relationship("Product")
+    __table_args__ = (UniqueConstraint("tenant_id", "supplier_id", "sku", name="uq_supplier_products_sku"),)
+
+
+class RFQ(Base):
+    __tablename__ = "rfqs"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    rfq_number = Column(String(64), nullable=False)
+    supplier_id = Column(String(36), ForeignKey("suppliers.id", ondelete="RESTRICT"), nullable=False)
+    status = Column(String(30), default="DRAFT", nullable=False)  # DRAFT, SENT, RESPONDED, CLOSED, CANCELLED
+    deadline_date = Column(DateTime(timezone=True), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_by_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    supplier = relationship("Supplier")
+    items = relationship("RFQItem", back_populates="rfq", cascade="all, delete-orphan")
+    __table_args__ = (UniqueConstraint("tenant_id", "rfq_number", name="uq_rfqs_tenant_number"),)
+
+
+class RFQItem(Base):
+    __tablename__ = "rfq_items"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    rfq_id = Column(String(36), ForeignKey("rfqs.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(String(36), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    sku = Column(String(100), nullable=False)
+    name = Column(String(255), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    target_unit_cost_cents = Column(BigInteger, nullable=True)
+    quoted_unit_cost_cents = Column(BigInteger, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    rfq = relationship("RFQ", back_populates="items")
+
+
+class PurchaseOrder(Base):
+    __tablename__ = "purchase_orders"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    po_number = Column(String(64), nullable=False)
+    supplier_id = Column(String(36), ForeignKey("suppliers.id", ondelete="RESTRICT"), nullable=False)
+    warehouse_id = Column(String(36), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=False)
+    rfq_id = Column(String(36), ForeignKey("rfqs.id", ondelete="SET NULL"), nullable=True)
+    status = Column(String(30), default="DRAFT", nullable=False)  # DRAFT, APPROVED, ISSUED, PARTIALLY_RECEIVED, RECEIVED, CLOSED, CANCELLED
+    version = Column(Integer, default=1, nullable=False)
+    currency = Column(String(10), default="MAD", nullable=False)
+    subtotal_cents = Column(BigInteger, default=0, nullable=False)
+    tax_cents = Column(BigInteger, default=0, nullable=False)
+    grand_total_cents = Column(BigInteger, default=0, nullable=False)
+    payment_terms = Column(String(100), default="NET_30")
+    notes = Column(Text, nullable=True)
+    approved_by_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+    issued_at = Column(DateTime(timezone=True), nullable=True)
+    expected_delivery_date = Column(DateTime(timezone=True), nullable=True)
+    created_by_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    supplier = relationship("Supplier", back_populates="purchase_orders")
+    warehouse = relationship("Warehouse")
+    rfq = relationship("RFQ")
+    items = relationship("PurchaseOrderItem", back_populates="purchase_order", cascade="all, delete-orphan")
+    goods_receipts = relationship("GoodsReceipt", back_populates="purchase_order")
+    __table_args__ = (UniqueConstraint("tenant_id", "po_number", name="uq_purchase_orders_tenant_number"),)
+
+
+class PurchaseOrderItem(Base):
+    __tablename__ = "purchase_order_items"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    purchase_order_id = Column(String(36), ForeignKey("purchase_orders.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(String(36), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    sku = Column(String(100), nullable=False)
+    name = Column(String(255), nullable=False)
+    quantity_ordered = Column(Integer, nullable=False)
+    quantity_received = Column(Integer, default=0, nullable=False)
+    unit_cost_cents = Column(BigInteger, nullable=False)
+    subtotal_cents = Column(BigInteger, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    purchase_order = relationship("PurchaseOrder", back_populates="items")
+
+
+class GoodsReceipt(Base):
+    __tablename__ = "goods_receipts"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    receipt_number = Column(String(64), nullable=False)
+    purchase_order_id = Column(String(36), ForeignKey("purchase_orders.id", ondelete="RESTRICT"), nullable=False, index=True)
+    warehouse_id = Column(String(36), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=False)
+    received_by_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    carrier_name = Column(String(100), nullable=True)
+    tracking_reference = Column(String(100), nullable=True)
+    notes = Column(Text, nullable=True)
+    received_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    purchase_order = relationship("PurchaseOrder", back_populates="goods_receipts")
+    warehouse = relationship("Warehouse")
+    items = relationship("GoodsReceiptItem", back_populates="goods_receipt", cascade="all, delete-orphan")
+    __table_args__ = (UniqueConstraint("tenant_id", "receipt_number", name="uq_goods_receipts_tenant_number"),)
+
+
+class GoodsReceiptItem(Base):
+    __tablename__ = "goods_receipt_items"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    goods_receipt_id = Column(String(36), ForeignKey("goods_receipts.id", ondelete="CASCADE"), nullable=False, index=True)
+    po_item_id = Column(String(36), ForeignKey("purchase_order_items.id", ondelete="RESTRICT"), nullable=False)
+    sku = Column(String(100), nullable=False)
+    quantity_received = Column(Integer, nullable=False)
+    quantity_rejected = Column(Integer, default=0, nullable=False)
+    rejection_reason = Column(String(255), nullable=True)
+    lot_number = Column(String(100), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    goods_receipt = relationship("GoodsReceipt", back_populates="items")
+    po_item = relationship("PurchaseOrderItem")
+
+
+class StockTransfer(Base):
+    __tablename__ = "stock_transfers"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    transfer_number = Column(String(64), nullable=False)
+    source_warehouse_id = Column(String(36), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=False)
+    destination_warehouse_id = Column(String(36), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=False)
+    status = Column(String(30), default="DRAFT", nullable=False)  # DRAFT, REQUESTED, APPROVED, IN_TRANSIT, RECEIVED, CANCELLED
+    notes = Column(Text, nullable=True)
+    created_by_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    shipped_at = Column(DateTime(timezone=True), nullable=True)
+    received_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    source_warehouse = relationship("Warehouse", foreign_keys=[source_warehouse_id])
+    destination_warehouse = relationship("Warehouse", foreign_keys=[destination_warehouse_id])
+    items = relationship("StockTransferItem", back_populates="transfer", cascade="all, delete-orphan")
+    __table_args__ = (UniqueConstraint("tenant_id", "transfer_number", name="uq_stock_transfers_tenant_number"),)
+
+
+class StockTransferItem(Base):
+    __tablename__ = "stock_transfer_items"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    transfer_id = Column(String(36), ForeignKey("stock_transfers.id", ondelete="CASCADE"), nullable=False, index=True)
+    sku = Column(String(100), nullable=False)
+    quantity_requested = Column(Integer, nullable=False)
+    quantity_shipped = Column(Integer, default=0, nullable=False)
+    quantity_received = Column(Integer, default=0, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    transfer = relationship("StockTransfer", back_populates="items")
+
+
+class Shipment(Base):
+    __tablename__ = "shipments"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    shipment_number = Column(String(64), nullable=False)
+    order_id = Column(String(36), ForeignKey("sales_orders.id", ondelete="RESTRICT"), nullable=False, index=True)
+    warehouse_id = Column(String(36), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=False)
+    carrier_code = Column(String(50), nullable=False)
+    carrier_service = Column(String(100), nullable=True)
+    tracking_number = Column(String(100), nullable=True)
+    status = Column(String(30), default="CREATED", nullable=False)  # CREATED, PICKING, PACKED, SHIPPED, IN_TRANSIT, OUT_FOR_DELIVERY, DELIVERED, FAILED, RETURNED, CANCELLED
+    shipping_address_json = Column(JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=False)
+    delivery_contact_json = Column(JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=False)
+    shipping_label_url = Column(String(500), nullable=True)
+    estimated_delivery_at = Column(DateTime(timezone=True), nullable=True)
+    shipped_at = Column(DateTime(timezone=True), nullable=True)
+    delivered_at = Column(DateTime(timezone=True), nullable=True)
+    failed_at = Column(DateTime(timezone=True), nullable=True)
+    failure_reason = Column(Text, nullable=True)
+    created_by_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    order = relationship("SalesOrder", back_populates="shipments")
+    warehouse = relationship("Warehouse")
+    items = relationship("ShipmentItem", back_populates="shipment", cascade="all, delete-orphan")
+    tracking_events = relationship("ShipmentTrackingEvent", back_populates="shipment", cascade="all, delete-orphan")
+    delivery_proof = relationship("DeliveryProof", back_populates="shipment", uselist=False, cascade="all, delete-orphan")
+    __table_args__ = (UniqueConstraint("tenant_id", "shipment_number", name="uq_shipments_tenant_number"),)
+
+
+class ShipmentItem(Base):
+    __tablename__ = "shipment_items"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    shipment_id = Column(String(36), ForeignKey("shipments.id", ondelete="CASCADE"), nullable=False, index=True)
+    order_item_id = Column(String(36), ForeignKey("order_items.id", ondelete="RESTRICT"), nullable=False)
+    sku = Column(String(100), nullable=False)
+    name = Column(String(255), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    shipment = relationship("Shipment", back_populates="items")
+    order_item = relationship("OrderItem")
+
+
+class ShipmentTrackingEvent(Base):
+    __tablename__ = "shipment_tracking_events"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    shipment_id = Column(String(36), ForeignKey("shipments.id", ondelete="CASCADE"), nullable=False, index=True)
+    status = Column(String(50), nullable=False)
+    event_timestamp = Column(DateTime(timezone=True), nullable=False)
+    location = Column(String(255), nullable=True)
+    description = Column(Text, nullable=True)
+    raw_payload_json = Column(JSON().with_variant(JSONB, "postgresql"), default=dict)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    shipment = relationship("Shipment", back_populates="tracking_events")
+
+
+class DeliveryProof(Base):
+    __tablename__ = "delivery_proofs"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    shipment_id = Column(String(36), ForeignKey("shipments.id", ondelete="CASCADE"), nullable=False, index=True)
+    recipient_name = Column(String(255), nullable=False)
+    signature_image_url = Column(String(500), nullable=True)
+    photo_url = Column(String(500), nullable=True)
+    signed_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    location_coordinates = Column(String(100), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    shipment = relationship("Shipment", back_populates="delivery_proof")
+    __table_args__ = (UniqueConstraint("tenant_id", "shipment_id", name="uq_delivery_proof_shipment"),)
+
+
+class SupportTicket(Base):
+    __tablename__ = "support_tickets"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    ticket_number = Column(String(64), nullable=False)
+    account_id = Column(String(36), ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True)
+    contact_id = Column(String(36), ForeignKey("contacts.id", ondelete="SET NULL"), nullable=True)
+    order_id = Column(String(36), ForeignKey("sales_orders.id", ondelete="SET NULL"), nullable=True)
+    priority = Column(String(20), default="MEDIUM", nullable=False)  # LOW, MEDIUM, HIGH, URGENT
+    category = Column(String(50), default="GENERAL", nullable=False)  # SHIPPING_DELAY, DAMAGED_GOODS, WARRANTY_CLAIM, BILLING, GENERAL
+    status = Column(String(30), default="OPEN", nullable=False)  # OPEN, IN_PROGRESS, PENDING_CUSTOMER, RESOLVED, CLOSED
+    subject = Column(String(255), nullable=False)
+    description = Column(Text, nullable=False)
+    assigned_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+    closed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    order = relationship("SalesOrder", back_populates="support_tickets")
+    account = relationship("Account")
+    contact = relationship("Contact")
+    assigned_user = relationship("User")
+    messages = relationship("TicketMessage", back_populates="ticket", cascade="all, delete-orphan")
+    __table_args__ = (UniqueConstraint("tenant_id", "ticket_number", name="uq_support_tickets_tenant_number"),)
+
+
+class TicketMessage(Base):
+    __tablename__ = "ticket_messages"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    ticket_id = Column(String(36), ForeignKey("support_tickets.id", ondelete="CASCADE"), nullable=False, index=True)
+    sender_type = Column(String(20), nullable=False)  # CUSTOMER, AGENT, SYSTEM
+    sender_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    message_text = Column(Text, nullable=False)
+    attachments_json = Column(JSON().with_variant(JSONB, "postgresql"), default=list)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    ticket = relationship("SupportTicket", back_populates="messages")
+
+
+class WarrantyClaim(Base):
+    __tablename__ = "warranty_claims"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    claim_number = Column(String(64), nullable=False)
+    order_id = Column(String(36), ForeignKey("sales_orders.id", ondelete="RESTRICT"), nullable=False)
+    order_item_id = Column(String(36), ForeignKey("order_items.id", ondelete="RESTRICT"), nullable=False)
+    ticket_id = Column(String(36), ForeignKey("support_tickets.id", ondelete="SET NULL"), nullable=True)
+    sku = Column(String(100), nullable=False)
+    serial_number = Column(String(100), nullable=True)
+    status = Column(String(30), default="SUBMITTED", nullable=False)  # SUBMITTED, VALIDATED, REJECTED, REPLACEMENT_ISSUED, REFUNDED
+    warranty_valid_until = Column(DateTime(timezone=True), nullable=False)
+    claim_reason = Column(Text, nullable=False)
+    inspection_notes = Column(Text, nullable=True)
+    resolved_by_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    order = relationship("SalesOrder", back_populates="warranty_claims")
+    order_item = relationship("OrderItem")
+    ticket = relationship("SupportTicket")
+    __table_args__ = (UniqueConstraint("tenant_id", "claim_number", name="uq_warranty_claims_tenant_number"),)
+
+
+class ReturnAuthorization(Base):
+    __tablename__ = "return_authorizations"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    rma_number = Column(String(64), nullable=False)
+    order_id = Column(String(36), ForeignKey("sales_orders.id", ondelete="RESTRICT"), nullable=False)
+    ticket_id = Column(String(36), ForeignKey("support_tickets.id", ondelete="SET NULL"), nullable=True)
+    status = Column(String(30), default="REQUESTED", nullable=False)  # REQUESTED, AUTHORIZED, RECEIVED, INSPECTED, RESTOCKED, REJECTED, CANCELLED
+    reason = Column(Text, nullable=False)
+    requested_action = Column(String(30), default="REFUND", nullable=False)  # REFUND, REPLACEMENT, STORE_CREDIT
+    inspection_outcome = Column(String(30), nullable=True)  # RESTOCK, QUARANTINE, SCRAP, REJECT
+    inspection_notes = Column(Text, nullable=True)
+    refund_amount_cents = Column(BigInteger, default=0, nullable=False)
+    destination_warehouse_id = Column(String(36), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=True)
+    authorized_by_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    inspected_by_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    authorized_at = Column(DateTime(timezone=True), nullable=True)
+    inspected_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    order = relationship("SalesOrder", back_populates="return_authorizations")
+    ticket = relationship("SupportTicket")
+    destination_warehouse = relationship("Warehouse")
+    items = relationship("ReturnItem", back_populates="rma", cascade="all, delete-orphan")
+    __table_args__ = (UniqueConstraint("tenant_id", "rma_number", name="uq_rma_tenant_number"),)
+
+
+class ReturnItem(Base):
+    __tablename__ = "return_items"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    rma_id = Column(String(36), ForeignKey("return_authorizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    order_item_id = Column(String(36), ForeignKey("order_items.id", ondelete="RESTRICT"), nullable=False)
+    sku = Column(String(100), nullable=False)
+    quantity_requested = Column(Integer, nullable=False)
+    quantity_received = Column(Integer, default=0, nullable=False)
+    condition = Column(String(50), nullable=True)  # UNOPENED, OPENED_LIKE_NEW, DAMAGED, DEFECTIVE
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    rma = relationship("ReturnAuthorization", back_populates="items")
+    order_item = relationship("OrderItem")
+
+
+class Appointment(Base):
+    __tablename__ = "appointments"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    booking_number = Column(String(64), nullable=False)
+    account_id = Column(String(36), ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True)
+    contact_id = Column(String(36), ForeignKey("contacts.id", ondelete="SET NULL"), nullable=True)
+    order_id = Column(String(36), ForeignKey("sales_orders.id", ondelete="SET NULL"), nullable=True)
+    service_type = Column(String(50), nullable=False)  # SALES_DEMO, ON_SITE_INSTALLATION, HARDWARE_SUPPORT, DELIVERY_SLOT
+    status = Column(String(30), default="REQUESTED", nullable=False)  # REQUESTED, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED, RESCHEDULED
+    staff_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    start_time = Column(DateTime(timezone=True), nullable=False)
+    end_time = Column(DateTime(timezone=True), nullable=False)
+    location_type = Column(String(30), default="VIDEO_CALL", nullable=False)  # VIDEO_CALL, ON_SITE, PHONE
+    location_details = Column(String(255), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    account = relationship("Account")
+    contact = relationship("Contact")
+    order = relationship("SalesOrder")
+    staff_user = relationship("User")
+    __table_args__ = (UniqueConstraint("tenant_id", "booking_number", name="uq_appointments_tenant_number"),)

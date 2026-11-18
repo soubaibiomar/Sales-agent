@@ -30,6 +30,10 @@ from src.backend.api.inventory import router as inventory_router
 from src.backend.api.orders import router as orders_router
 from src.backend.api.payments import router as payments_router
 from src.backend.api.invoices import router as invoices_router
+from src.backend.api.procurement import router as procurement_router
+from src.backend.api.logistics import router as logistics_router
+from src.backend.api.support import router as support_router
+from src.backend.api.scheduling import router as scheduling_router
 
 logger = logging.getLogger("SalesAI.API")
 
@@ -105,3 +109,7 @@ app.include_router(inventory_router, prefix="/api/v1")
 app.include_router(orders_router, prefix="/api/v1")
 app.include_router(payments_router, prefix="/api/v1")
 app.include_router(invoices_router, prefix="/api/v1")
+app.include_router(procurement_router, prefix="/api/v1")
+app.include_router(logistics_router, prefix="/api/v1")
+app.include_router(support_router, prefix="/api/v1")
+app.include_router(scheduling_router, prefix="/api/v1")

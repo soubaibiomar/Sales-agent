@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Support & Returns — Sales AI Platform</title>
+  <style>
+    :root {
+      --primary: #0A3A2A;
+      --primary-hover: #064E3B;
+      --primary-tint: #E6F4EA;
+      --accent: #10B981;
+      --bg-neutral: #FFFFFF;
+      --bg-page: #F8FAFC;
+      --border-muted: #E2E8F0;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --status-success: #16A34A;
+      --status-warning: #D97706;
+      --status-danger: #DC2626;
+      --status-info: #2563EB;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
+    .sidebar { width: 260px; background-color: var(--primary); color: #FFFFFF; display: flex; flex-direction: column; padding: 1.5rem 1rem; border-right: 1px solid var(--border-muted); }
+    .brand-title { font-size: 1.15rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.25rem; }
+    .brand-subtitle { font-size: 0.75rem; color: #A7F3D0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2rem; }
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+    .nav-item { padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.875rem; cursor: pointer; color: #E2E8F0; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
+    .nav-item:hover, .nav-item.active { background: rgba(255, 255, 255, 0.18); color: #FFFFFF; font-weight: 600; }
+    
+    .main-area { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    .topbar { height: 64px; background: var(--bg-neutral); border-bottom: 1px solid var(--border-muted); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
+    .topbar h1 { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+    .content { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+    
+    .tabs { display: flex; gap: 1rem; border-bottom: 2px solid var(--border-muted); margin-bottom: 1rem; }
+    .tab-btn { padding: 0.75rem 1.25rem; background: none; border: none; font-weight: 600; font-size: 0.9rem; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    
+    .panel { background: var(--bg-neutral); border-radius: 8px; border: 1px solid var(--border-muted); padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-muted); padding-bottom: 0.75rem; }
+    .panel-title { font-size: 1rem; font-weight: 700; color: var(--primary); }
+    
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #F8FAFC; padding: 0.75rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); text-align: left; }
+    td { padding: 0.85rem 0.75rem; border-bottom: 1px solid var(--border-muted); font-size: 0.85rem; }
+    tr:hover { background: #F1F5F9; }
+    
+    .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 700; font-size: 0.75rem; }
+    .badge-open { background: #FEF3C7; color: var(--status-warning); }
+    .badge-resolved { background: #DCFCE7; color: var(--status-success); }
+    .badge-rejected { background: #FEE2E2; color: var(--status-danger); }
+    .badge-restocked { background: #DCFCE7; color: var(--status-success); }
+
+    .btn { padding: 0.45rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-outline { background: transparent; border: 1px solid var(--border-muted); color: var(--text-main); }
+    .btn-danger { background: var(--status-danger); color: #fff; }
+
+    .alert-banner { padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.85rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; background: #FEF3C7; border: 1px solid #FDE68A; color: #92400E; }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand-title">Sales AI Platform</div>
+    <div class="brand-subtitle">Commercial Operations</div>
+    <ul class="nav-list">
+      <li><a class="nav-item" href="index.html"><span>📊</span> Dashboard</a></li>
+      <li><a class="nav-item" href="orders.html"><span>🛒</span> Orders</a></li>
+      <li><a class="nav-item" href="inventory.html"><span>🏭</span> Inventory</a></li>
+      <li><a class="nav-item" href="procurement.html"><span>🚢</span> Procurement</a></li>
+      <li><a class="nav-item" href="logistics.html"><span>🚚</span> Logistics</a></li>
+      <li><a class="nav-item active" href="support.html"><span>🎧</span> Support</a></li>
+      <li><a class="nav-item" href="schedule.html"><span>📅</span> Scheduling</a></li>
+    </ul>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <h1>🎧 Support, Warranties & Return Authorizations</h1>
+      <div style="font-size: 0.85rem; color: var(--text-muted);">Tenant: <strong id="tenantName">Acme Corp</strong></div>
+    </header>
+
+    <div class="content">
+      <div class="alert-banner">
+        <span>🛡️</span>
+        <strong>Return Policy Invariant:</strong> Stock restoration and refund release strictly require a verified return inspection. Inspection outcome <code>RESTOCK</code> increments inventory, while <code>QUARANTINE</code> and <code>SCRAP</code> do not add available balance.
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tickets')">Support Tickets</button>
+        <button class="tab-btn" onclick="switchTab('rmas')">Return Authorizations (RMA)</button>
+        <button class="tab-btn" onclick="switchTab('warranties')">Warranty Claims</button>
+      </div>
+
+      <!-- Tickets Tab -->
+      <div id="tab-tickets" class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Active Support Tickets</div>
+          <button class="btn btn-primary" onclick="alert('Open new support ticket')">+ New Ticket</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Ticket #</th>
+              <th>Subject</th>
+              <th>Category</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>TCK-20261118-0001</strong></td>
+              <td>Damaged package received on delivery</td>
+              <td>DAMAGED_GOODS</td>
+              <td><span style="color:var(--status-danger); font-weight:700;">HIGH</span></td>
+              <td><span class="badge badge-open">OPEN</span></td>
+              <td>2 hours ago</td>
+              <td>
+                <button class="btn btn-outline" onclick="alert('View ticket message history')">💬 Messages</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- RMAs Tab -->
+      <div id="tab-rmas" class="panel" style="display:none;">
+        <div class="panel-header">
+          <div class="panel-title">Return Merchandise Authorizations (RMA)</div>
+          <button class="btn btn-primary">+ Request RMA</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>RMA #</th>
+              <th>Order Ref</th>
+              <th>Requested Action</th>
+              <th>Status</th>
+              <th>Inspection Outcome</th>
+              <th>Refund Amount</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>RMA-20261118-0001</strong></td>
+              <td>ORD-20261118-0012</td>
+              <td>REFUND</td>
+              <td><span class="badge badge-open">RECEIVED</span></td>
+              <td>Pending Inspection</td>
+              <td>—</td>
+              <td>
+                <button class="btn btn-primary" onclick="inspectRMA('RMA-20261118-0001')">🔍 Inspect & Settle</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Warranties Tab -->
+      <div id="tab-warranties" class="panel" style="display:none;">
+        <div class="panel-header">
+          <div class="panel-title">Hardware Warranty Claims</div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Claim #</th>
+              <th>SKU</th>
+              <th>Valid Until</th>
+              <th>Reason</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>WAR-20261118-0001</strong></td>
+              <td>LAPTOP-PRO-16</td>
+              <td>2027-11-18</td>
+              <td>Defective power connector</td>
+              <td><span class="badge badge-resolved">VALIDATED</span></td>
+              <td>
+                <button class="btn btn-outline">Review</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('tab-tickets').style.display = tabId === 'tickets' ? 'block' : 'none';
+      document.getElementById('tab-rmas').style.display = tabId === 'rmas' ? 'block' : 'none';
+      document.getElementById('tab-warranties').style.display = tabId === 'warranties' ? 'block' : 'none';
+    }
+
+    function inspectRMA(rmaNumber) {
+      const outcome = prompt(`Select inspection outcome for ${rmaNumber} (RESTOCK, QUARANTINE, SCRAP, REJECT):`, "RESTOCK");
+      if (outcome) {
+        alert(`RMA ${rmaNumber} inspected with outcome ${outcome}. Inventory and refund updated according to policy.`);
+      }
+    }
+  </script>
+</body>
+</html>

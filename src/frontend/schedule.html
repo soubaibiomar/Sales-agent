@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scheduling & Appointments — Sales AI Platform</title>
+  <style>
+    :root {
+      --primary: #0A3A2A;
+      --primary-hover: #064E3B;
+      --primary-tint: #E6F4EA;
+      --accent: #10B981;
+      --bg-neutral: #FFFFFF;
+      --bg-page: #F8FAFC;
+      --border-muted: #E2E8F0;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --status-success: #16A34A;
+      --status-warning: #D97706;
+      --status-danger: #DC2626;
+      --status-info: #2563EB;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
+    .sidebar { width: 260px; background-color: var(--primary); color: #FFFFFF; display: flex; flex-direction: column; padding: 1.5rem 1rem; border-right: 1px solid var(--border-muted); }
+    .brand-title { font-size: 1.15rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.25rem; }
+    .brand-subtitle { font-size: 0.75rem; color: #A7F3D0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2rem; }
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+    .nav-item { padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.875rem; cursor: pointer; color: #E2E8F0; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
+    .nav-item:hover, .nav-item.active { background: rgba(255, 255, 255, 0.18); color: #FFFFFF; font-weight: 600; }
+    
+    .main-area { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    .topbar { height: 64px; background: var(--bg-neutral); border-bottom: 1px solid var(--border-muted); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
+    .topbar h1 { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+    .content { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+    
+    .panel { background: var(--bg-neutral); border-radius: 8px; border: 1px solid var(--border-muted); padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-muted); padding-bottom: 0.75rem; }
+    .panel-title { font-size: 1rem; font-weight: 700; color: var(--primary); }
+    
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #F8FAFC; padding: 0.75rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); text-align: left; }
+    td { padding: 0.85rem 0.75rem; border-bottom: 1px solid var(--border-muted); font-size: 0.85rem; }
+    tr:hover { background: #F1F5F9; }
+    
+    .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 700; font-size: 0.75rem; }
+    .badge-confirmed { background: #DCFCE7; color: var(--status-success); }
+    .badge-requested { background: #FEF3C7; color: var(--status-warning); }
+    .badge-completed { background: #E0E7FF; color: var(--status-info); }
+    .badge-cancelled { background: #FEE2E2; color: var(--status-danger); }
+    
+    .btn { padding: 0.45rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-outline { background: transparent; border: 1px solid var(--border-muted); color: var(--text-main); }
+
+    .slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+    .slot-card { padding: 0.75rem; border: 1px solid var(--border-muted); border-radius: 6px; text-align: center; cursor: pointer; font-size: 0.85rem; background: #FFFFFF; }
+    .slot-card:hover { border-color: var(--primary); background: var(--primary-tint); }
+    .slot-card.occupied { background: #F1F5F9; color: var(--text-muted); cursor: not-allowed; text-decoration: line-through; border-color: transparent; }
+
+    .alert-banner { padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.85rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; background: #EFF6FF; border: 1px solid #BFDBFE; color: #1E40AF; }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand-title">Sales AI Platform</div>
+    <div class="brand-subtitle">Commercial Operations</div>
+    <ul class="nav-list">
+      <li><a class="nav-item" href="index.html"><span>📊</span> Dashboard</a></li>
+      <li><a class="nav-item" href="orders.html"><span>🛒</span> Orders</a></li>
+      <li><a class="nav-item" href="inventory.html"><span>🏭</span> Inventory</a></li>
+      <li><a class="nav-item" href="procurement.html"><span>🚢</span> Procurement</a></li>
+      <li><a class="nav-item" href="logistics.html"><span>🚚</span> Logistics</a></li>
+      <li><a class="nav-item" href="support.html"><span>🎧</span> Support</a></li>
+      <li><a class="nav-item active" href="schedule.html"><span>📅</span> Scheduling</a></li>
+    </ul>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <h1>📅 Appointment Scheduling & Calendar Availability</h1>
+      <div style="font-size: 0.85rem; color: var(--text-muted);">Tenant: <strong id="tenantName">Acme Corp</strong></div>
+    </header>
+
+    <div class="content">
+      <div class="alert-banner">
+        <span>🛡️</span>
+        <strong>Concurrency Conflict Guard:</strong> Appointment bookings are verified against staff availability with atomic serialization. Double-booking attempts within identical intervals fail closed with HTTP 409 Conflict.
+      </div>
+
+      <!-- Appointments Ledger -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Scheduled Appointments</div>
+          <button class="btn btn-primary" onclick="alert('Book appointment form')">+ Book Appointment</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Booking #</th>
+              <th>Service Type</th>
+              <th>Staff Member</th>
+              <th>Start Time</th>
+              <th>End Time</th>
+              <th>Channel</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>APT-20261118-0001</strong></td>
+              <td>SALES_DEMO</td>
+              <td>Youssef Mansouri</td>
+              <td>2026-11-19 10:00 UTC</td>
+              <td>2026-11-19 10:30 UTC</td>
+              <td>VIDEO_CALL</td>
+              <td><span class="badge badge-confirmed">CONFIRMED</span></td>
+              <td>
+                <button class="btn btn-outline" onclick="alert('Appointment details')">View</button>
+              </td>
+            </tr>
+            <tr>
+              <td><strong>APT-20261118-0002</strong></td>
+              <td>ON_SITE_INSTALLATION</td>
+              <td>Mehdi Benjelloun</td>
+              <td>2026-11-20 14:00 UTC</td>
+              <td>2026-11-20 15:30 UTC</td>
+              <td>ON_SITE</td>
+              <td><span class="badge badge-confirmed">CONFIRMED</span></td>
+              <td>
+                <button class="btn btn-outline">View</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Calendar Slot Availability Viewer -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Calendar Availability Slots (Tomorrow: 2026-11-19)</div>
+          <span style="font-size:0.8rem; color:var(--text-muted);">Working Hours: 09:00 - 18:00 UTC</span>
+        </div>
+        <div class="slots-grid">
+          <div class="slot-card">09:00 - 09:30</div>
+          <div class="slot-card">09:30 - 10:00</div>
+          <div class="slot-card occupied">10:00 - 10:30 (Booked)</div>
+          <div class="slot-card">10:30 - 11:00</div>
+          <div class="slot-card">11:00 - 11:30</div>
+          <div class="slot-card">11:30 - 12:00</div>
+          <div class="slot-card">14:00 - 14:30</div>
+          <div class="slot-card">14:30 - 15:00</div>
+          <div class="slot-card">15:00 - 15:30</div>
+          <div class="slot-card">15:30 - 16:00</div>
+          <div class="slot-card">16:00 - 16:30</div>
+          <div class="slot-card">16:30 - 17:00</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
