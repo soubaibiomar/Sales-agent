@@ -1303,3 +1303,70 @@ class Appointment(Base):
     order = relationship("SalesOrder")
     staff_user = relationship("User")
     __table_args__ = (UniqueConstraint("tenant_id", "booking_number", name="uq_appointments_tenant_number"),)
+
+
+class VoiceSession(Base):
+    __tablename__ = "voice_sessions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    session_id = Column(String(100), unique=True, nullable=False, index=True)
+    channel_type = Column(String(32), default="WEBRTC", nullable=False)  # WEBRTC, SIP_PSTN, WEB_VOICE
+    voice_mode = Column(String(32), default="CUSTOMER", nullable=False)   # CUSTOMER, MANAGER
+    caller_identifier = Column(String(255), nullable=True, index=True)
+    customer_account_id = Column(String(36), ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True)
+    customer_contact_id = Column(String(36), ForeignKey("contacts.id", ondelete="SET NULL"), nullable=True)
+    manager_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    status = Column(String(32), default="INITIATED", nullable=False)      # INITIATED, ACTIVE, PAUSED, TRANSFERRED, COMPLETED, FAILED
+    language = Column(String(16), default="fr-FR", nullable=False)        # fr-FR, en-US, ar-MA, ary-Arab, ary-Latn
+    is_caller_verified = Column(Boolean, default=False, nullable=False)
+    recording_consent_given = Column(Boolean, default=False, nullable=False)
+    disclosure_played = Column(Boolean, default=False, nullable=False)
+    turns_count = Column(Integer, default=0, nullable=False)
+    started_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    ended_at = Column(DateTime(timezone=True), nullable=True)
+    metadata_json = Column(JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    customer_account = relationship("Account")
+    customer_contact = relationship("Contact")
+    manager_user = relationship("User")
+    transcripts = relationship("VoiceTranscript", back_populates="session", cascade="all, delete-orphan", order_by="VoiceTranscript.turn_index")
+    recordings = relationship("VoiceRecording", back_populates="session", cascade="all, delete-orphan")
+
+
+class VoiceTranscript(Base):
+    __tablename__ = "voice_transcripts"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    session_id = Column(String(100), ForeignKey("voice_sessions.session_id", ondelete="CASCADE"), nullable=False, index=True)
+    turn_index = Column(Integer, default=0, nullable=False)
+    speaker_type = Column(String(32), nullable=False)  # USER, AGENT, SYSTEM
+    raw_text = Column(Text, nullable=False)
+    redacted_text = Column(Text, nullable=False)
+    language = Column(String(16), default="fr-FR", nullable=False)
+    latency_ms = Column(Integer, default=0, nullable=True)
+    is_barge_in = Column(Boolean, default=False, nullable=False)
+    metadata_json = Column(JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    session = relationship("VoiceSession", back_populates="transcripts")
+
+
+class VoiceRecording(Base):
+    __tablename__ = "voice_recordings"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    session_id = Column(String(100), ForeignKey("voice_sessions.session_id", ondelete="CASCADE"), nullable=False, index=True)
+    storage_path = Column(String(512), nullable=False)
+    duration_seconds = Column(Integer, default=0, nullable=False)
+    file_size_bytes = Column(Integer, default=0, nullable=False)
+    mime_type = Column(String(64), default="audio/wav", nullable=False)
+    encryption_algorithm = Column(String(32), default="AES-256-GCM", nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    session = relationship("VoiceSession", back_populates="recordings")

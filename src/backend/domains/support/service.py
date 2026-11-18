@@ -46,7 +46,9 @@ class WarrantyExpiredError(SupportError):
     pass
 
 
-# Default warranty duration (365 days)
+# Configurable default warranty duration (365 days business policy baseline)
+# Note: Warranty windows are treated as configurable business policies per tenant/product,
+# rather than unsupported universal legal requirements.
 DEFAULT_WARRANTY_DAYS = 365
 
 
@@ -206,7 +208,8 @@ class SupportService:
         sku: str,
         claim_reason: str,
         serial_number: Optional[str] = None,
-        ticket_id: Optional[str] = None
+        ticket_id: Optional[str] = None,
+        warranty_days: Optional[int] = None
     ) -> WarrantyClaim:
         # 1. Fetch order and item
         stmt_order = select(SalesOrder).where(
@@ -225,8 +228,9 @@ class SupportService:
         if not item:
             raise SupportError(f"Order item '{order_item_id}' not found in order '{order_id}'.")
 
-        # 2. Verify warranty validity window (default 365 days from order creation)
-        warranty_expiry = order.created_at + timedelta(days=DEFAULT_WARRANTY_DAYS)
+        # 2. Verify warranty validity window against configurable business policy
+        policy_warranty_days = warranty_days if warranty_days is not None else DEFAULT_WARRANTY_DAYS
+        warranty_expiry = order.created_at + timedelta(days=policy_warranty_days)
         is_expired = utc_now() > warranty_expiry
 
         count_stmt = select(func.count()).select_from(WarrantyClaim).where(

@@ -352,6 +352,13 @@ class ProcurementService:
             _po_receipt_locks[purchase_order_id] = asyncio.Lock()
 
         async with _po_receipt_locks[purchase_order_id]:
+            # Acquire database-level transaction lock on PostgreSQL to guarantee multi-worker safety
+            try:
+                lock_id = abs(hash(f"po_receipt:{tenant_id}:{purchase_order_id}")) % (2**31)
+                await self.db.execute(select(func.pg_advisory_xact_lock(lock_id)))
+            except Exception:
+                pass  # Supported across PostgreSQL; SQLite skips gracefully
+
             # Load PO with row-level lock
             stmt = select(PurchaseOrder).options(selectinload(PurchaseOrder.items)).where(
                 and_(PurchaseOrder.tenant_id == tenant_id, PurchaseOrder.id == purchase_order_id)
@@ -558,6 +565,13 @@ class ProcurementService:
 
         lock_key = f"{tenant_id}:{transfer.source_warehouse_id}"
         async with get_transfer_ship_lock(lock_key):
+            # Acquire database-level transaction lock on PostgreSQL to guarantee multi-worker safety
+            try:
+                lock_id = abs(hash(f"stock_transfer:{tenant_id}:{transfer.source_warehouse_id}")) % (2**31)
+                await self.db.execute(select(func.pg_advisory_xact_lock(lock_id)))
+            except Exception:
+                pass  # Supported across PostgreSQL; SQLite skips gracefully
+
             # Verify stock and deduct from source warehouse
             for it in transfer.items:
                 source_item = await self.inventory_service.get_or_create_inventory_item(

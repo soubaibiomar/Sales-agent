@@ -73,6 +73,7 @@ class WarrantyClaimCreateRequest(BaseModel):
     serial_number: Optional[str] = None
     ticket_id: Optional[str] = None
     claim_reason: str = Field(..., min_length=1)
+    warranty_days: Optional[int] = Field(None, ge=1, description="Configurable warranty policy window in days (defaults to business policy baseline)")
 
 
 class WarrantyClaimResponse(BaseModel):

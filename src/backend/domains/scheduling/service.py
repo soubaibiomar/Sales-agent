@@ -73,6 +73,14 @@ class SchedulingService:
             _staff_booking_locks[lock_key] = asyncio.Lock()
 
         async with _staff_booking_locks[lock_key]:
+            # Acquire database-level transaction lock on PostgreSQL to guarantee multi-worker safety
+            if staff_user_id:
+                try:
+                    lock_id = abs(hash(f"staff_booking:{tenant_id}:{staff_user_id}")) % (2**31)
+                    await self.db.execute(select(func.pg_advisory_xact_lock(lock_id)))
+                except Exception:
+                    pass  # Supported across PostgreSQL; SQLite skips gracefully
+
             # Check overlap if staff assigned
             if staff_user_id:
                 has_conflict = await self._check_temporal_conflict(

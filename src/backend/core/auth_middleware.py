@@ -162,6 +162,20 @@ async def get_security_context(
         correlation_id=correlation_id
     )
 
+async def get_optional_security_context(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_bearer),
+    correlation_id: str = Depends(get_correlation_id)
+) -> Optional[SecurityContext]:
+    """
+    Optional authentication dependency for dual-mode endpoints supporting both
+    unauthenticated customer sessions (identified via channel/caller/header) and
+    authenticated user sessions. Returns None if no Bearer token is provided.
+    """
+    if not credentials or not credentials.credentials:
+        return None
+    return await get_security_context(request, credentials, correlation_id)
+
 def require_permission(permission_code: str) -> Callable:
     """FastAPI dependency factory enforcing server-side RBAC/ABAC permissions."""
     async def permission_checker(

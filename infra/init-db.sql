@@ -1095,6 +1095,60 @@ CREATE TABLE IF NOT EXISTS appointments (
     CONSTRAINT chk_appointment_times CHECK (end_time > start_time)
 );
 
+-- 32. Voice Sessions Table
+CREATE TABLE IF NOT EXISTS voice_sessions (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    session_id VARCHAR(100) NOT NULL UNIQUE,
+    channel_type VARCHAR(32) NOT NULL DEFAULT 'WEBRTC',
+    voice_mode VARCHAR(32) NOT NULL DEFAULT 'CUSTOMER',
+    caller_identifier VARCHAR(255),
+    customer_account_id VARCHAR(36) REFERENCES accounts(id) ON DELETE SET NULL,
+    customer_contact_id VARCHAR(36) REFERENCES contacts(id) ON DELETE SET NULL,
+    manager_user_id VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'INITIATED',
+    language VARCHAR(16) NOT NULL DEFAULT 'fr-FR',
+    is_caller_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    recording_consent_given BOOLEAN NOT NULL DEFAULT FALSE,
+    disclosure_played BOOLEAN NOT NULL DEFAULT FALSE,
+    turns_count INTEGER NOT NULL DEFAULT 0,
+    started_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ended_at TIMESTAMPTZ,
+    metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 33. Voice Transcripts Table
+CREATE TABLE IF NOT EXISTS voice_transcripts (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    session_id VARCHAR(100) NOT NULL REFERENCES voice_sessions(session_id) ON DELETE CASCADE,
+    turn_index INTEGER NOT NULL DEFAULT 0,
+    speaker_type VARCHAR(32) NOT NULL,
+    raw_text TEXT NOT NULL,
+    redacted_text TEXT NOT NULL,
+    language VARCHAR(16) NOT NULL DEFAULT 'fr-FR',
+    latency_ms INTEGER DEFAULT 0,
+    is_barge_in BOOLEAN NOT NULL DEFAULT FALSE,
+    metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 34. Voice Recordings Table
+CREATE TABLE IF NOT EXISTS voice_recordings (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    session_id VARCHAR(100) NOT NULL REFERENCES voice_sessions(session_id) ON DELETE CASCADE,
+    storage_path VARCHAR(512) NOT NULL,
+    duration_seconds INTEGER NOT NULL DEFAULT 0,
+    file_size_bytes INTEGER NOT NULL DEFAULT 0,
+    mime_type VARCHAR(64) NOT NULL DEFAULT 'audio/wav',
+    encryption_algorithm VARCHAR(32) NOT NULL DEFAULT 'AES-256-GCM',
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for Step 04 Performance
 CREATE INDEX IF NOT EXISTS idx_accounts_tenant ON accounts(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_contacts_account ON contacts(account_id);
@@ -1159,6 +1213,16 @@ CREATE INDEX IF NOT EXISTS idx_rma_order ON return_authorizations(tenant_id, ord
 CREATE INDEX IF NOT EXISTS idx_return_items_tenant ON return_items(tenant_id, rma_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_tenant ON appointments(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_staff_schedule ON appointments(tenant_id, staff_user_id, start_time, end_time);
+
+-- Indexes for Step 07 Performance
+CREATE INDEX IF NOT EXISTS idx_voice_sessions_tenant ON voice_sessions(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_voice_sessions_session_id ON voice_sessions(session_id);
+CREATE INDEX IF NOT EXISTS idx_voice_sessions_caller ON voice_sessions(caller_identifier);
+CREATE INDEX IF NOT EXISTS idx_voice_transcripts_tenant ON voice_transcripts(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_voice_transcripts_session ON voice_transcripts(session_id);
+CREATE INDEX IF NOT EXISTS idx_voice_recordings_tenant ON voice_recordings(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_voice_recordings_session ON voice_recordings(session_id);
+CREATE INDEX IF NOT EXISTS idx_voice_recordings_expires ON voice_recordings(expires_at);
 
 -- 4. Enable Row-Level Security (RLS) on all tenant-partitioned tables
 ALTER TABLE organization_sites ENABLE ROW LEVEL SECURITY;
@@ -1328,6 +1392,15 @@ ALTER TABLE return_items FORCE ROW LEVEL SECURITY;
 
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE appointments FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE voice_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE voice_sessions FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE voice_transcripts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE voice_transcripts FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE voice_recordings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE voice_recordings FORCE ROW LEVEL SECURITY;
 
 -- 5. Define RLS Isolation Policies
 CREATE POLICY tenant_isolation_sites ON organization_sites
@@ -1636,6 +1709,21 @@ CREATE POLICY tenant_isolation_appointments ON appointments
     USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
     WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
 
+CREATE POLICY tenant_isolation_voice_sessions ON voice_sessions
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_voice_transcripts ON voice_transcripts
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_voice_recordings ON voice_recordings
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
 -- 6. Grant least-privilege DML permissions to sales_app_user
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO sales_app_user;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO sales_app_user;
@@ -1662,6 +1750,7 @@ INSERT INTO permissions (id, code, description, domain) VALUES
     ('perm_quotes_create', 'quotes:create', 'Create and send commercial quotations', 'COMMERCE'),
     ('perm_orders_read', 'orders:read', 'View customer order and shipment status', 'COMMERCE'),
     ('perm_voice_copilot', 'voice:copilot', 'Access privileged Manager Voice Copilot interface', 'VOICE'),
+    ('perm_voice_agent', 'voice:agent', 'Initiate and manage customer voice sessions', 'VOICE'),
     ('perm_audit_read', 'audit:read', 'View compliance and security audit logs', 'SECURITY'),
     ('perm_crm_read', 'crm:read', 'View CRM leads, accounts and opportunities', 'CRM'),
     ('perm_crm_write', 'crm:write', 'Create and modify CRM leads, accounts and opportunities', 'CRM'),

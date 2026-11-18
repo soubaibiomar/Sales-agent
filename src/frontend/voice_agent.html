@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Voice Agent — Sales AI Management</title>
+    <style>
+        :root {
+            --brand-primary: #0A3A2A;
+            --brand-primary-hover: #064E3B;
+            --brand-emerald: #10B981;
+            --surface-bg: #F8FAFC;
+            --surface-card: #FFFFFF;
+            --border-muted: #E2E8F0;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --danger: #DC2626;
+            --warning: #D97706;
+            --success: #16A34A;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--surface-bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background: var(--brand-primary);
+            color: #FFFFFF;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header h1 { font-size: 1.25rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .badge {
+            background: rgba(16, 185, 129, 0.2);
+            color: #A7F3D0;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        nav a { color: #FFFFFF; text-decoration: none; font-size: 0.875rem; margin-left: 20px; opacity: 0.85; }
+        nav a:hover { opacity: 1; }
+        main {
+            max-width: 1000px;
+            margin: 32px auto;
+            padding: 0 16px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 24px;
+        }
+        .card {
+            background: var(--surface-card);
+            border: 1px solid var(--border-muted);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .voice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-muted);
+        }
+        .waveform-container {
+            height: 120px;
+            background: #F1F5F9;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        .wave-bar {
+            width: 4px;
+            height: 20px;
+            background: var(--brand-emerald);
+            margin: 0 2px;
+            border-radius: 2px;
+            transition: height 0.1s ease;
+        }
+        .active-animation .wave-bar {
+            animation: pulse 0.8s infinite alternate ease-in-out;
+        }
+        @keyframes pulse {
+            0% { height: 10px; }
+            100% { height: 75px; }
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .mic-btn {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: none;
+            background: var(--brand-primary);
+            color: #FFFFFF;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(10, 58, 42, 0.3);
+            transition: all 0.2s ease;
+        }
+        .mic-btn:hover { background: var(--brand-primary-hover); transform: scale(1.05); }
+        .mic-btn.active {
+            background: var(--danger);
+            animation: ripple 1.5s infinite;
+        }
+        @keyframes ripple {
+            0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+            70% { box-shadow: 0 0 0 16px rgba(220, 38, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+        .feed {
+            height: 320px;
+            overflow-y: auto;
+            border: 1px solid var(--border-muted);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #FFFFFF;
+        }
+        .msg {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+        .msg.user {
+            align-self: flex-end;
+            background: var(--brand-primary);
+            color: #FFFFFF;
+            border-bottom-right-radius: 2px;
+        }
+        .msg.agent {
+            align-self: flex-start;
+            background: #F1F5F9;
+            color: var(--text-main);
+            border-bottom-left-radius: 2px;
+        }
+        .msg.system {
+            align-self: center;
+            background: #FEF3C7;
+            color: #92400E;
+            font-size: 0.75rem;
+            text-align: center;
+        }
+        .side-panel h3 { font-size: 1rem; margin-bottom: 16px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+        .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-muted);
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-muted);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            width: 100%;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-outline:hover { background: #F1F5F9; }
+        .btn-danger {
+            background: #FEE2E2;
+            color: var(--danger);
+            border: 1px solid #FCA5A5;
+        }
+        .btn-danger:hover { background: #FCD34D; }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .status-dot.active { background: var(--success); }
+        .status-dot.idle { background: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>
+            <span>Sales AI Management</span>
+            <span class="badge">Customer Voice Agent</span>
+        </h1>
+        <nav>
+            <a href="index.html">Tableau de bord</a>
+            <a href="voice_copilot.html">Manager Copilot</a>
+            <a href="inbox.html">Omnicanal</a>
+            <a href="orders.html">Commandes</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="card">
+            <div class="voice-header">
+                <div>
+                    <h2>Session Vocale Client</h2>
+                    <p style="font-size: 0.75rem; color: var(--text-muted);">
+                        <span class="status-dot idle" id="statusDot"></span>
+                        <span id="sessionStatus">En attente de connexion</span>
+                    </p>
+                </div>
+                <div>
+                    <button class="btn-outline" id="bargeInBtn" style="width: auto; padding: 6px 12px; font-size: 0.75rem;" disabled>
+                        ⚡ Interrompre (Barge-in)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Visualizer -->
+            <div class="waveform-container" id="visualizer">
+                <div class="wave-bar" style="height: 15px;"></div>
+                <div class="wave-bar" style="height: 35px;"></div>
+                <div class="wave-bar" style="height: 60px;"></div>
+                <div class="wave-bar" style="height: 25px;"></div>
+                <div class="wave-bar" style="height: 45px;"></div>
+                <div class="wave-bar" style="height: 80px;"></div>
+                <div class="wave-bar" style="height: 30px;"></div>
+                <div class="wave-bar" style="height: 50px;"></div>
+                <div class="wave-bar" style="height: 20px;"></div>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <button class="mic-btn" id="micBtn" title="Démarrer / Arrêter la voix">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Conversation Feed -->
+            <div class="feed" id="conversationFeed">
+                <div class="msg system">
+                    Appel chiffré & conforme Loi 09-08. Divulgation légale enregistrée automatiquement.
+                </div>
+            </div>
+        </div>
+
+        <div class="card side-panel">
+            <h3>Paramètres de l'Appel</h3>
+
+            <div class="form-group">
+                <label>Langue de Conversation</label>
+                <select class="form-control" id="languageSelect">
+                    <option value="fr-FR" selected>Français (Maroc / Standard)</option>
+                    <option value="ary-Arab">Darija Marocaine (العربية)</option>
+                    <option value="ary-Latn">Darija Arabizi (Latin/3,7,9)</option>
+                    <option value="ar-MA">Arabe Standard Moderne</option>
+                    <option value="en-US">English (International)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Numéro Appelant (Caller ID)</label>
+                <input type="text" class="form-control" id="callerInput" value="+212661234567" placeholder="+212...">
+            </div>
+
+            <div class="form-group">
+                <label>Vérification Identité Client</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" class="form-control" id="otpInput" placeholder="Code OTP (6 chiffres)" maxlength="6">
+                    <button class="btn-outline" id="verifyOtpBtn" style="width: auto; margin-top: 0;">Valider</button>
+                </div>
+                <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;" id="verificationStatus">
+                    Non vérifié (Accès catalogue public uniquement)
+                </p>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid var(--border-muted); margin: 20px 0;">
+
+            <button class="btn-outline btn-danger" id="handoffBtn" disabled>
+                👥 Transférer à un Conseiller
+            </button>
+        </div>
+    </main>
+
+    <script>
+        let currentSessionId = null;
+        let isSpeaking = false;
+        const tenantId = "default-tenant";
+
+        const micBtn = document.getElementById("micBtn");
+        const statusDot = document.getElementById("statusDot");
+        const sessionStatus = document.getElementById("sessionStatus");
+        const visualizer = document.getElementById("visualizer");
+        const feed = document.getElementById("conversationFeed");
+        const bargeInBtn = document.getElementById("bargeInBtn");
+        const handoffBtn = document.getElementById("handoffBtn");
+        const verifyOtpBtn = document.getElementById("verifyOtpBtn");
+        const otpInput = document.getElementById("otpInput");
+        const verificationStatus = document.getElementById("verificationStatus");
+
+        micBtn.addEventListener("click", async () => {
+            if (!currentSessionId) {
+                // Start Session
+                try {
+                    const resp = await fetch("/api/v1/voice/sessions", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-Tenant-Id": tenantId
+                        },
+                        body: JSON.stringify({
+                            voice_mode: "CUSTOMER",
+                            channel_type: "WEBRTC",
+                            caller_identifier: document.getElementById("callerInput").value,
+                            language: document.getElementById("languageSelect").value,
+                            recording_consent: true
+                        })
+                    });
+                    const data = await resp.json();
+                    currentSessionId = data.session_id;
+
+                    statusDot.className = "status-dot active";
+                    sessionStatus.innerText = "Connecté (ID: " + currentSessionId.slice(0, 8) + "...)";
+                    micBtn.classList.add("active");
+                    visualizer.classList.add("active-animation");
+                    bargeInBtn.disabled = false;
+                    handoffBtn.disabled = false;
+
+                    // Play disclosure message
+                    addMessage("agent", data.disclosure_text || "Bonjour, comment puis-je vous aider ?");
+                } catch (e) {
+                    alert("Erreur de connexion vocale: " + e.message);
+                }
+            } else {
+                // End Session
+                await fetch("/api/v1/voice/sessions/" + currentSessionId + "/end", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "X-Tenant-Id": tenantId },
+                    body: JSON.stringify({ reason: "USER_COMPLETED" })
+                });
+                currentSessionId = null;
+                statusDot.className = "status-dot idle";
+                sessionStatus.innerText = "Session terminée";
+                micBtn.classList.remove("active");
+                visualizer.classList.remove("active-animation");
+                bargeInBtn.disabled = true;
+                handoffBtn.disabled = true;
+                addMessage("system", "Session vocale terminée. Enregistrement archivé selon la politique de rétention.");
+            }
+        });
+
+        // Barge-in button
+        bargeInBtn.addEventListener("click", async () => {
+            if (!currentSessionId) return;
+            await fetch("/api/v1/voice/sessions/" + currentSessionId + "/barge-in", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-Tenant-Id": tenantId },
+                body: JSON.stringify({
+                    session_id: currentSessionId,
+                    interrupted_turn_index: 1,
+                    energy_level: 850.0,
+                    timestamp_ms: Date.now()
+                })
+            });
+            addMessage("system", "⚡ Interruption détectée. Synthèse vocale interrompue.");
+        });
+
+        // Human Handoff button
+        handoffBtn.addEventListener("click", async () => {
+            if (!currentSessionId) return;
+            const resp = await fetch("/api/v1/voice/sessions/" + currentSessionId + "/handoff", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-Tenant-Id": tenantId },
+                body: JSON.stringify({
+                    reason: "Client demande un transfert opérateur",
+                    target_department: "SUPPORT"
+                })
+            });
+            const data = await resp.json();
+            addMessage("system", "Transfert en cours vers la file " + data.assigned_queue + ".");
+            addMessage("agent", "Je vous transfère à un agent du support technique. Restez en ligne.");
+        });
+
+        // OTP Verification
+        verifyOtpBtn.addEventListener("click", async () => {
+            if (!currentSessionId) {
+                alert("Veuillez d'abord démarrer la session vocale.");
+                return;
+            }
+            const otp = otpInput.value.trim();
+            if (!otp) return;
+
+            const resp = await fetch("/api/v1/voice/sessions/" + currentSessionId + "/verify-caller", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-Tenant-Id": tenantId },
+                body: JSON.stringify({ otp_code: otp })
+            });
+            const data = await resp.json();
+            if (data.verified) {
+                verificationStatus.innerText = "✅ Identité vérifiée avec succès";
+                verificationStatus.style.color = "var(--success)";
+                addMessage("system", "Client authentifié via OTP. Accès commandes autorisé.");
+            } else {
+                verificationStatus.innerText = "❌ Code invalide ou expiré";
+                verificationStatus.style.color = "var(--danger)";
+            }
+        });
+
+        function addMessage(type, text) {
+            const div = document.createElement("div");
+            div.className = "msg " + type;
+            div.innerText = text;
+            feed.appendChild(div);
+            feed.scrollTop = feed.scrollHeight;
+        }
+    </script>
+</body>
+</html>

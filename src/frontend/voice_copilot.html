@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager Voice Copilot — Sales AI Management</title>
+    <style>
+        :root {
+            --brand-primary: #0A3A2A;
+            --brand-primary-hover: #064E3B;
+            --brand-emerald: #10B981;
+            --surface-bg: #F8FAFC;
+            --surface-card: #FFFFFF;
+            --border-muted: #E2E8F0;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --danger: #DC2626;
+            --warning: #D97706;
+            --success: #16A34A;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--surface-bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background: var(--brand-primary);
+            color: #FFFFFF;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header h1 { font-size: 1.25rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .badge {
+            background: rgba(16, 185, 129, 0.2);
+            color: #A7F3D0;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        nav a { color: #FFFFFF; text-decoration: none; font-size: 0.875rem; margin-left: 20px; opacity: 0.85; }
+        nav a:hover { opacity: 1; }
+        main {
+            max-width: 1080px;
+            margin: 32px auto;
+            padding: 0 16px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 24px;
+        }
+        .card {
+            background: var(--surface-card);
+            border: 1px solid var(--border-muted);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .manager-banner {
+            background: #E6F4EA;
+            border: 1px solid #A7F3D0;
+            color: #064E3B;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .feed {
+            height: 380px;
+            overflow-y: auto;
+            border: 1px solid var(--border-muted);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: #FFFFFF;
+            margin-bottom: 20px;
+        }
+        .msg {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        .msg.manager {
+            align-self: flex-end;
+            background: var(--brand-primary);
+            color: #FFFFFF;
+            border-bottom-right-radius: 2px;
+        }
+        .msg.copilot {
+            align-self: flex-start;
+            background: #F8FAFC;
+            border: 1px solid var(--border-muted);
+            color: var(--text-main);
+            border-bottom-left-radius: 2px;
+        }
+        .action-card {
+            background: #FFFBEB;
+            border: 1px solid #FCD34D;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+        .action-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
+            color: #92400E;
+            font-size: 0.875rem;
+            margin-bottom: 8px;
+        }
+        .ptt-container {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .ptt-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--border-muted);
+            border-radius: 8px;
+            font-size: 0.875rem;
+        }
+        .btn-primary {
+            background: var(--brand-primary);
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-primary:hover { background: var(--brand-primary-hover); }
+        .btn-mfa {
+            background: var(--warning);
+            color: #FFFFFF;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.875rem;
+            margin-top: 8px;
+        }
+        .quick-queries button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 8px 12px;
+            background: #F1F5F9;
+            border: 1px solid var(--border-muted);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            color: var(--text-main);
+        }
+        .quick-queries button:hover { background: #E2E8F0; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>
+            <span>Sales AI Management</span>
+            <span class="badge">Manager Voice Copilot</span>
+        </h1>
+        <nav>
+            <a href="index.html">Tableau de bord</a>
+            <a href="voice_agent.html">Agent Client</a>
+            <a href="approvals.html">Approbations</a>
+            <a href="inventory.html">Inventaire</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="card">
+            <div class="manager-banner">
+                <div>
+                    <strong>Session Authentifiée:</strong> Direction Commerciale (Rôle: sales_manager)
+                </div>
+                <div style="font-size: 0.75rem;">
+                    🛡️ Step-Up MFA & Non-Autonomous Authority Actifs
+                </div>
+            </div>
+
+            <!-- Feed -->
+            <div class="feed" id="copilotFeed">
+                <div class="msg copilot">
+                    Bonjour Directeur. Sales AI Copilot est à votre écoute. 
+                    Vous pouvez interroger les indicateurs de ventes, les devis en attente ou demander des aperçus d'actions.
+                </div>
+            </div>
+
+            <!-- Push-to-Talk / Command Input -->
+            <div class="ptt-container">
+                <input type="text" class="ptt-input" id="commandInput" placeholder="Posez une question ou formulez un ordre de gestion (ex: 'Chiffre d'affaires du jour')...">
+                <button class="btn-primary" id="sendBtn">Envoyer</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="font-size: 1rem; margin-bottom: 12px;">Requêtes Fréquentes Direction</h3>
+            <div class="quick-queries">
+                <button onclick="runQuery('Donne-moi le chiffre d\'affaires et les ventes du jour')">📊 Ventes & Chiffre d'affaires</button>
+                <button onclick="runQuery('Quels sont les devis en attente d\'approbation ?')">📝 Devis en attente d'approbation</button>
+                <button onclick="runQuery('Y a-t-il des alertes de rupture de stock ?')">⚠️ Alertes stock & réapprovisionnement</button>
+                <button onclick="runQuery('Quel est l\'état des tickets de support urgents ?')">🎧 SLA & Tickets de support</button>
+                <button onclick="runQuery('Approuve le bon de commande fournisseur PO-2026-001')">🔒 Test Action Sensible (Step-Up MFA)</button>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid var(--border-muted); margin: 20px 0;">
+
+            <div id="mfaModal" style="display: none; background: #FEF3C7; border: 1px solid #FCD34D; padding: 16px; border-radius: 8px;">
+                <h4 style="color: #92400E; font-size: 0.875rem; margin-bottom: 8px;">Confirmation Second Facteur (MFA)</h4>
+                <p style="font-size: 0.75rem; color: #78350F; margin-bottom: 12px;">
+                    Cette action dépasse le seuil d'autorisation vocale. Entrez votre code TOTP Google Authenticator.
+                </p>
+                <input type="text" id="mfaInput" placeholder="Code MFA (6 chiffres)" maxlength="6" style="width: 100%; padding: 8px; border: 1px solid #FCD34D; border-radius: 4px; margin-bottom: 8px;">
+                <button class="btn-mfa" id="confirmActionBtn" style="width: 100%;">Valider l'Opération</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const tenantId = "default-tenant";
+        const feed = document.getElementById("copilotFeed");
+        const commandInput = document.getElementById("commandInput");
+        const sendBtn = document.getElementById("sendBtn");
+        const mfaModal = document.getElementById("mfaModal");
+        const mfaInput = document.getElementById("mfaInput");
+        const confirmActionBtn = document.getElementById("confirmActionBtn");
+
+        let pendingActionToken = null;
+
+        function runQuery(text) {
+            commandInput.value = text;
+            sendCommand();
+        }
+
+        async function sendCommand() {
+            const text = commandInput.value.trim();
+            if (!text) return;
+
+            addMsg("manager", text);
+            commandInput.value = "";
+
+            try {
+                const resp = await fetch("/api/v1/voice/copilot/command", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Tenant-Id": tenantId,
+                        "Authorization": "Bearer mock-manager-token"
+                    },
+                    body: JSON.stringify({ command_text: text })
+                });
+
+                const data = await resp.json();
+                addMsg("copilot", data.insight_text);
+
+                if (data.requires_confirmation && data.action_preview) {
+                    pendingActionToken = data.action_preview.action_token;
+                    mfaModal.style.display = "block";
+                    addActionCard(data.action_preview);
+                } else {
+                    mfaModal.style.display = "none";
+                    pendingActionToken = null;
+                }
+            } catch (e) {
+                addMsg("copilot", "Erreur lors du traitement de la commande: " + e.message);
+            }
+        }
+
+        confirmActionBtn.addEventListener("click", async () => {
+            if (!pendingActionToken) return;
+            const code = mfaInput.value.trim();
+            if (!code) {
+                alert("Veuillez saisir votre code MFA à 6 chiffres.");
+                return;
+            }
+
+            try {
+                const resp = await fetch("/api/v1/voice/copilot/confirm-action", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Tenant-Id": tenantId,
+                        "Authorization": "Bearer mock-manager-token"
+                    },
+                    body: JSON.stringify({
+                        action_token: pendingActionToken,
+                        totp_code: code,
+                        confirmed: true
+                    })
+                });
+                const data = await resp.json();
+                addMsg("copilot", "✅ " + data.message);
+                mfaModal.style.display = "none";
+                mfaInput.value = "";
+                pendingActionToken = null;
+            } catch (e) {
+                alert("Erreur de confirmation MFA: " + e.message);
+            }
+        });
+
+        sendBtn.addEventListener("click", sendCommand);
+        commandInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") sendCommand();
+        });
+
+        function addMsg(type, text) {
+            const div = document.createElement("div");
+            div.className = "msg " + type;
+            div.innerText = text;
+            feed.appendChild(div);
+            feed.scrollTop = feed.scrollHeight;
+        }
+
+        function addActionCard(preview) {
+            const div = document.createElement("div");
+            div.className = "action-card";
+            div.innerHTML = `
+                <div class="action-header">
+                    <span>⚠️ Action Sensible Requérant Confirmation</span>
+                    <span style="background: #FEE2E2; color: #DC2626; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">Niveau: ${preview.risk_level}</span>
+                </div>
+                <div style="font-size: 0.8rem; color: #78350F; margin-bottom: 6px;">${preview.summary}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">Jeton d'action: <code>${preview.action_token.slice(0, 8)}...</code></div>
+            `;
+            feed.appendChild(div);
+            feed.scrollTop = feed.scrollHeight;
+        }
+    </script>
+</body>
+</html>

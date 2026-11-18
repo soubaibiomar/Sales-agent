@@ -34,6 +34,7 @@ from src.backend.api.procurement import router as procurement_router
 from src.backend.api.logistics import router as logistics_router
 from src.backend.api.support import router as support_router
 from src.backend.api.scheduling import router as scheduling_router
+from src.backend.api.voice import router as voice_router
 
 logger = logging.getLogger("SalesAI.API")
 
@@ -113,3 +114,4 @@ app.include_router(procurement_router, prefix="/api/v1")
 app.include_router(logistics_router, prefix="/api/v1")
 app.include_router(support_router, prefix="/api/v1")
 app.include_router(scheduling_router, prefix="/api/v1")
+app.include_router(voice_router)

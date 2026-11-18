@@ -48,9 +48,9 @@ class MultilingualProcessor:
         if arabizi_word_match or any(m in stripped.lower() for m in darija_latin_markers):
             return "ary-Latn"
 
-        # Distinguish French vs English
-        french_markers = ["bonjour", "merci", "devis", "prix", "commande", "livraison", "s'il", "vous", "plaît", "avec"]
-        if any(w in stripped.lower() for w in french_markers):
+        # Distinguish French vs English (with word boundaries to avoid substring false positives e.g. 'merci' in 'commercial')
+        french_pattern = re.compile(r"\b(bonjour|merci|devis|prix|commande|livraison|s'il|vous|plaît|avec|facture)\b", re.IGNORECASE)
+        if french_pattern.search(stripped):
             return "fr-FR"
 
         return "en-US"
