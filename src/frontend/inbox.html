@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Workspace — Omnichannel Unified Inbox</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand-primary: #0A3A2A;
+      --brand-hover: #064E3B;
+      --brand-tint: #E6F4EA;
+      --accent-emerald: #10B981;
+      --bg-white: #FFFFFF;
+      --bg-soft: #F8FAFC;
+      --border-muted: #E2E8F0;
+      --border-darker: #CBD5E1;
+      --text-main: #0F172A;
+      --text-muted: #475569;
+      --status-success: #16A34A;
+      --status-warning: #D97706;
+      --status-critical: #DC2626;
+      --status-info: #2563EB;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-soft);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Navigation Bar */
+    header {
+      background-color: var(--brand-primary);
+      color: var(--bg-white);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid var(--accent-emerald);
+    }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .badge-tenant {
+      background-color: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .header-user {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.85rem;
+    }
+    .operator-status-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      background-color: var(--brand-tint);
+      color: var(--brand-primary);
+      font-weight: 600;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--status-success);
+    }
+
+    /* Main Container (3 Columns) */
+    .inbox-layout {
+      display: grid;
+      grid-template-columns: 240px 340px 1fr 300px;
+      flex: 1;
+      height: calc(100vh - 54px);
+      overflow: hidden;
+    }
+
+    /* Column 1: Channel & Status Navigation */
+    .sidebar-nav {
+      background-color: var(--bg-white);
+      border-right: 1px solid var(--border-muted);
+      padding: 1rem 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .nav-section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      padding-left: 0.5rem;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-main);
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .nav-item:hover { background-color: var(--bg-soft); }
+    .nav-item.active {
+      background-color: var(--brand-tint);
+      color: var(--brand-primary);
+      font-weight: 600;
+    }
+    .nav-count {
+      background-color: var(--border-muted);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      padding: 0.1rem 0.45rem;
+      border-radius: 9999px;
+      font-weight: 600;
+    }
+    .nav-item.active .nav-count {
+      background-color: var(--brand-primary);
+      color: var(--bg-white);
+    }
+
+    /* Column 2: Conversation List */
+    .conversation-queue {
+      background-color: var(--bg-white);
+      border-right: 1px solid var(--border-muted);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .queue-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .queue-search {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border-muted);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-family: inherit;
+    }
+    .queue-item {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-muted);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      transition: background 0.15s ease;
+    }
+    .queue-item:hover { background-color: var(--bg-soft); }
+    .queue-item.active {
+      background-color: #F0FDF4;
+      border-left: 4px solid var(--brand-primary);
+    }
+    .queue-item-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .customer-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .time-snippet {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .channel-pill {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    .channel-pill.whatsapp { background-color: #DCFCE7; color: #15803D; }
+    .channel-pill.web_chat { background-color: #E0E7FF; color: #4338CA; }
+    .channel-pill.email { background-color: #FEF3C7; color: #B45309; }
+    .channel-pill.voice_sip { background-color: #F1F5F9; color: #334155; }
+    .message-preview {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .unread-pill {
+      background-color: var(--status-critical);
+      color: var(--bg-white);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.1rem 0.4rem;
+      border-radius: 9999px;
+      margin-left: auto;
+    }
+
+    /* Column 3: Active Conversation Timeline */
+    .timeline-view {
+      display: flex;
+      flex-direction: column;
+      background-color: var(--bg-soft);
+      border-right: 1px solid var(--border-muted);
+      height: 100%;
+      overflow: hidden;
+    }
+    .timeline-header {
+      background-color: var(--bg-white);
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--border-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .active-contact-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+    .handoff-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn-action {
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.15s ease;
+    }
+    .btn-handoff {
+      background-color: var(--brand-primary);
+      color: var(--bg-white);
+    }
+    .btn-handoff:hover { background-color: var(--brand-hover); }
+    .btn-release {
+      background-color: var(--bg-white);
+      border-color: var(--border-darker);
+      color: var(--text-main);
+    }
+    .btn-release:hover { background-color: var(--bg-soft); }
+
+    /* Messages Stream */
+    .messages-scroll {
+      flex: 1;
+      padding: 1.25rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .msg-bubble {
+      max-width: 65%;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      font-size: 0.875rem;
+      line-height: 1.45;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      position: relative;
+    }
+    .msg-customer {
+      align-self: flex-start;
+      background-color: var(--bg-white);
+      border: 1px solid var(--border-muted);
+      color: var(--text-main);
+    }
+    .msg-agent {
+      align-self: flex-end;
+      background-color: var(--brand-primary);
+      color: var(--bg-white);
+    }
+    .msg-bot {
+      align-self: flex-end;
+      background-color: var(--brand-tint);
+      border: 1px solid #A7F3D0;
+      color: var(--brand-primary);
+    }
+    .msg-meta {
+      font-size: 0.7rem;
+      opacity: 0.8;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+    .system-notice {
+      align-self: center;
+      background-color: var(--border-muted);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      text-align: center;
+      max-width: 80%;
+    }
+    .system-notice.stop {
+      background-color: #FEE2E2;
+      color: var(--status-critical);
+      border: 1px solid #FECACA;
+    }
+
+    /* Reply Composer */
+    .timeline-composer {
+      background-color: var(--bg-white);
+      padding: 1rem 1.25rem;
+      border-top: 1px solid var(--border-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .composer-input {
+      width: 100%;
+      height: 70px;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--border-muted);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.875rem;
+      resize: none;
+    }
+    .composer-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .ai-silenced-banner {
+      background-color: #FEF3C7;
+      color: #92400E;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.4rem 0.75rem;
+      border-radius: 4px;
+      border: 1px solid #FDE68A;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* Column 4: Context Sidebar */
+    .context-sidebar {
+      background-color: var(--bg-white);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      overflow-y: auto;
+    }
+    .context-block-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .context-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      margin-bottom: 0.5rem;
+    }
+    .context-label {
+      font-size: 0.725rem;
+      color: var(--text-muted);
+    }
+    .context-val {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+      <span>Sales Workspace — Unified Omnichannel Inbox</span>
+      <span class="badge-tenant" id="tenantBadge">Tenant: Alpha Corp</span>
+    </div>
+    <div class="header-user">
+      <div class="operator-status-pill">
+        <span class="status-dot"></span>
+        <span id="agentName">Karim Idrissi (Sales Rep)</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="inbox-layout">
+    <!-- 1. Channels Nav -->
+    <nav class="sidebar-nav" aria-label="Inbox Filters">
+      <div>
+        <div class="nav-section-title">Channels</div>
+        <div class="nav-item active" data-channel="ALL">
+          <span>All Channels</span>
+          <span class="nav-count" id="countAll">18</span>
+        </div>
+        <div class="nav-item" data-channel="WHATSAPP">
+          <span>WhatsApp Business</span>
+          <span class="nav-count">11</span>
+        </div>
+        <div class="nav-item" data-channel="WEB_CHAT">
+          <span>Web Chat Widget</span>
+          <span class="nav-count">4</span>
+        </div>
+        <div class="nav-item" data-channel="EMAIL">
+          <span>Gmail / Email</span>
+          <span class="nav-count">2</span>
+        </div>
+        <div class="nav-item" data-channel="VOICE_SIP">
+          <span>Telephony Calls</span>
+          <span class="nav-count">1</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="nav-section-title">Status Queues</div>
+        <div class="nav-item" data-status="BOT_ACTIVE">
+          <span>Bot Active (AI)</span>
+          <span class="nav-count">12</span>
+        </div>
+        <div class="nav-item" data-status="HUMAN_ACTIVE">
+          <span>Human Active</span>
+          <span class="nav-count">5</span>
+        </div>
+        <div class="nav-item" data-status="PENDING">
+          <span>Pending Takeover</span>
+          <span class="nav-count">1</span>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 2. Conversation Queue -->
+    <section class="conversation-queue" aria-label="Conversation List">
+      <div class="queue-header">
+        <input type="text" class="queue-search" placeholder="Search conversations or contacts..." aria-label="Search">
+      </div>
+      <div id="queueList">
+        <!-- Dynamically rendered conversation items -->
+        <div class="queue-item active" tabindex="0">
+          <div class="queue-item-top">
+            <span class="customer-name">Yassine Benjelloun</span>
+            <span class="time-snippet">12:35</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="channel-pill whatsapp">WHATSAPP</span>
+            <span class="message-preview">Salam, bghina devis 3la 100 unites dyal...</span>
+            <span class="unread-pill">2</span>
+          </div>
+        </div>
+
+        <div class="queue-item" tabindex="0">
+          <div class="queue-item-top">
+            <span class="customer-name">Fatima Zahra Mansouri</span>
+            <span class="time-snippet">11:15</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="channel-pill web_chat">WEB CHAT</span>
+            <span class="message-preview">Pouvez-vous me connecter avec un conseiller ?</span>
+          </div>
+        </div>
+
+        <div class="queue-item" tabindex="0">
+          <div class="queue-item-top">
+            <span class="customer-name">Driss Alami (Atlas Procure)</span>
+            <span class="time-snippet">09:40</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="channel-pill email">EMAIL</span>
+            <span class="message-preview">Subject: Demande de tarif annuel 2026...</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Active Conversation Timeline -->
+    <main class="timeline-view" aria-label="Active Conversation Stream">
+      <div class="timeline-header">
+        <div>
+          <div class="active-contact-title">
+            <span id="activeName">Yassine Benjelloun</span>
+            <span class="channel-pill whatsapp">WHATSAPP</span>
+            <span id="optOutBadge" style="display: none; background: #FEE2E2; color: #DC2626; font-size: 0.7rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 4px;">OPTED-OUT (STOP)</span>
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);" id="activeSub">Phone: +212 6 12 34 56 78 • Version: 4 • Assigned: Karim Idrissi</div>
+        </div>
+        <div class="handoff-actions">
+          <button class="btn-action btn-handoff" id="btnHandoff">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><polyline points="16 11 18 13 22 9"></polyline></svg>
+            Take Over (Silence AI)
+          </button>
+          <button class="btn-action btn-release" id="btnRelease">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            Release to AI Bot
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages Stream -->
+      <div class="messages-scroll" id="messagesStream">
+        <div class="msg-bubble msg-customer">
+          <div>Salam alaykum, bghina devis 3la 100 unites dyal les serveurs rack 2U. Chhal l-prix dyalhom w delivery time?</div>
+          <div class="msg-meta">12:30 • WhatsApp</div>
+        </div>
+
+        <div class="msg-bubble msg-bot">
+          <div><strong style="font-size: 0.75rem;">[AI SALES ASSISTANT]</strong><br>Wa alaykum assalam! Marhba bik. Pour 100 unités de serveurs rack 2U, nous avons actuellement notre catalogue entreprise avec remise sur volume. Je prépare votre estimation. Souhaitez-vous inclure l'extension de garantie 3 ans ?</div>
+          <div class="msg-meta">12:31 • Automated AI</div>
+        </div>
+
+        <div class="system-notice">
+          Karim Idrissi took over this conversation. AI automated responses are silenced.
+        </div>
+
+        <div class="msg-bubble msg-agent">
+          <div>Bonjour M. Benjelloun, c'est Karim votre conseiller dédié. Je prends personnellement en charge votre demande de devis grand compte. Je vous envoie la proposition chiffrée par email d'ici 15 minutes.</div>
+          <div class="msg-meta">12:35 • Karim Idrissi</div>
+        </div>
+      </div>
+
+      <!-- Composer -->
+      <div class="timeline-composer">
+        <div class="ai-silenced-banner">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+          <span>Human Operator Mode Active. AI bot is completely silenced. Messages will be delivered directly from you.</span>
+        </div>
+        <textarea class="composer-input" id="replyInput" placeholder="Type your reply to customer... (Press Enter to send, Shift+Enter for newline)"></textarea>
+        <div class="composer-actions">
+          <button class="btn-action btn-release" id="btnAttach">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+            Attach File
+          </button>
+          <button class="btn-action btn-handoff" id="btnSend">Send Message</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- 4. Context Sidebar -->
+    <aside class="context-sidebar" aria-label="Customer CRM Context">
+      <div>
+        <div class="context-block-title">Customer Context</div>
+        <div class="context-field">
+          <span class="context-label">Full Name</span>
+          <span class="context-val">Yassine Benjelloun</span>
+        </div>
+        <div class="context-field">
+          <span class="context-label">Primary Identifier</span>
+          <span class="context-val">+212 6 12 34 56 78</span>
+        </div>
+        <div class="context-field">
+          <span class="context-label">Account Verification</span>
+          <span class="context-val" style="color: var(--status-success);">Verified Business</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="context-block-title">Channel Compliance</div>
+        <div class="context-field">
+          <span class="context-label">Channel</span>
+          <span class="context-val">WhatsApp Business</span>
+        </div>
+        <div class="context-field">
+          <span class="context-label">Consent Given</span>
+          <span class="context-val">Yes (Opt-in recorded)</span>
+        </div>
+        <div class="context-field">
+          <span class="context-label">STOP Status</span>
+          <span class="context-val" style="color: var(--status-success);">ACTIVE (Not Opted Out)</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="context-block-title">Session State</div>
+        <div class="context-field">
+          <span class="context-label">Monotonic Version</span>
+          <span class="context-val">Version 4</span>
+        </div>
+        <div class="context-field">
+          <span class="context-label">AI Status</span>
+          <span class="context-val" style="color: var(--status-warning);">SILENCED (Human Active)</span>
+        </div>
+        <div class="context-field">
+          <span class="context-label">Assigned Representative</span>
+          <span class="context-val">Karim Idrissi</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    // Simple interactive client state for UI demonstration
+    const btnHandoff = document.getElementById('btnHandoff');
+    const btnRelease = document.getElementById('btnRelease');
+    const btnSend = document.getElementById('btnSend');
+    const replyInput = document.getElementById('replyInput');
+    const messagesStream = document.getElementById('messagesStream');
+
+    btnHandoff.addEventListener('click', () => {
+      alert('Handing off conversation to Karim Idrissi. AI bot is silenced.');
+    });
+
+    btnRelease.addEventListener('click', () => {
+      alert('Releasing conversation back to automated AI bot.');
+    });
+
+    btnSend.addEventListener('click', () => {
+      const text = replyInput.value.trim();
+      if (!text) return;
+      const bubble = document.createElement('div');
+      bubble.className = 'msg-bubble msg-agent';
+      bubble.innerHTML = `<div>${text}</div><div class="msg-meta">Just now • Karim Idrissi</div>`;
+      messagesStream.appendChild(bubble);
+      replyInput.value = '';
+      messagesStream.scrollTop = messagesStream.scrollHeight;
+    });
+  </script>
+</body>
+</html>

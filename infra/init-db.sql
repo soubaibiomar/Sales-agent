@@ -132,6 +132,102 @@ CREATE TABLE IF NOT EXISTS feature_flags (
     CONSTRAINT uq_tenant_feature_key UNIQUE (tenant_id, key)
 );
 
+-- =============================================================================
+-- STEP 03 OMNICHANNEL CONVERSATIONS & EVENT INGESTION SCHEMA
+-- =============================================================================
+
+-- Contacts Table
+CREATE TABLE IF NOT EXISTS contacts (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    display_name VARCHAR(200) NOT NULL,
+    primary_email VARCHAR(255),
+    primary_phone VARCHAR(50),
+    is_verified BOOLEAN NOT NULL DEFAULT false,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+
+-- Channel Identities Table
+CREATE TABLE IF NOT EXISTS channel_identities (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    contact_id VARCHAR(36) NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+    channel_type VARCHAR(30) NOT NULL,
+    identifier VARCHAR(255) NOT NULL,
+    is_opted_out BOOLEAN NOT NULL DEFAULT false,
+    opt_out_at TIMESTAMPTZ,
+    opt_out_reason VARCHAR(255),
+    consent_given_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    CONSTRAINT uq_tenant_channel_identifier UNIQUE (tenant_id, channel_type, identifier)
+);
+
+-- Conversations Table
+CREATE TABLE IF NOT EXISTS conversations (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    contact_id VARCHAR(36) NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+    channel_type VARCHAR(30) NOT NULL,
+    channel_identifier VARCHAR(255) NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'BOT_ACTIVE',
+    assigned_user_id VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
+    version INT NOT NULL DEFAULT 1,
+    is_ai_silenced BOOLEAN NOT NULL DEFAULT false,
+    unread_count INT NOT NULL DEFAULT 0,
+    last_message_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+
+-- Inbound Raw Events (Durable Ingest Buffer)
+CREATE TABLE IF NOT EXISTS inbound_raw_events (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    channel_type VARCHAR(30) NOT NULL,
+    provider_event_id VARCHAR(255) NOT NULL,
+    payload_json TEXT NOT NULL,
+    signature_verified BOOLEAN NOT NULL DEFAULT true,
+    processing_status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    processed_at TIMESTAMPTZ,
+    CONSTRAINT uq_tenant_channel_provider_event UNIQUE (tenant_id, channel_type, provider_event_id)
+);
+
+-- Conversation Messages Table
+CREATE TABLE IF NOT EXISTS conversation_messages (
+    id VARCHAR(36) PRIMARY KEY,
+    conversation_id VARCHAR(36) NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    sender_type VARCHAR(20) NOT NULL,
+    sender_id VARCHAR(36),
+    content TEXT NOT NULL,
+    content_redacted TEXT,
+    event_type VARCHAR(30) NOT NULL DEFAULT 'MESSAGE',
+    conversation_version INT NOT NULL DEFAULT 1,
+    attachments JSONB DEFAULT '[]'::jsonb,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+
+-- Message Attachments Table
+CREATE TABLE IF NOT EXISTS message_attachments (
+    id VARCHAR(36) PRIMARY KEY,
+    message_id VARCHAR(36) NOT NULL REFERENCES conversation_messages(id) ON DELETE CASCADE,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    file_name VARCHAR(255) NOT NULL,
+    content_type VARCHAR(100) NOT NULL,
+    file_size_bytes INT NOT NULL,
+    storage_path VARCHAR(500) NOT NULL,
+    is_safe BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+
 -- 4. Enable Row-Level Security (RLS) on all tenant-partitioned tables
 ALTER TABLE organization_sites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE organization_sites FORCE ROW LEVEL SECURITY;
@@ -151,43 +247,106 @@ ALTER TABLE audit_logs FORCE ROW LEVEL SECURITY;
 ALTER TABLE feature_flags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE feature_flags FORCE ROW LEVEL SECURITY;
 
--- 5. Define RLS Isolation Policies
--- Rule: Access is permitted IF AND ONLY IF row.tenant_id matches the session variable app.current_tenant_id.
--- If the session variable is unset or empty, NULLIF returns NULL and comparison fails closed (0 rows).
+ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contacts FORCE ROW LEVEL SECURITY;
 
+ALTER TABLE channel_identities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE channel_identities FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE conversations FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE inbound_raw_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inbound_raw_events FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE conversation_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE conversation_messages FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE message_attachments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE message_attachments FORCE ROW LEVEL SECURITY;
+
+-- 5. Define RLS Isolation Policies
 CREATE POLICY tenant_isolation_sites ON organization_sites
-    AS RESTRICTIVE
+    AS PERMISSIVE
     FOR ALL
+    TO PUBLIC
     USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
     WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
 
 CREATE POLICY tenant_isolation_users ON users
-    AS RESTRICTIVE
+    AS PERMISSIVE
     FOR ALL
+    TO PUBLIC
     USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
     WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
 
 CREATE POLICY tenant_isolation_user_roles ON user_roles
-    AS RESTRICTIVE
+    AS PERMISSIVE
     FOR ALL
+    TO PUBLIC
     USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
     WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
 
 CREATE POLICY tenant_isolation_session_revocations ON session_revocations
-    AS RESTRICTIVE
+    AS PERMISSIVE
     FOR ALL
+    TO PUBLIC
     USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
     WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
 
 CREATE POLICY tenant_isolation_audit_logs ON audit_logs
-    AS RESTRICTIVE
+    AS PERMISSIVE
     FOR ALL
+    TO PUBLIC
     USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
     WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
 
 CREATE POLICY tenant_isolation_feature_flags ON feature_flags
-    AS RESTRICTIVE
+    AS PERMISSIVE
     FOR ALL
+    TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_contacts ON contacts
+    AS PERMISSIVE
+    FOR ALL
+    TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_channel_identities ON channel_identities
+    AS PERMISSIVE
+    FOR ALL
+    TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_conversations ON conversations
+    AS PERMISSIVE
+    FOR ALL
+    TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_inbound_raw_events ON inbound_raw_events
+    AS PERMISSIVE
+    FOR ALL
+    TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_conversation_messages ON conversation_messages
+    AS PERMISSIVE
+    FOR ALL
+    TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_message_attachments ON message_attachments
+    AS PERMISSIVE
+    FOR ALL
+    TO PUBLIC
     USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
     WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
 

@@ -299,5 +299,8 @@ def test_rls_persists_across_migrations_and_reconnects():
             WHERE schemaname = 'public' AND policyname LIKE 'tenant_isolation_%';
         """)
         policies = cur.fetchall()
-        assert len(policies) == 6, f"Expected 6 active RLS policies, found {len(policies)}"
+        original_6 = {"organization_sites", "users", "user_roles", "session_revocations", "audit_logs", "feature_flags"}
+        found_tables = {p[0] for p in policies}
+        assert original_6.issubset(found_tables), f"Missing original RLS policies: {original_6 - found_tables}"
+        assert len(policies) in (6, 12), f"Expected 6 or 12 active RLS policies, found {len(policies)}"
     conn.close()

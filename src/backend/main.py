@@ -20,6 +20,8 @@ from src.backend.api.auth import router as auth_router
 from src.backend.api.tenants import router as tenants_router
 from src.backend.api.users import router as users_router
 from src.backend.api.audit import router as audit_router
+from src.backend.api.channels import router as channels_router
+from src.backend.api.inbox import router as inbox_router
 
 logger = logging.getLogger("SalesAI.API")
 
@@ -85,3 +87,5 @@ app.include_router(auth_router, prefix="/api/v1")
 app.include_router(tenants_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
 app.include_router(audit_router, prefix="/api/v1")
+app.include_router(channels_router, prefix="/api/v1")
+app.include_router(inbox_router, prefix="/api/v1")

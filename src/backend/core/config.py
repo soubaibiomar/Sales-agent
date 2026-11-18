@@ -61,6 +61,13 @@ class Settings(BaseSettings):
     data_retention_days_transcripts: int = 365
     pii_redaction_enabled: bool = True
 
+    # Omnichannel Webhooks & Integrations
+    whatsapp_webhook_secret: str = "dev_whatsapp_webhook_secret_change_in_prod"
+    whatsapp_verify_token: str = "dev_whatsapp_verify_token_12345"
+    email_webhook_secret: str = "dev_email_webhook_secret_change_in_prod"
+    voice_telephony_secret: str = "dev_telephony_secret_change_in_prod"
+    webchat_shared_token: str = "dev_webchat_token_change_in_prod"
+
     @property
     def cors_origins_list(self) -> List[str]:
         return [o.strip() for o in self.cors_allowed_origins.split(",") if o.strip()]

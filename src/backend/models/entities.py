@@ -144,3 +144,112 @@ class FeatureFlag(Base):
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
 
     __table_args__ = (UniqueConstraint("tenant_id", "key", name="uq_tenant_feature_key"),)
+
+class Contact(Base):
+    __tablename__ = "contacts"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    first_name = Column(String(100), nullable=True)
+    last_name = Column(String(100), nullable=True)
+    display_name = Column(String(200), nullable=False)
+    primary_email = Column(String(255), nullable=True)
+    primary_phone = Column(String(50), nullable=True)
+    is_verified = Column(Boolean, nullable=False, default=False)
+    metadata_json = Column(Text, nullable=True, default="{}")
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    tenant = relationship("Tenant")
+    identities = relationship("ChannelIdentity", back_populates="contact", cascade="all, delete-orphan")
+    conversations = relationship("Conversation", back_populates="contact", cascade="all, delete-orphan")
+
+class ChannelIdentity(Base):
+    __tablename__ = "channel_identities"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    contact_id = Column(String(36), ForeignKey("contacts.id", ondelete="CASCADE"), nullable=False, index=True)
+    channel_type = Column(String(30), nullable=False)  # WEB_CHAT, WHATSAPP, EMAIL, VOICE_SIP
+    identifier = Column(String(255), nullable=False)   # Phone number, email address, or web session UUID
+    is_opted_out = Column(Boolean, nullable=False, default=False)
+    opt_out_at = Column(DateTime(timezone=True), nullable=True)
+    opt_out_reason = Column(String(255), nullable=True)
+    consent_given_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    metadata_json = Column(Text, nullable=True, default="{}")
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    contact = relationship("Contact", back_populates="identities")
+    __table_args__ = (UniqueConstraint("tenant_id", "channel_type", "identifier", name="uq_tenant_channel_identifier"),)
+
+class Conversation(Base):
+    __tablename__ = "conversations"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    contact_id = Column(String(36), ForeignKey("contacts.id", ondelete="CASCADE"), nullable=False, index=True)
+    channel_type = Column(String(30), nullable=False)
+    channel_identifier = Column(String(255), nullable=False)
+    status = Column(String(30), nullable=False, default="BOT_ACTIVE")  # BOT_ACTIVE, HUMAN_PENDING, HUMAN_ACTIVE, CLOSED
+    assigned_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    version = Column(Integer, nullable=False, default=1)
+    is_ai_silenced = Column(Boolean, nullable=False, default=False)
+    unread_count = Column(Integer, nullable=False, default=0)
+    last_message_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    metadata_json = Column(Text, nullable=True, default="{}")
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    contact = relationship("Contact", back_populates="conversations")
+    assigned_user = relationship("User")
+    messages = relationship("ConversationMessage", back_populates="conversation", cascade="all, delete-orphan")
+
+class InboundRawEvent(Base):
+    __tablename__ = "inbound_raw_events"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    channel_type = Column(String(30), nullable=False)
+    provider_event_id = Column(String(255), nullable=False)
+    payload_json = Column(Text, nullable=False)
+    signature_verified = Column(Boolean, nullable=False, default=True)
+    processing_status = Column(String(30), nullable=False, default="PENDING")  # PENDING, PROCESSED, FAILED, DUPLICATE
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    processed_at = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (UniqueConstraint("tenant_id", "channel_type", "provider_event_id", name="uq_tenant_channel_provider_event"),)
+
+class ConversationMessage(Base):
+    __tablename__ = "conversation_messages"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    conversation_id = Column(String(36), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    sender_type = Column(String(20), nullable=False)  # CUSTOMER, AGENT, AI_BOT, SYSTEM
+    sender_id = Column(String(36), nullable=True)
+    content = Column(Text, nullable=False)
+    content_redacted = Column(Text, nullable=True)
+    event_type = Column(String(30), nullable=False, default="MESSAGE")  # MESSAGE, STATUS_CHANGE, HANDOFF, CONSENT_STOP, ATTACHMENT
+    conversation_version = Column(Integer, nullable=False, default=1)
+    attachments_json = Column(Text, nullable=True, default="[]")
+    metadata_json = Column(Text, nullable=True, default="{}")
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    conversation = relationship("Conversation", back_populates="messages")
+    attachments = relationship("MessageAttachment", back_populates="message", cascade="all, delete-orphan")
+
+class MessageAttachment(Base):
+    __tablename__ = "message_attachments"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    message_id = Column(String(36), ForeignKey("conversation_messages.id", ondelete="CASCADE"), nullable=False, index=True)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    file_name = Column(String(255), nullable=False)
+    content_type = Column(String(100), nullable=False)
+    file_size_bytes = Column(Integer, nullable=False)
+    storage_path = Column(String(500), nullable=False)
+    is_safe = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    message = relationship("ConversationMessage", back_populates="attachments")
+
