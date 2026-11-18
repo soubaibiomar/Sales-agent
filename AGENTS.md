@@ -18,6 +18,15 @@ You are working on the **Sales AI Management Platform**, a unified, multi-tenant
    - **Manager Voice Copilot**: Authenticated management interface requiring session authentication, step-up MFA, and strict role authorization. Spoken commands cannot authorize high-risk mutations (e.g. wire payments, custom discounts > 25%, bulk deletions) without explicit second-factor UI confirmation.
 7. **Temporal vs. Peripheral n8n**: Temporal owns transactional sagas, retries, and compensation logic. n8n is strictly peripheral (outbound marketing notifications, non-critical webhooks) and cannot independently mutate core commerce state.
 8. **Fact-Checked Outputs**: All production claims made to customers (prices, stock availability, discounts, delivery dates) must be backed by fresh deterministic database evidence. Schema validation and deterministic claim checkers filter all AI outputs before delivery.
+9. **Local Hardware & VRAM Mutual Exclusion**:
+   - Hardware envelope: Intel Core i7-13620H, NVIDIA RTX 4060 Laptop (8GB VRAM), 16GB DDR5 RAM, Windows + Docker + Ollama (port 11434).
+   - Default generation model: `qwen3.5:4b` (resident in GPU VRAM during interactive turns).
+   - High-complexity reasoning model: `qwen3.5:9b-q4_K_M` (loaded on-demand only).
+   - **Absolute Prohibition**: Never keep `qwen3.5:4b` and `qwen3.5:9b-q4_K_M` resident on the GPU simultaneously. When routing to 9B, 4B must be evicted from VRAM (`keep_alive: 0`); once 9B completes, it is evicted and 4B restored.
+   - Auxiliary models (embeddings, reranker, ASR, TTS) run strictly on CPU to protect GPU VRAM for the active LLM. Moroccan Darija tools (`DarijaLID`, `Transliteration-Moroccan-Darija`, `moulsot.v0.3`) are loaded into RAM on demand.
+   - All 18 agent roles share the single active LLM instance via distinct role prompts and tool definitions.
+   - Real-time telemetry tracks host RAM, VRAM, latency (TTFT), and generation throughput (tok/s).
+   - Multilingual voice and text must be tested across 5 distinct matrices: French (`fr-FR`), English (`en-US`), Arabic (`ar-MA`), Darija (`ary-Arab`), and Arabizi (`ary-Latn`).
 
 ---
 

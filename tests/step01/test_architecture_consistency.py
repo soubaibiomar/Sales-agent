@@ -22,6 +22,7 @@ def test_all_10_adrs_exist_and_accepted():
         "ADR-008-s3-object-storage-and-retention.md",
         "ADR-009-model-gateway-and-provider-isolation.md",
         "ADR-010-security-controls-and-evidence-structure.md",
+        "ADR-011-local-ai-hardware-and-vram-orchestration.md",
     ]
     for adr in expected_adrs:
         adr_path = ADR_DIR / adr
@@ -66,6 +67,17 @@ def test_trust_boundaries_diagram_covers_all_8_threat_domains():
     assert "Trust Boundary 6: Payment Events & Financial Transactions" in tb_content
     assert "Trust Boundary 7: Stock Ledger & Inventory Reservation" in tb_content
     assert "Trust Boundary 8: Approval Hierarchy & Quote Discounts" in tb_content
+
+def test_hardware_model_budget_specification_exists():
+    budget_file = ARCH_DIR / "hardware-model-budget.md"
+    assert budget_file.exists(), "hardware-model-budget.md missing"
+    content = budget_file.read_text(encoding="utf-8")
+    assert "RTX 4060 Laptop" in content
+    assert "PRIMARY_LLM" in content
+    assert "REASONING_LLM" in content
+    assert "qwen3.5:4b" in content
+    assert "qwen3.5:9b-q4_K_M" in content
+    assert "Never Co-Resident" in content
 
 def test_risk_register_covers_stride_and_launch_blockers():
     assert RISK_FILE.exists(), f"Risk register missing: {RISK_FILE}"
