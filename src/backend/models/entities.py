@@ -5,9 +5,9 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional, List
 from sqlalchemy import (
-    Column, String, Boolean, DateTime, ForeignKey, Integer, Text, Table, UniqueConstraint
+    Column, String, Boolean, DateTime, ForeignKey, Integer, Text, Table, UniqueConstraint, JSON
 )
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import declarative_base, relationship, synonym
 from sqlalchemy.dialects.postgresql import JSONB
 
 Base = declarative_base()
@@ -129,7 +129,8 @@ class AuditEvent(Base):
     action = Column(String(50), nullable=False)
     ip_address = Column(String(45), nullable=True)
     user_agent = Column(Text, nullable=True)
-    payload_json = Column(Text, nullable=True, default="{}")
+    payload = Column("payload", JSON, nullable=True, default=dict)
+    payload_json = synonym("payload")
     status = Column(String(20), nullable=False, default="SUCCESS")
     timestamp = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
@@ -140,7 +141,8 @@ class FeatureFlag(Base):
     tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
     key = Column(String(100), nullable=False)
     is_enabled = Column(Boolean, nullable=False, default=False)
-    rules_json = Column(Text, nullable=True, default="{}")
+    rules = Column("rules", JSON, nullable=True, default=dict)
+    rules_json = synonym("rules")
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
 
     __table_args__ = (UniqueConstraint("tenant_id", "key", name="uq_tenant_feature_key"),)
@@ -269,6 +271,8 @@ class OutboxEvent(Base):
     next_retry_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     last_error = Column(Text, nullable=True)
     is_high_priority = Column(Boolean, nullable=False, default=False)
+    claimed_by = Column(String(100), nullable=True)
+    claim_expires_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     processed_at = Column(DateTime(timezone=True), nullable=True)
 

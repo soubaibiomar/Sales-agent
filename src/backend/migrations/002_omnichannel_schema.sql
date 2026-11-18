@@ -108,6 +108,8 @@ CREATE TABLE IF NOT EXISTS outbox_events (
     next_retry_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_error TEXT,
     is_high_priority BOOLEAN NOT NULL DEFAULT FALSE,
+    claimed_by VARCHAR(100),
+    claim_expires_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     processed_at TIMESTAMP WITH TIME ZONE
 );
@@ -121,3 +123,4 @@ CREATE INDEX IF NOT EXISTS idx_raw_events_tenant_status ON inbound_raw_events(te
 CREATE INDEX IF NOT EXISTS idx_messages_conv_created ON conversation_messages(conversation_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_attachments_msg ON message_attachments(message_id);
 CREATE INDEX IF NOT EXISTS idx_outbox_tenant_status ON outbox_events(tenant_id, status, next_retry_at);
+CREATE INDEX IF NOT EXISTS idx_outbox_claim ON outbox_events(status, claim_expires_at);

@@ -6,12 +6,14 @@ high-priority immediate safety bypass, and administrative DLQ auditing.
 """
 import json
 import uuid
+import asyncio
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional, Callable, Awaitable
-from sqlalchemy import select
+from sqlalchemy import select, or_, and_, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.backend.models.entities import OutboxEvent, AuditEvent
+from src.backend.core.database import engine, AsyncSessionLocal
+from src.backend.models.entities import OutboxEvent, AuditEvent, ChannelIdentity, Tenant
 
 class OutboxStatus:
     PENDING = "PENDING"
@@ -19,6 +21,7 @@ class OutboxStatus:
     DELIVERED = "DELIVERED"
     FAILED = "FAILED"
     DEAD_LETTER = "DEAD_LETTER"
+    CANCELLED = "CANCELLED"
 
 class OutboxService:
     """Enterprise domain service for transactional outbox dispatch and DLQ management."""
@@ -42,6 +45,13 @@ class OutboxService:
         """
         current_time = now or datetime.now(timezone.utc)
         payload_json = json.dumps(payload_dict, default=str)
+
+        bind = session.bind or engine
+        if bind and bind.dialect.name == "postgresql":
+            await session.execute(
+                text("SELECT set_config('app.current_tenant_id', :t, false)"),
+                {"t": str(tenant_id)}
+            )
 
         outbox_event = OutboxEvent(
             id=str(uuid.uuid4()),
@@ -69,33 +79,85 @@ class OutboxService:
         dispatcher_callable: Optional[Callable[[OutboxEvent], Awaitable[bool]]] = None,
         limit: int = 50,
         now: Optional[datetime] = None,
-        backoff_base_seconds: int = 2
+        backoff_base_seconds: int = 2,
+        worker_id: Optional[str] = None,
+        lease_duration_seconds: int = 60,
+        tenant_id: Optional[str] = None
     ) -> List[OutboxEvent]:
         """
-        Fetches and dispatches pending or retriable outbox events.
+        Fetches and dispatches pending or retriable outbox events with row locking and claim leasing.
         Order: High-priority first (bypassing normal delays), then oldest created.
         On failure: increments retry count with exponential backoff (base * 2^retry).
         On max retries: transitions to DEAD_LETTER and emits AuditEvent.
         """
         current_time = now or datetime.now(timezone.utc)
+        worker = worker_id or f"outbox_worker_{uuid.uuid4().hex[:8]}"
+        lease_expires = current_time + timedelta(seconds=lease_duration_seconds)
+
+        bind = session.bind or engine
+        if tenant_id and bind and bind.dialect.name == "postgresql":
+            await session.execute(
+                text("SELECT set_config('app.current_tenant_id', :t, false)"),
+                {"t": str(tenant_id)}
+            )
+
+        # Finding P1-1: Select pending/failed events whose retry time has arrived,
+        # OR processing events whose lease has expired (stale worker recovery)
+        eligibility = or_(
+            and_(
+                OutboxEvent.status.in_([OutboxStatus.PENDING, OutboxStatus.FAILED]),
+                OutboxEvent.next_retry_at <= current_time
+            ),
+            and_(
+                OutboxEvent.status == OutboxStatus.PROCESSING,
+                OutboxEvent.claim_expires_at <= current_time
+            )
+        )
 
         stmt = (
             select(OutboxEvent)
-            .where(
-                OutboxEvent.status.in_([OutboxStatus.PENDING, OutboxStatus.FAILED]),
-                OutboxEvent.next_retry_at <= current_time
-            )
+            .where(eligibility)
             .order_by(
                 OutboxEvent.is_high_priority.desc(),
                 OutboxEvent.created_at.asc()
             )
             .limit(limit)
         )
+
+        if tenant_id:
+            stmt = stmt.where(OutboxEvent.tenant_id == tenant_id)
+
+        # Pessimistic Row-Locking with SKIP LOCKED on PostgreSQL
+        if bind and bind.dialect.name == "postgresql":
+            stmt = stmt.with_for_update(skip_locked=True)
+
         res = await session.execute(stmt)
         events = list(res.scalars().all())
 
+        dispatched_events = []
         for event in events:
+            # Finding P1-2: Pre-dispatch opt-out check for non-safety/non-high-priority events
+            if not event.is_high_priority:
+                id_stmt = select(ChannelIdentity).where(
+                    ChannelIdentity.tenant_id == event.tenant_id,
+                    ChannelIdentity.channel_type == event.channel_type,
+                    ChannelIdentity.identifier == event.recipient_identifier
+                )
+                id_res = await session.execute(id_stmt)
+                identity = id_res.scalars().first()
+                if identity and identity.is_opted_out:
+                    event.status = OutboxStatus.CANCELLED
+                    event.last_error = "Suppressed: recipient has opted out (STOP directive)"
+                    event.claimed_by = None
+                    event.claim_expires_at = None
+                    event.processed_at = current_time
+                    dispatched_events.append(event)
+                    continue
+
+            # Claim lease
             event.status = OutboxStatus.PROCESSING
+            event.claimed_by = worker
+            event.claim_expires_at = lease_expires
             await session.flush()
 
             success = True
@@ -111,8 +173,10 @@ class OutboxService:
                     success = False
                     error_msg = str(exc)
             else:
-                # Default simulated dispatch (e.g., in unit testing without external provider)
                 success = True
+
+            event.claimed_by = None
+            event.claim_expires_at = None
 
             if success:
                 event.status = OutboxStatus.DELIVERED
@@ -126,7 +190,6 @@ class OutboxService:
                     event.status = OutboxStatus.DEAD_LETTER
                     event.processed_at = current_time
 
-                    # Emit AuditEvent for DEAD_LETTER
                     audit = AuditEvent(
                         id=str(uuid.uuid4()),
                         tenant_id=event.tenant_id,
@@ -150,8 +213,11 @@ class OutboxService:
                     delay_seconds = backoff_base_seconds ** event.retry_count
                     event.next_retry_at = current_time + timedelta(seconds=delay_seconds)
 
+            dispatched_events.append(event)
+
+        await session.flush()
         await session.commit()
-        return events
+        return dispatched_events
 
     @staticmethod
     async def get_dead_letter_events(
@@ -208,6 +274,74 @@ class OutboxService:
             payload_json=json.dumps({"event_id": event.id, "channel": event.channel_type})
         )
         session.add(audit)
+        await session.flush()
         await session.commit()
-        await session.refresh(event)
         return event
+
+class OutboxWorkerDaemon:
+    """
+    Background worker daemon for continuous asynchronous outbox event draining.
+    (Baseline Control 16, 17, 34; Step 03 Reliability)
+    """
+    def __init__(
+        self,
+        session_factory: Optional[Callable[[], AsyncSession]] = None,
+        dispatcher_callable: Optional[Callable[[OutboxEvent], Awaitable[bool]]] = None,
+        poll_interval_seconds: float = 2.0,
+        worker_id: Optional[str] = None
+    ):
+        self.session_factory = session_factory or AsyncSessionLocal
+        self.dispatcher_callable = dispatcher_callable
+        self.poll_interval = poll_interval_seconds
+        self.worker_id = worker_id or f"daemon_{uuid.uuid4().hex[:8]}"
+        self.running = False
+        self._task: Optional[asyncio.Task] = None
+
+    async def run_once(self, tenant_id: Optional[str] = None, limit: int = 50) -> int:
+        """Executes a single draining iteration with strict multi-tenant context handling."""
+        async with self.session_factory() as session:
+            if tenant_id:
+                events = await OutboxService.dispatch_pending_events(
+                    session=session,
+                    tenant_id=tenant_id,
+                    dispatcher_callable=self.dispatcher_callable,
+                    limit=limit,
+                    worker_id=self.worker_id
+                )
+                return len(events)
+            else:
+                t_res = await session.execute(select(Tenant.id).where(Tenant.is_active == True))
+                active_tenants = [row[0] for row in t_res.all()]
+                total = 0
+                for t_id in active_tenants:
+                    events = await OutboxService.dispatch_pending_events(
+                        session=session,
+                        tenant_id=t_id,
+                        dispatcher_callable=self.dispatcher_callable,
+                        limit=limit,
+                        worker_id=self.worker_id
+                    )
+                    total += len(events)
+                return total
+
+    async def _loop(self):
+        while self.running:
+            try:
+                await self.run_once()
+            except Exception:
+                pass
+            await asyncio.sleep(self.poll_interval)
+
+    def start(self):
+        if not self.running:
+            self.running = True
+            self._task = asyncio.create_task(self._loop())
+
+    async def stop(self):
+        self.running = False
+        if self._task:
+            self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass

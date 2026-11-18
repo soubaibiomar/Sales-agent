@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     action VARCHAR(50) NOT NULL,
     ip_address VARCHAR(45),
     user_agent TEXT,
-    payload_json TEXT DEFAULT '{}',
+    payload JSONB DEFAULT '{}'::jsonb,
     status VARCHAR(20) NOT NULL DEFAULT 'SUCCESS',
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS feature_flags (
     tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     key VARCHAR(100) NOT NULL,
     is_enabled BOOLEAN NOT NULL DEFAULT FALSE,
-    rules_json TEXT DEFAULT '{}',
+    rules JSONB DEFAULT '{}'::jsonb,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_tenant_feature_key UNIQUE (tenant_id, key)
 );

@@ -11,10 +11,24 @@ from pydantic import BaseModel, Field
 
 from src.backend.core.database import get_db_session
 from src.backend.core.auth_middleware import get_security_context, SecurityContext
+from src.backend.core.policy_service import policy_service
 from src.backend.models.entities import Conversation, ConversationMessage, Contact
 from src.backend.domains.conversations.service import ConversationService, ConversationDomainError
 
 router = APIRouter(prefix="/inbox", tags=["Unified Inbox"])
+
+def require_permission(perm: str):
+    async def _perm_dependency(context: SecurityContext = Depends(get_security_context)) -> SecurityContext:
+        has_perm = policy_service.check_permission(context.roles, perm)
+        if not has_perm and (perm in context.permissions or "*" in context.permissions):
+            has_perm = True
+        if not has_perm:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Forbidden: Insufficient privileges. Required permission: '{perm}'"
+            )
+        return context
+    return _perm_dependency
 
 class AgentReplyRequest(BaseModel):
     content: str = Field(..., min_length=1, max_length=10000)
@@ -30,7 +44,7 @@ async def list_conversations(
     assigned_to_me: bool = False,
     limit: int = 50,
     offset: int = 0,
-    context: SecurityContext = Depends(get_security_context),
+    context: SecurityContext = Depends(require_permission("conversations:read")),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
@@ -76,7 +90,7 @@ async def list_conversations(
 @router.get("/conversations/{conversation_id}/timeline")
 async def get_conversation_timeline(
     conversation_id: str,
-    context: SecurityContext = Depends(get_security_context),
+    context: SecurityContext = Depends(require_permission("conversations:read")),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
@@ -135,7 +149,7 @@ async def get_conversation_timeline(
 async def handoff_conversation(
     conversation_id: str,
     req: HandoffRequest,
-    context: SecurityContext = Depends(get_security_context),
+    context: SecurityContext = Depends(require_permission("conversations:handoff")),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
@@ -164,7 +178,7 @@ async def handoff_conversation(
 @router.post("/conversations/{conversation_id}/release")
 async def release_conversation(
     conversation_id: str,
-    context: SecurityContext = Depends(get_security_context),
+    context: SecurityContext = Depends(require_permission("conversations:handoff")),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
@@ -191,7 +205,7 @@ async def release_conversation(
 async def agent_reply(
     conversation_id: str,
     req: AgentReplyRequest,
-    context: SecurityContext = Depends(get_security_context),
+    context: SecurityContext = Depends(require_permission("conversations:write")),
     db: AsyncSession = Depends(get_db_session)
 ):
     """

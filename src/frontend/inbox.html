@@ -646,7 +646,13 @@
       if (!text) return;
       const bubble = document.createElement('div');
       bubble.className = 'msg-bubble msg-agent';
-      bubble.innerHTML = `<div>${text}</div><div class="msg-meta">Just now • Karim Idrissi</div>`;
+      const contentDiv = document.createElement('div');
+      contentDiv.textContent = text;
+      const metaDiv = document.createElement('div');
+      metaDiv.className = 'msg-meta';
+      metaDiv.textContent = 'Just now • Karim Idrissi';
+      bubble.appendChild(contentDiv);
+      bubble.appendChild(metaDiv);
       messagesStream.appendChild(bubble);
       replyInput.value = '';
       messagesStream.scrollTop = messagesStream.scrollHeight;

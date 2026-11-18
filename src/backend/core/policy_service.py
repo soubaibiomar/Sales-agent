@@ -17,18 +17,24 @@ DEFAULT_ROLE_PERMISSIONS: Dict[str, List[str]] = {
         "tenant:read", "tenant:update", "users:read", "users:write",
         "roles:assign", "sites:read", "sites:write", "audit:read",
         "catalog:read", "catalog:write", "quotes:read", "quotes:write",
-        "orders:read", "orders:write", "inventory:read", "inventory:write"
+        "orders:read", "orders:write", "inventory:read", "inventory:write",
+        "conversations:read", "conversations:write", "conversations:handoff"
     ],
     "sales_manager": [
         "users:read", "sites:read", "catalog:read", "catalog:write",
         "quotes:read", "quotes:write", "quotes:approve", "quotes:discount_override",
         "orders:read", "orders:write", "inventory:read", "copilot:access",
-        "audit:read"
+        "audit:read", "conversations:read", "conversations:write", "conversations:handoff"
     ],
     "sales_representative": [
         "catalog:read", "quotes:read", "quotes:create", "quotes:draft",
         "orders:read", "orders:create", "customers:read", "customers:write",
-        "copilot:access"
+        "copilot:access", "conversations:read", "conversations:write", "conversations:handoff"
+    ],
+    "sales_rep": [
+        "catalog:read", "quotes:read", "quotes:create", "quotes:draft",
+        "orders:read", "orders:create", "customers:read", "customers:write",
+        "copilot:access", "conversations:read", "conversations:write", "conversations:handoff"
     ],
     "inventory_manager": [
         "catalog:read", "inventory:read", "inventory:write",
@@ -36,7 +42,7 @@ DEFAULT_ROLE_PERMISSIONS: Dict[str, List[str]] = {
     ],
     "support_agent": [
         "tickets:read", "tickets:write", "conversations:read", "conversations:write",
-        "returns:read", "returns:write", "customers:read"
+        "conversations:handoff", "returns:read", "returns:write", "customers:read"
     ],
     "customer": [
         "portal:access", "orders:read_self", "orders:create_self",

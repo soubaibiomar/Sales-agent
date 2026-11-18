@@ -9,8 +9,10 @@ import json
 import uuid
 from datetime import datetime, timezone
 from typing import Optional, List, Tuple, Dict, Any
-from sqlalchemy import select, update
+from sqlalchemy import select, update, text
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.backend.core.database import current_tenant_id_ctx, engine
 
 from src.backend.models.entities import (
     Contact, ChannelIdentity, Conversation, InboundRawEvent,
@@ -80,6 +82,18 @@ def detect_stop_intent(text: str) -> Tuple[bool, Optional[str]]:
             return True, match.group(0)
     return False, None
 
+async def _ensure_tenant_context(session: AsyncSession, tenant_id: str) -> None:
+    """Ensures tenant context is set on contextvar and PostgreSQL session config."""
+    if not tenant_id:
+        return
+    current_tenant_id_ctx.set(tenant_id)
+    bind = session.bind or engine
+    if bind and bind.dialect.name == "postgresql":
+        await session.execute(
+            text("SELECT set_config('app.current_tenant_id', :tenant_id, false)"),
+            {"tenant_id": str(tenant_id)}
+        )
+
 class ConversationService:
     """Enterprise domain service for omnichannel ingestion and conversation state."""
 
@@ -96,6 +110,8 @@ class ConversationService:
         DURABLE INGEST: Persists raw webhook event before any batching, routing, or debounce.
         Enforces idempotency using (tenant_id, channel_type, provider_event_id).
         """
+        await _ensure_tenant_context(session, tenant_id)
+
         # Check for existing duplicate event
         stmt = select(InboundRawEvent).where(
             InboundRawEvent.tenant_id == tenant_id,
@@ -107,6 +123,7 @@ class ConversationService:
         if existing:
             # Mark as DUPLICATE and return
             existing.processing_status = "DUPLICATE"
+            await session.flush()
             await session.commit()
             return existing
 
@@ -122,8 +139,8 @@ class ConversationService:
             created_at=datetime.now(timezone.utc)
         )
         session.add(raw_event)
+        await session.flush()
         await session.commit()
-        await session.refresh(raw_event)
         return raw_event
 
     @staticmethod
@@ -138,12 +155,18 @@ class ConversationService:
         Resolves or creates contact by verified channel identifier.
         Strictly prevents unverified auto-merge across distinct identifiers.
         """
+        await _ensure_tenant_context(session, tenant_id)
+
         # 1. Look for existing ChannelIdentity for this tenant
         stmt = select(ChannelIdentity).where(
             ChannelIdentity.tenant_id == tenant_id,
             ChannelIdentity.channel_type == channel_type,
             ChannelIdentity.identifier == identifier
         )
+        bind = session.bind or engine
+        if bind and bind.dialect.name == "postgresql":
+            stmt = stmt.with_for_update()
+
         res = await session.execute(stmt)
         channel_id = res.scalars().first()
 
@@ -195,6 +218,8 @@ class ConversationService:
         Processes normalized message event into tenant conversation timeline with state machine updates.
         Enforces STOP directives, monotonic conversation versions, and PII redaction.
         """
+        await _ensure_tenant_context(session, event.tenant_id)
+
         contact, identity = await ConversationService.resolve_or_create_contact(
             session=session,
             tenant_id=event.tenant_id,
@@ -225,13 +250,52 @@ class ConversationService:
             )
             session.add(audit)
 
-        # 2. Find or Create Active Conversation
+            # Finding P1-2: Cancel any pre-queued marketing/non-safety outbox messages for this recipient & channel
+            pending_outbox_stmt = select(OutboxEvent).where(
+                OutboxEvent.tenant_id == event.tenant_id,
+                OutboxEvent.channel_type == event.channel_type,
+                OutboxEvent.recipient_identifier == event.sender_identifier,
+                OutboxEvent.status.in_(["PENDING", "FAILED"]),
+                OutboxEvent.is_high_priority == False
+            )
+            bind = session.bind or engine
+            if bind and bind.dialect.name == "postgresql":
+                pending_outbox_stmt = pending_outbox_stmt.with_for_update(skip_locked=True)
+            outbox_res = await session.execute(pending_outbox_stmt)
+            cancelled_events = outbox_res.scalars().all()
+            for ob in cancelled_events:
+                ob.status = "CANCELLED"
+                ob.last_error = f"Suppressed due to STOP opt-out directive ('{matched_keyword}')"
+                ob.processed_at = datetime.now(timezone.utc)
+            
+            if cancelled_events:
+                cancel_audit = AuditEvent(
+                    id=str(uuid.uuid4()),
+                    tenant_id=event.tenant_id,
+                    event_type="OUTBOX_MESSAGES_CANCELLED",
+                    resource_type="OUTBOX",
+                    resource_id=identity.id,
+                    action="SUPPRESS_PROMOTIONAL",
+                    status="SUCCESS",
+                    payload_json=json.dumps({
+                        "count": len(cancelled_events),
+                        "cancelled_ids": [c.id for c in cancelled_events],
+                        "keyword": matched_keyword
+                    })
+                )
+                session.add(cancel_audit)
+
+        # 2. Find or Create Active Conversation (with pessimistic row-locking on PostgreSQL)
         conv_stmt = select(Conversation).where(
             Conversation.tenant_id == event.tenant_id,
             Conversation.contact_id == contact.id,
             Conversation.channel_type == event.channel_type,
             Conversation.status.in_(["BOT_ACTIVE", "HUMAN_PENDING", "HUMAN_ACTIVE"])
         ).order_by(Conversation.created_at.desc())
+        bind = session.bind or engine
+        if bind and bind.dialect.name == "postgresql":
+            conv_stmt = conv_stmt.with_for_update()
+
         conv_res = await session.execute(conv_stmt)
         conversation = conv_res.scalars().first()
 
@@ -339,8 +403,8 @@ class ConversationService:
                 now=now
             )
 
+        await session.flush()
         await session.commit()
-        await session.refresh(msg)
         return msg
 
     @staticmethod
@@ -356,10 +420,16 @@ class ConversationService:
         silences AI responses, and monotonically increments version.
         (Baseline Controls 57, 58; SAI-11)
         """
+        await _ensure_tenant_context(session, tenant_id)
+
         stmt = select(Conversation).where(
             Conversation.tenant_id == tenant_id,
             Conversation.id == conversation_id
         )
+        bind = session.bind or engine
+        if bind and bind.dialect.name == "postgresql":
+            stmt = stmt.with_for_update()
+
         res = await session.execute(stmt)
         conv = res.scalars().first()
         if not conv:
@@ -401,8 +471,8 @@ class ConversationService:
         )
         session.add(audit)
 
+        await session.flush()
         await session.commit()
-        await session.refresh(conv)
         return conv
 
     @staticmethod
@@ -415,10 +485,16 @@ class ConversationService:
         """
         Releases conversation back to automated AI bot handling.
         """
+        await _ensure_tenant_context(session, tenant_id)
+
         stmt = select(Conversation).where(
             Conversation.tenant_id == tenant_id,
             Conversation.id == conversation_id
         )
+        bind = session.bind or engine
+        if bind and bind.dialect.name == "postgresql":
+            stmt = stmt.with_for_update()
+
         res = await session.execute(stmt)
         conv = res.scalars().first()
         if not conv:
@@ -443,8 +519,8 @@ class ConversationService:
             created_at=now
         )
         session.add(sys_msg)
+        await session.flush()
         await session.commit()
-        await session.refresh(conv)
         return conv
 
     @staticmethod
@@ -461,10 +537,16 @@ class ConversationService:
         1. Conversation is not silenced (human does not own it).
         2. Current conversation.version exactly matches expected_version from turn dispatch.
         """
+        await _ensure_tenant_context(session, tenant_id)
+
         stmt = select(Conversation).where(
             Conversation.tenant_id == tenant_id,
             Conversation.id == conversation_id
         )
+        bind = session.bind or engine
+        if bind and bind.dialect.name == "postgresql":
+            stmt = stmt.with_for_update()
+
         res = await session.execute(stmt)
         conv = res.scalars().first()
         if not conv:
@@ -511,8 +593,8 @@ class ConversationService:
             now=now
         )
 
+        await session.flush()
         await session.commit()
-        await session.refresh(msg)
         return msg
 
     @staticmethod
@@ -527,10 +609,16 @@ class ConversationService:
         """
         Submits reply from human sales representative or support agent.
         """
+        await _ensure_tenant_context(session, tenant_id)
+
         stmt = select(Conversation).where(
             Conversation.tenant_id == tenant_id,
             Conversation.id == conversation_id
         )
+        bind = session.bind or engine
+        if bind and bind.dialect.name == "postgresql":
+            stmt = stmt.with_for_update()
+
         res = await session.execute(stmt)
         conv = res.scalars().first()
         if not conv:
@@ -570,6 +658,6 @@ class ConversationService:
             now=now
         )
 
+        await session.flush()
         await session.commit()
-        await session.refresh(msg)
         return msg

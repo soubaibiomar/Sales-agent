@@ -5,9 +5,9 @@
 **Sprint:** 2 — Connect  
 **Date:** 2026-11-18  
 **Author:** Lead Software Architect, Senior Backend Engineer, Security Engineer, AI Systems Engineer  
-**Status:** **PASS** (Ready for Independent Audit)  
-**Precondition Status:** Step 02 Condition Formally Closed (`reports/STEP_02_CONDITION_CLOSURE.md`)  
-**Evidence Artifact:** `evidence/step-03/test_run.log`  
+**Status:** **REMEDIATION COMPLETE** (145/145 Tests Passing — Ready for Independent Codex Re-Audit)  
+**Remediation Report:** [reports/STEP_03_REMEDIATION_REPORT.md](file:///c:/Users/omar/Documents/Sales%20agent/reports/STEP_03_REMEDIATION_REPORT.md)  
+**Evidence Artifact:** `evidence/step-03-remediation/test_run.log`  
 
 ---
 
@@ -305,18 +305,18 @@ In accordance with the STEP 03 acceptance gate specification (*"PASS only if eve
 - **Transactional Outbox & DLQ:** Proven by `OutboxService` retry backoff, DLQ exhaustion audit, and high-priority bypass.
 - **Out-of-order message handling:** Proven by chronological timeline ordering and stale AI turn rejection.
 - **Human ownership & consent unbypassable:** Proven by `StaleTurnError` on AI submission, atomic handoff, and multilingual STOP opt-out.
-- **PostgreSQL 16 RLS:** Proven on all 13 tables with live tests under unprivileged `sales_app_user`.
+- **PostgreSQL 16 RLS & Webhook Tenant Context:** Proven on all 13 tables with live tests under unprivileged `sales_app_user`.
+- **Outbox Concurrency & Worker Leasing:** Verified with `SKIP LOCKED`, claim expiration, and standing worker daemon.
+- **STOP Opt-out Purge:** Verified cancellation of pre-queued marketing messages and pre-dispatch suppression guard.
 - **Canonical DB Parity:** Proven 100% identical between `infra/init-db.sql` and live active database.
-- **Test Suite:** 136 passing assertions in 47.45s.
+- **Test Suite:** 145 passing assertions in 45.37s.
 
-### **FINAL VERDICT: PASS**
+### **FINAL VERDICT: REMEDIATION COMPLETE**
 
 ---
 
 ## 11. NEXT-STEP ELIGIBILITY
 
-STEP 03 is complete, verified, and accepted.  
-Engineering is **ELIGIBLE** to proceed to:  
-**STEP 04: CRM, Catalog, Deterministic Pricing, Quotations & Manager Approvals**.
-
-*(Awaiting independent Codex audit before beginning Step 04).*
+STEP 03 critical remediation is complete and verified against live PostgreSQL 16.  
+In accordance with strict project rules:  
+**STEP 04 IS STRICTLY BLOCKED** until the independent Codex re-audit inspects `reports/STEP_03_REMEDIATION_REPORT.md` and issues an official PASS verdict.

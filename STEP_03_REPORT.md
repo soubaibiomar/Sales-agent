@@ -1,11 +1,11 @@
 # STEP 03 SUMMARY REPORT: OMNICHANNEL INGESTION, CONVERSATIONS & INBOX
 
-**Status:** **PASS** (136/136 Tests Passing)  
+**Status:** **REMEDIATION COMPLETE** (145/145 Tests Passing)  
 **Sprint:** 2 — Connect  
 **Date:** 2026-11-18  
 **Detailed Report:** [reports/step-03-report.md](file:///c:/Users/omar/Documents/Sales%20agent/reports/step-03-report.md)  
-**Condition Closure Report:** [reports/STEP_02_CONDITION_CLOSURE.md](file:///c:/Users/omar/Documents/Sales%20agent/reports/STEP_02_CONDITION_CLOSURE.md)  
-**Evidence Log:** [evidence/step-03/test_run.log](file:///c:/Users/omar/Documents/Sales%20agent/evidence/step-03/test_run.log)  
+**Critical Remediation Report:** [reports/STEP_03_REMEDIATION_REPORT.md](file:///c:/Users/omar/Documents/Sales%20agent/reports/STEP_03_REMEDIATION_REPORT.md)  
+**Remediation Evidence Log:** [evidence/step-03-remediation/test_run.log](file:///c:/Users/omar/Documents/Sales%20agent/evidence/step-03-remediation/test_run.log)  
 
 ---
 
@@ -55,13 +55,13 @@
 Command:
 ```powershell
 $env:PYTHONPATH="."
-python -m pytest tests/ -v
+python -m pytest tests/ -v --tb=short
 ```
-**Outcome:** **136 passed in 47.45s** (0 failed, 0 errors, 0 skipped).  
-**Evidence Artifact:** [evidence/step-03/test_run.log](file:///c:/Users/omar/Documents/Sales%20agent/evidence/step-03/test_run.log)
+**Outcome:** **145 passed in 45.37s** (0 failed, 0 errors, 0 skipped).  
+**Evidence Artifact:** [evidence/step-03-remediation/test_run.log](file:///c:/Users/omar/Documents/Sales%20agent/evidence/step-03-remediation/test_run.log)
 
 ---
 
 ## 3. Mandatory Stop Condition
 
-Do not proceed to Step 04 until the independent Codex audit is completed and reports PASS.
+Do not proceed to Step 04 until the independent Codex re-audit is completed and reports PASS. Step 04 is strictly blocked.

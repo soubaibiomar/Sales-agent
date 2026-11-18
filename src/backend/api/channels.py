@@ -6,10 +6,12 @@ Handles WhatsApp, Email, Voice/SIP, and Web Chat inbound traffic with signature 
 import json
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, Request, Header, HTTPException, status, Depends, Query, Response
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.backend.core.config import settings
-from src.backend.core.database import get_db_session
+from src.backend.core.database import get_db_session, current_tenant_id_ctx, engine
+from src.backend.models.entities import Tenant
 from src.backend.integrations.whatsapp import WhatsAppAdapter
 from src.backend.integrations.email import EmailAdapter
 from src.backend.integrations.webchat import WebChatAdapter
@@ -22,6 +24,30 @@ whatsapp_adapter = WhatsAppAdapter()
 email_adapter = EmailAdapter()
 webchat_adapter = WebChatAdapter()
 voice_adapter = VoiceSIPAdapter()
+
+async def activate_and_validate_tenant(session: AsyncSession, tenant_id: str) -> Tenant:
+    """
+    Validates tenant exists and is active, then binds tenant context to both
+    contextvars and the PostgreSQL session configuration.
+    (Baseline Control 16, 41; Zero-Trust Multi-Tenancy)
+    """
+    stmt = select(Tenant).where(Tenant.id == tenant_id)
+    res = await session.execute(stmt)
+    tenant = res.scalars().first()
+    if not tenant or not tenant.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Tenant '{tenant_id}' does not exist or is inactive"
+        )
+
+    current_tenant_id_ctx.set(tenant_id)
+    bind = session.bind or engine
+    if bind and bind.dialect.name == "postgresql":
+        await session.execute(
+            text("SELECT set_config('app.current_tenant_id', :tenant_id, false)"),
+            {"tenant_id": str(tenant_id)}
+        )
+    return tenant
 
 # -----------------------------------------------------------------------------
 # 1. WHATSAPP WEBHOOKS
@@ -68,6 +94,9 @@ async def whatsapp_webhook_ingest(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing X-Hub-Signature-256 cryptographic signature"
         )
+
+    # 2. Zero-Trust Tenant Validation & RLS Activation (Baseline Control 16, 41)
+    await activate_and_validate_tenant(db, tenant_id)
 
     try:
         payload = json.loads(raw_body.decode("utf-8"))
@@ -140,6 +169,9 @@ async def email_webhook_ingest(
     if not is_valid:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email webhook authentication token")
 
+    # Zero-Trust Tenant Validation & RLS Activation (Baseline Control 16, 41)
+    await activate_and_validate_tenant(db, tenant_id)
+
     try:
         payload = json.loads(raw_body.decode("utf-8"))
     except Exception as e:
@@ -199,6 +231,9 @@ async def voice_sip_webhook_ingest(
     if not is_valid:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid telephony webhook signature")
 
+    # Zero-Trust Tenant Validation & RLS Activation (Baseline Control 16, 41)
+    await activate_and_validate_tenant(db, tenant_id)
+
     try:
         payload = json.loads(raw_body.decode("utf-8"))
     except Exception as e:
@@ -251,6 +286,9 @@ async def webchat_send_message(
     tenant_id = payload.get("tenant_id")
     if not tenant_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="tenant_id is required")
+
+    # Zero-Trust Tenant Validation & RLS Activation (Baseline Control 16, 41)
+    await activate_and_validate_tenant(db, tenant_id)
 
     session_id = payload.get("session_id")
     message_text = payload.get("message", "").strip()
