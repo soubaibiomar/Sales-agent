@@ -1,13 +1,17 @@
 """
 Model Lifecycle Manager enforcing VRAM mutual exclusion and on-demand model loading.
 Guarantees that 4B and 9B models are never co-resident in GPU memory.
+Now with cross-process file-locking and live voice call safety guards.
 """
+import os
+import tempfile
 import urllib.request
 import json
 import logging
 import threading
 import time
 from typing import Optional, Set, Dict, Any, List
+from filelock import FileLock, Timeout
 from src.ai.config import ai_config
 from src.ai.resource_monitor import HardwareTelemetry
 
@@ -17,16 +21,23 @@ class VRAMMutualExclusionError(Exception):
     """Raised when an operation would violate GPU VRAM co-residency invariants or eviction fails."""
     pass
 
+class VoiceModelSafetyError(Exception):
+    """Raised when 9B reasoning model is erroneously requested synchronously during a live voice call."""
+    pass
+
 class ModelLifecycleManager:
     """
     Orchestrates GPU VRAM state transitions and on-demand model life-cycles.
-    Thread-safe and fail-closed.
+    Thread-safe and cross-process safe via FileLock and fail-closed.
     """
-    def __init__(self, ollama_url: Optional[str] = None):
+    def __init__(self, ollama_url: Optional[str] = None, lock_path: Optional[str] = None):
         self.ollama_url = ollama_url or ai_config.ollama_base_url
         self.active_gpu_model: Optional[str] = None
         self.active_optional_cpu_models: Set[str] = set()
-        self._transition_lock = threading.Lock()
+        self._thread_lock = threading.Lock()
+        
+        lock_file = lock_path or os.path.join(tempfile.gettempdir(), "sales_ai_ollama_vram.lock")
+        self._file_lock = FileLock(lock_file, timeout=20.0)
 
     def get_running_ollama_models(self) -> List[Dict[str, Any]]:
         """Queries /api/ps to inspect active models resident in memory."""
@@ -95,29 +106,46 @@ class ModelLifecycleManager:
             
         return True
 
-    def prepare_for_inference(self, requested_model: str, is_complex_reasoning: bool = False) -> str:
+    def prepare_for_inference(
+        self,
+        requested_model: str,
+        is_complex_reasoning: bool = False,
+        channel: Optional[str] = None
+    ) -> str:
         """
-        Thread-safe preparation for inference turn.
-        Enforces 4B default, evaluates 9B justification, and executes mutual exclusion eviction.
+        Thread-safe and cross-process safe preparation for inference turn.
+        Enforces:
+        1. Live voice call safety: 9B is prohibited synchronously during voice calls.
+        2. 4B default; downscales unjustified 9B requests.
+        3. Mutual exclusion: evicts resident model before loading conflicting model.
         """
-        with self._transition_lock:
-            target_model = requested_model
-            if is_complex_reasoning:
-                target_model = ai_config.reasoning_llm
-            else:
-                # Downscale unjustified 9B requests
-                if "9b" in requested_model.lower() and not is_complex_reasoning:
-                    logger.info("Unjustified 9B request downscaled to primary 4B model.")
-                    target_model = ai_config.primary_llm
+        # Guard: Voice channel safety (Requirement 5)
+        if channel == "voice":
+            if "9b" in requested_model.lower() or is_complex_reasoning:
+                raise VoiceModelSafetyError(
+                    "Synchronous 9B invocation is strictly prohibited during live voice calls "
+                    "to preserve target latency and avoid GPU VRAM switching stalls."
+                )
 
-            # Enforce mutual exclusion
-            if not self.can_load_gpu_model(target_model):
-                if self.active_gpu_model:
-                    logger.info(f"Evicting active model {self.active_gpu_model} to load {target_model}...")
-                    self.evict_gpu_model(self.active_gpu_model, verify=True)
+        with self._thread_lock:
+            with self._file_lock:
+                target_model = requested_model
+                if is_complex_reasoning:
+                    target_model = ai_config.reasoning_llm
+                else:
+                    # Downscale unjustified 9B requests
+                    if "9b" in requested_model.lower() and not is_complex_reasoning:
+                        logger.info("Unjustified 9B request downscaled to primary 4B model.")
+                        target_model = ai_config.primary_llm
 
-            self.active_gpu_model = target_model
-            return target_model
+                # Enforce mutual exclusion
+                if not self.can_load_gpu_model(target_model):
+                    if self.active_gpu_model:
+                        logger.info(f"Evicting active model {self.active_gpu_model} to load {target_model}...")
+                        self.evict_gpu_model(self.active_gpu_model, verify=True)
+
+                self.active_gpu_model = target_model
+                return target_model
 
     def load_optional_darija_tool(self, tool_name: str) -> bool:
         """Loads optional Moroccan Darija / Arabizi models into host RAM on demand."""

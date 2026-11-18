@@ -57,3 +57,8 @@ Thumbs.db
 scratch/
 tmp/
 *.tmp
+*.db
+*.sqlite
+*.sqlite3
+backups/
+
