@@ -1,0 +1,198 @@
+{
+  "hardware": {
+    "cpu": "Intel Core i7-13620H",
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop (8188 MiB)",
+    "total_ram_mb": 16087.48,
+    "baseline_vram_mb": 601.0,
+    "baseline_ram_mb": 15183.89
+  },
+  "benchmarks": {
+    "4b_cold_start": {
+      "model": "qwen3.5:4b",
+      "num_ctx": 2048,
+      "token_count": 60,
+      "ttft_ms": 16037.36,
+      "total_duration_sec": 16.037,
+      "tokens_per_sec": 59.53,
+      "start_vram_mb": 601.0,
+      "peak_vram_mb": 4283.0,
+      "delta_vram_mb": 3682.0,
+      "start_ram_mb": 15185.77,
+      "peak_ram_mb": 15570.01,
+      "delta_ram_mb": 384.24,
+      "ollama_meta": {
+        "load_duration_ms": 13321.49,
+        "prompt_eval_duration_ms": 328.67,
+        "eval_duration_ms": 1007.82
+      }
+    },
+    "4b_warm_inference": {
+      "model": "qwen3.5:4b",
+      "num_ctx": 2048,
+      "token_count": 60,
+      "ttft_ms": 2991.21,
+      "total_duration_sec": 2.991,
+      "tokens_per_sec": 58.33,
+      "start_vram_mb": 4280.0,
+      "peak_vram_mb": 4299.0,
+      "delta_vram_mb": 19.0,
+      "start_ram_mb": 15504.01,
+      "peak_ram_mb": 15659.68,
+      "delta_ram_mb": 155.67,
+      "ollama_meta": {
+        "load_duration_ms": 242.98,
+        "prompt_eval_duration_ms": 82.69,
+        "eval_duration_ms": 1028.63
+      }
+    },
+    "4b_ctx_4096": {
+      "model": "qwen3.5:4b",
+      "num_ctx": 4096,
+      "token_count": 60,
+      "ttft_ms": 16798.47,
+      "total_duration_sec": 16.798,
+      "tokens_per_sec": 64.99,
+      "start_vram_mb": 4275.0,
+      "peak_vram_mb": 4345.0,
+      "delta_vram_mb": 70.0,
+      "start_ram_mb": 15576.41,
+      "peak_ram_mb": 15694.68,
+      "delta_ram_mb": 118.27,
+      "ollama_meta": {
+        "load_duration_ms": 14140.66,
+        "prompt_eval_duration_ms": 339.73,
+        "eval_duration_ms": 923.22
+      }
+    },
+    "4b_resident_models": [
+      {
+        "name": "qwen3.5:4b",
+        "model": "qwen3.5:4b",
+        "size": 3130009844,
+        "digest": "d8b0f5e9760cd1682034f292d7ef72ec46f432149be0df7574bf2d6e92e38c04",
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "qwen35",
+          "families": [
+            "qwen35"
+          ],
+          "parameter_size": "4.2B",
+          "quantization_level": "Q4_K_M"
+        },
+        "expires_at": "2026-11-18T11:10:20.936056339Z",
+        "size_vram": 3130009844,
+        "context_length": 4096
+      }
+    ],
+    "4b_post_unload": {
+      "running_models": 0,
+      "vram_mb": 687.0
+    },
+    "9b_cold_start": {
+      "model": "qwen3.5:9b-q4_K_M",
+      "num_ctx": 2048,
+      "token_count": 60,
+      "ttft_ms": 21645.51,
+      "total_duration_sec": 21.646,
+      "tokens_per_sec": 40.79,
+      "start_vram_mb": 595.0,
+      "peak_vram_mb": 6823.0,
+      "delta_vram_mb": 6228.0,
+      "start_ram_mb": 15643.14,
+      "peak_ram_mb": 15740.26,
+      "delta_ram_mb": 97.12,
+      "ollama_meta": {
+        "load_duration_ms": 19222.66,
+        "prompt_eval_duration_ms": 162.54,
+        "eval_duration_ms": 1471.02
+      }
+    },
+    "9b_warm_inference": {
+      "model": "qwen3.5:9b-q4_K_M",
+      "num_ctx": 2048,
+      "token_count": 60,
+      "ttft_ms": 2749.75,
+      "total_duration_sec": 2.75,
+      "tokens_per_sec": 41.09,
+      "start_vram_mb": 6823.0,
+      "peak_vram_mb": 6823.0,
+      "delta_vram_mb": 0.0,
+      "start_ram_mb": 15679.81,
+      "peak_ram_mb": 15766.62,
+      "delta_ram_mb": 86.81,
+      "ollama_meta": {
+        "load_duration_ms": 238.46,
+        "prompt_eval_duration_ms": 69.79,
+        "eval_duration_ms": 1460.21
+      }
+    },
+    "9b_ctx_4096": {
+      "model": "qwen3.5:9b-q4_K_M",
+      "num_ctx": 4096,
+      "token_count": 60,
+      "ttft_ms": 20255.61,
+      "total_duration_sec": 20.256,
+      "tokens_per_sec": 37.93,
+      "start_vram_mb": 6823.0,
+      "peak_vram_mb": 6894.0,
+      "delta_vram_mb": 71.0,
+      "start_ram_mb": 15686.32,
+      "peak_ram_mb": 15989.78,
+      "delta_ram_mb": 303.46,
+      "ollama_meta": {
+        "load_duration_ms": 16898.64,
+        "prompt_eval_duration_ms": 520.51,
+        "eval_duration_ms": 1582.05
+      }
+    },
+    "9b_resident_models": [
+      {
+        "name": "qwen3.5:9b-q4_K_M",
+        "model": "qwen3.5:9b-q4_K_M",
+        "size": 5589560196,
+        "digest": "56671c2ab9385f9cfcb404638e32cd62d88e3501d44822208363c010179a3c90",
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "qwen35",
+          "families": [
+            "qwen35"
+          ],
+          "parameter_size": "9.0B",
+          "quantization_level": "Q4_K_M"
+        },
+        "expires_at": "2026-11-18T11:11:06.933962551Z",
+        "size_vram": 5589560196,
+        "context_length": 4096
+      }
+    ],
+    "9b_post_unload": {
+      "running_models": 0,
+      "vram_mb": 558.0
+    },
+    "mutual_exclusion_cycle": [
+      {
+        "step": "Load 4B",
+        "models": [
+          "qwen3.5:4b"
+        ],
+        "vram_mb": 4240.0
+      },
+      {
+        "step": "Transition to 9B",
+        "models": [
+          "qwen3.5:9b-q4_K_M"
+        ],
+        "vram_mb": 6822.0
+      },
+      {
+        "step": "Restore 4B",
+        "models": [
+          "qwen3.5:4b"
+        ],
+        "vram_mb": 4240.0
+      }
+    ]
+  }
+}

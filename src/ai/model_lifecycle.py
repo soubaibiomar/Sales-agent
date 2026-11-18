@@ -5,24 +5,39 @@ Guarantees that 4B and 9B models are never co-resident in GPU memory.
 import urllib.request
 import json
 import logging
-from typing import Optional, Set, Dict, Any
+import threading
+import time
+from typing import Optional, Set, Dict, Any, List
 from src.ai.config import ai_config
 from src.ai.resource_monitor import HardwareTelemetry
 
 logger = logging.getLogger("SalesAI.ModelLifecycle")
 
 class VRAMMutualExclusionError(Exception):
-    """Raised when an operation would violate GPU VRAM co-residency invariants."""
+    """Raised when an operation would violate GPU VRAM co-residency invariants or eviction fails."""
     pass
 
 class ModelLifecycleManager:
     """
     Orchestrates GPU VRAM state transitions and on-demand model life-cycles.
+    Thread-safe and fail-closed.
     """
     def __init__(self, ollama_url: Optional[str] = None):
         self.ollama_url = ollama_url or ai_config.ollama_base_url
         self.active_gpu_model: Optional[str] = None
         self.active_optional_cpu_models: Set[str] = set()
+        self._transition_lock = threading.Lock()
+
+    def get_running_ollama_models(self) -> List[Dict[str, Any]]:
+        """Queries /api/ps to inspect active models resident in memory."""
+        try:
+            req = urllib.request.Request(f"{self.ollama_url}/api/ps", headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                return data.get("models", [])
+        except Exception as e:
+            logger.debug(f"Could not connect to Ollama /api/ps: {e}")
+            return []
 
     def can_load_gpu_model(self, target_model: str) -> bool:
         """
@@ -36,7 +51,7 @@ class ModelLifecycleManager:
         if self.active_gpu_model == target_model:
             return True
         
-        # Conflict: 4B vs 9B
+        # Conflict check: 4B vs 9B
         is_4b = "4b" in target_model.lower()
         is_9b = "9b" in target_model.lower()
         active_is_4b = "4b" in self.active_gpu_model.lower()
@@ -47,9 +62,10 @@ class ModelLifecycleManager:
             
         return False
 
-    def evict_gpu_model(self, model_name: str) -> bool:
+    def evict_gpu_model(self, model_name: str, verify: bool = True) -> bool:
         """
         Instructs Ollama to immediately unload the model from VRAM by setting keep_alive to 0.
+        Verifies model eviction from /api/ps to fail closed if eviction fails.
         """
         logger.info(f"Evicting GPU model: {model_name} from VRAM...")
         try:
@@ -59,11 +75,20 @@ class ModelLifecycleManager:
                 data=req_data,
                 headers={"Content-Type": "application/json"}
             )
-            # Short timeout; non-blocking attempt if Ollama offline
-            with urllib.request.urlopen(req, timeout=3) as resp:
+            with urllib.request.urlopen(req, timeout=5) as resp:
                 pass
         except Exception as e:
-            logger.warning(f"Ollama unload request for {model_name} encountered notice: {e}")
+            logger.warning(f"Ollama unload request for {model_name} encountered error: {e}")
+
+        # Verification step
+        if verify:
+            time.sleep(0.5)
+            running = self.get_running_ollama_models()
+            still_resident = any(model_name in m.get("name", "") for m in running)
+            if still_resident:
+                msg = f"CRITICAL: Failed to evict {model_name}; model still resident in VRAM. Aborting transition to prevent GPU OOM."
+                logger.error(msg)
+                raise VRAMMutualExclusionError(msg)
 
         if self.active_gpu_model == model_name:
             self.active_gpu_model = None
@@ -72,26 +97,27 @@ class ModelLifecycleManager:
 
     def prepare_for_inference(self, requested_model: str, is_complex_reasoning: bool = False) -> str:
         """
-        Determines the appropriate model (4B vs 9B) and prepares VRAM state.
-        Only allows 9B when is_complex_reasoning is explicitly True.
+        Thread-safe preparation for inference turn.
+        Enforces 4B default, evaluates 9B justification, and executes mutual exclusion eviction.
         """
-        target_model = requested_model
-        if is_complex_reasoning:
-            target_model = ai_config.reasoning_llm
-        else:
-            # Default to primary 4B model
-            if "9b" in requested_model.lower() and not is_complex_reasoning:
-                logger.info("Unjustified 9B request downscaled to primary 4B model.")
-                target_model = ai_config.primary_llm
+        with self._transition_lock:
+            target_model = requested_model
+            if is_complex_reasoning:
+                target_model = ai_config.reasoning_llm
+            else:
+                # Downscale unjustified 9B requests
+                if "9b" in requested_model.lower() and not is_complex_reasoning:
+                    logger.info("Unjustified 9B request downscaled to primary 4B model.")
+                    target_model = ai_config.primary_llm
 
-        # Check mutual exclusion
-        if not self.can_load_gpu_model(target_model):
-            if self.active_gpu_model:
-                logger.info(f"Evicting active model {self.active_gpu_model} to load {target_model}...")
-                self.evict_gpu_model(self.active_gpu_model)
+            # Enforce mutual exclusion
+            if not self.can_load_gpu_model(target_model):
+                if self.active_gpu_model:
+                    logger.info(f"Evicting active model {self.active_gpu_model} to load {target_model}...")
+                    self.evict_gpu_model(self.active_gpu_model, verify=True)
 
-        self.active_gpu_model = target_model
-        return target_model
+            self.active_gpu_model = target_model
+            return target_model
 
     def load_optional_darija_tool(self, tool_name: str) -> bool:
         """Loads optional Moroccan Darija / Arabizi models into host RAM on demand."""
@@ -116,12 +142,20 @@ class ModelLifecycleManager:
 
     def get_lifecycle_status(self) -> Dict[str, Any]:
         """Returns the current state of GPU and CPU models."""
+        running_ollama = self.get_running_ollama_models()
         telemetry = HardwareTelemetry.get_gpu_vram_mb()
+        
+        # Check running models co-residency
+        has_4b = any("4b" in m.get("name", "").lower() for m in running_ollama)
+        has_9b = any("9b" in m.get("name", "").lower() for m in running_ollama)
+        co_residency_violation = has_4b and has_9b
+
         return {
             "active_gpu_model": self.active_gpu_model,
+            "running_in_ollama": [m.get("name") for m in running_ollama],
             "active_optional_cpu_models": list(self.active_optional_cpu_models),
             "gpu_telemetry": telemetry,
-            "co_residency_violation": False
+            "co_residency_violation": co_residency_violation
         }
 
 lifecycle_manager = ModelLifecycleManager()
