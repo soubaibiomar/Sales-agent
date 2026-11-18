@@ -26,6 +26,10 @@ from src.backend.api.crm import router as crm_router
 from src.backend.api.catalog import router as catalog_router
 from src.backend.api.quotes import router as quotes_router
 from src.backend.api.approvals import router as approvals_router
+from src.backend.api.inventory import router as inventory_router
+from src.backend.api.orders import router as orders_router
+from src.backend.api.payments import router as payments_router
+from src.backend.api.invoices import router as invoices_router
 
 logger = logging.getLogger("SalesAI.API")
 
@@ -97,3 +101,7 @@ app.include_router(crm_router, prefix="/api/v1")
 app.include_router(catalog_router, prefix="/api/v1")
 app.include_router(quotes_router, prefix="/api/v1")
 app.include_router(approvals_router, prefix="/api/v1")
+app.include_router(inventory_router, prefix="/api/v1")
+app.include_router(orders_router, prefix="/api/v1")
+app.include_router(payments_router, prefix="/api/v1")
+app.include_router(invoices_router, prefix="/api/v1")

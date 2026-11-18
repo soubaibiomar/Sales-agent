@@ -134,6 +134,8 @@ class AuditEvent(Base):
     status = Column(String(20), nullable=False, default="SUCCESS")
     timestamp = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
+AuditLog = AuditEvent
+
 class FeatureFlag(Base):
     __tablename__ = "feature_flags"
 
@@ -592,3 +594,274 @@ class QuoteDocument(Base):
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
     quote = relationship("Quote", back_populates="documents")
+
+
+# ============================================================================
+# STEP 05 ENTITIES: Orders, Payments, Invoicing and Stock Reservations
+# ============================================================================
+
+class Warehouse(Base):
+    __tablename__ = "warehouses"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    code = Column(String(50), nullable=False)
+    name = Column(String(255), nullable=False)
+    address_json = Column(Text, nullable=False, default="{}")
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    tenant = relationship("Tenant")
+    inventory_items = relationship("InventoryItem", back_populates="warehouse", cascade="all, delete-orphan")
+    __table_args__ = (UniqueConstraint("tenant_id", "code", name="uq_tenant_warehouse_code"),)
+
+
+class InventoryItem(Base):
+    __tablename__ = "inventory_items"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    warehouse_id = Column(String(36), ForeignKey("warehouses.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(String(36), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    variant_id = Column(String(36), ForeignKey("product_variants.id", ondelete="SET NULL"), nullable=True)
+    sku = Column(String(100), nullable=False, index=True)
+    on_hand_quantity = Column(Integer, nullable=False, default=0)
+    reserved_quantity = Column(Integer, nullable=False, default=0)
+    allocated_quantity = Column(Integer, nullable=False, default=0)
+    backorder_allowed = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    warehouse = relationship("Warehouse", back_populates="inventory_items")
+    product = relationship("Product")
+    variant = relationship("ProductVariant")
+    reservations = relationship("StockReservation", back_populates="inventory_item", cascade="all, delete-orphan")
+    movements = relationship("StockMovement", back_populates="inventory_item", cascade="all, delete-orphan")
+    __table_args__ = (UniqueConstraint("tenant_id", "warehouse_id", "sku", name="uq_tenant_warehouse_sku"),)
+
+    @property
+    def available_to_promise(self) -> int:
+        return max(0, self.on_hand_quantity - self.reserved_quantity - self.allocated_quantity)
+
+
+class StockReservation(Base):
+    __tablename__ = "stock_reservations"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    inventory_item_id = Column(String(36), ForeignKey("inventory_items.id", ondelete="CASCADE"), nullable=False, index=True)
+    order_id = Column(String(36), nullable=True, index=True)
+    quote_id = Column(String(36), ForeignKey("quotes.id", ondelete="SET NULL"), nullable=True, index=True)
+    sku = Column(String(100), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    status = Column(String(50), nullable=False, default="ACTIVE")  # ACTIVE, COMMITTED, RELEASED, EXPIRED
+    reserved_until = Column(DateTime(timezone=True), nullable=False, index=True)
+    idempotency_key = Column(String(255), nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    inventory_item = relationship("InventoryItem", back_populates="reservations")
+    quote = relationship("Quote")
+
+
+class StockMovement(Base):
+    __tablename__ = "stock_movements"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    inventory_item_id = Column(String(36), ForeignKey("inventory_items.id", ondelete="CASCADE"), nullable=False, index=True)
+    movement_type = Column(String(50), nullable=False)  # INBOUND_RECEIPT, SALE_DEDUCTION, ADJUSTMENT, RETURN_RESTOCK, TRANSFER
+    quantity_delta = Column(Integer, nullable=False)
+    previous_on_hand = Column(Integer, nullable=False)
+    new_on_hand = Column(Integer, nullable=False)
+    reference_type = Column(String(50), nullable=False)  # ORDER, SHIPMENT, ADJUSTMENT, RETURN
+    reference_id = Column(String(255), nullable=False)
+    notes = Column(Text, nullable=True)
+    created_by_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    inventory_item = relationship("InventoryItem", back_populates="movements")
+    created_by_user = relationship("User")
+
+
+class SalesOrder(Base):
+    __tablename__ = "sales_orders"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    order_number = Column(String(100), nullable=False)
+    quote_id = Column(String(36), ForeignKey("quotes.id", ondelete="SET NULL"), nullable=True, index=True)
+    account_id = Column(String(36), ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True)
+    contact_id = Column(String(36), ForeignKey("contacts.id", ondelete="SET NULL"), nullable=True)
+    status = Column(String(50), nullable=False, default="DRAFT")  # DRAFT, PENDING_PAYMENT, PAYMENT_AUTHORIZED, PAID, PROCESSING, PARTIALLY_FULFILLED, FULFILLED, CANCELLED, REFUNDED
+    version = Column(Integer, nullable=False, default=1)
+    currency = Column(String(10), nullable=False, default="USD")
+    subtotal_cents = Column(BigInteger, nullable=False, default=0)
+    discount_total_cents = Column(BigInteger, nullable=False, default=0)
+    tax_total_cents = Column(BigInteger, nullable=False, default=0)
+    grand_total_cents = Column(BigInteger, nullable=False, default=0)
+    terms_hash = Column(String(64), nullable=False)
+    payment_status = Column(String(50), nullable=False, default="UNPAID")  # UNPAID, PARTIALLY_PAID, PAID, REFUNDED
+    fulfillment_status = Column(String(50), nullable=False, default="UNFULFILLED")  # UNFULFILLED, PARTIALLY_FULFILLED, FULFILLED
+    shipping_address_json = Column(Text, nullable=False, default="{}")
+    billing_address_json = Column(Text, nullable=False, default="{}")
+    idempotency_key = Column(String(255), nullable=True, index=True)
+    created_by_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    tenant = relationship("Tenant")
+    quote = relationship("Quote")
+    account = relationship("Account")
+    contact = relationship("Contact")
+    created_by_user = relationship("User")
+    items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+    payment_intents = relationship("PaymentIntent", back_populates="order", cascade="all, delete-orphan")
+    invoices = relationship("Invoice", back_populates="order", cascade="all, delete-orphan")
+    __table_args__ = (UniqueConstraint("tenant_id", "order_number", name="uq_tenant_order_number"),)
+
+
+class OrderItem(Base):
+    __tablename__ = "order_items"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    order_id = Column(String(36), ForeignKey("sales_orders.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(String(36), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    variant_id = Column(String(36), ForeignKey("product_variants.id", ondelete="SET NULL"), nullable=True)
+    sku = Column(String(100), nullable=False)
+    name = Column(String(255), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    uom = Column(String(50), nullable=False, default="UNIT")
+    unit_price_cents = Column(BigInteger, nullable=False)
+    unit_cost_cents = Column(BigInteger, nullable=False, default=0)
+    discount_percent = Column(Numeric(5, 2), nullable=False, default=0.00)
+    discount_cents = Column(BigInteger, nullable=False, default=0)
+    tax_rate_percent = Column(Numeric(5, 2), nullable=False, default=20.00)
+    tax_cents = Column(BigInteger, nullable=False, default=0)
+    subtotal_cents = Column(BigInteger, nullable=False)
+    total_cents = Column(BigInteger, nullable=False)
+    fulfillment_status = Column(String(50), nullable=False, default="UNFULFILLED")
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    order = relationship("SalesOrder", back_populates="items")
+    product = relationship("Product")
+    variant = relationship("ProductVariant")
+
+
+class PaymentIntent(Base):
+    __tablename__ = "payment_intents"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    order_id = Column(String(36), ForeignKey("sales_orders.id", ondelete="CASCADE"), nullable=False, index=True)
+    provider = Column(String(50), nullable=False, default="STRIPE_SANDBOX")  # STRIPE_SANDBOX, CMI_SANDBOX, BANK_TRANSFER
+    provider_intent_id = Column(String(255), nullable=False)
+    client_secret = Column(String(255), nullable=True)
+    amount_cents = Column(BigInteger, nullable=False)
+    currency = Column(String(10), nullable=False, default="USD")
+    status = Column(String(50), nullable=False, default="REQUIRES_PAYMENT_METHOD")  # REQUIRES_PAYMENT_METHOD, REQUIRES_CONFIRMATION, PROCESSING, SUCCEEDED, REQUIRES_CAPTURE, CANCELLED, FAILED
+    idempotency_key = Column(String(255), nullable=True, index=True)
+    metadata_json = Column(Text, nullable=False, default="{}")
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    order = relationship("SalesOrder", back_populates="payment_intents")
+    transactions = relationship("PaymentTransaction", back_populates="payment_intent", cascade="all, delete-orphan")
+    __table_args__ = (UniqueConstraint("tenant_id", "provider", "provider_intent_id", name="uq_tenant_provider_intent"),)
+
+
+class PaymentTransaction(Base):
+    __tablename__ = "payment_transactions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    payment_intent_id = Column(String(36), ForeignKey("payment_intents.id", ondelete="CASCADE"), nullable=False, index=True)
+    order_id = Column(String(36), ForeignKey("sales_orders.id", ondelete="CASCADE"), nullable=False, index=True)
+    transaction_type = Column(String(50), nullable=False, default="CAPTURE")  # AUTHORIZATION, CAPTURE, REFUND, VOID
+    amount_cents = Column(BigInteger, nullable=False)
+    currency = Column(String(10), nullable=False, default="USD")
+    provider_transaction_id = Column(String(255), nullable=False)
+    payment_method_type = Column(String(50), nullable=False, default="CARD")
+    status = Column(String(50), nullable=False, default="SUCCESS")  # SUCCESS, FAILED, PENDING
+    receipt_url = Column(String(500), nullable=True)
+    raw_response_json = Column(Text, nullable=False, default="{}")
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    payment_intent = relationship("PaymentIntent", back_populates="transactions")
+    order = relationship("SalesOrder")
+
+
+class RefundRequest(Base):
+    __tablename__ = "refund_requests"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    order_id = Column(String(36), ForeignKey("sales_orders.id", ondelete="CASCADE"), nullable=False, index=True)
+    payment_intent_id = Column(String(36), ForeignKey("payment_intents.id", ondelete="SET NULL"), nullable=True)
+    amount_cents = Column(BigInteger, nullable=False)
+    currency = Column(String(10), nullable=False, default="USD")
+    reason = Column(String(255), nullable=False)
+    status = Column(String(50), nullable=False, default="REQUESTED")  # REQUESTED, APPROVED, PROCESSING, COMPLETED, REJECTED
+    requested_by_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    approved_by_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    provider_refund_id = Column(String(255), nullable=True)
+    idempotency_key = Column(String(255), nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    order = relationship("SalesOrder")
+    payment_intent = relationship("PaymentIntent")
+    requested_by = relationship("User", foreign_keys=[requested_by_user_id])
+    approved_by = relationship("User", foreign_keys=[approved_by_user_id])
+
+
+class Invoice(Base):
+    __tablename__ = "invoices"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    order_id = Column(String(36), ForeignKey("sales_orders.id", ondelete="CASCADE"), nullable=False, index=True)
+    invoice_number = Column(String(100), nullable=False)
+    status = Column(String(50), nullable=False, default="ISSUED")  # DRAFT, ISSUED, PAID, CANCELLED, REFUNDED
+    currency = Column(String(10), nullable=False, default="USD")
+    subtotal_cents = Column(BigInteger, nullable=False)
+    discount_total_cents = Column(BigInteger, nullable=False, default=0)
+    tax_total_cents = Column(BigInteger, nullable=False)
+    grand_total_cents = Column(BigInteger, nullable=False)
+    terms_hash = Column(String(64), nullable=False)
+    invoice_hash = Column(String(64), nullable=False)
+    correction_of_invoice_id = Column(String(36), ForeignKey("invoices.id", ondelete="SET NULL"), nullable=True)
+    issued_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    due_date = Column(DateTime(timezone=True), nullable=False)
+    paid_at = Column(DateTime(timezone=True), nullable=True)
+    pdf_storage_path = Column(String(500), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    tenant = relationship("Tenant")
+    order = relationship("SalesOrder", back_populates="invoices")
+    items = relationship("InvoiceItem", back_populates="invoice", cascade="all, delete-orphan")
+    correction_of = relationship("Invoice", remote_side=[id])
+    __table_args__ = (UniqueConstraint("tenant_id", "invoice_number", name="uq_tenant_invoice_number"),)
+
+
+class InvoiceItem(Base):
+    __tablename__ = "invoice_items"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    invoice_id = Column(String(36), ForeignKey("invoices.id", ondelete="CASCADE"), nullable=False, index=True)
+    sku = Column(String(100), nullable=False)
+    name = Column(String(255), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    unit_price_cents = Column(BigInteger, nullable=False)
+    discount_cents = Column(BigInteger, nullable=False, default=0)
+    tax_rate_percent = Column(Numeric(5, 2), nullable=False, default=20.00)
+    tax_cents = Column(BigInteger, nullable=False)
+    subtotal_cents = Column(BigInteger, nullable=False)
+    total_cents = Column(BigInteger, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    invoice = relationship("Invoice", back_populates="items")

@@ -29,6 +29,10 @@ class Money:
         return self._cents
 
     @property
+    def amount_cents(self) -> int:
+        return self._cents
+
+    @property
     def currency(self) -> str:
         return self._currency
 
@@ -36,6 +40,10 @@ class Money:
     def decimal_amount(self) -> Decimal:
         """Returns exact Decimal value in major units (e.g. 1050 cents -> Decimal('10.50'))."""
         return Decimal(self._cents) / Decimal(100)
+
+    def to_major(self) -> Decimal:
+        """Returns exact Decimal value in major units (e.g. 1050 cents -> Decimal('10.50'))."""
+        return self.decimal_amount
 
     @classmethod
     def from_major(cls, amount: Union[Decimal, str, int], currency: str = "MAD") -> "Money":

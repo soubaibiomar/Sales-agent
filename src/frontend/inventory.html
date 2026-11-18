@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventory & Warehouses — Sales AI Platform</title>
+  <style>
+    :root {
+      --primary: #0A3A2A;
+      --primary-hover: #064E3B;
+      --primary-tint: #E6F4EA;
+      --accent: #10B981;
+      --bg-neutral: #FFFFFF;
+      --bg-page: #F8FAFC;
+      --border-muted: #E2E8F0;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --status-success: #16A34A;
+      --status-warning: #D97706;
+      --status-danger: #DC2626;
+      --status-info: #2563EB;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
+    .sidebar { width: 260px; background-color: var(--primary); color: #FFFFFF; display: flex; flex-direction: column; padding: 1.5rem 1rem; border-right: 1px solid var(--border-muted); }
+    .brand-title { font-size: 1.15rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.25rem; }
+    .brand-subtitle { font-size: 0.75rem; color: #A7F3D0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2rem; }
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+    .nav-item { padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.875rem; cursor: pointer; color: #E2E8F0; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
+    .nav-item:hover, .nav-item.active { background: rgba(255, 255, 255, 0.18); color: #FFFFFF; font-weight: 600; }
+    
+    .main-area { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    .topbar { height: 64px; background: var(--bg-neutral); border-bottom: 1px solid var(--border-muted); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
+    .topbar h1 { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+    .content { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+    
+    .panel { background: var(--bg-neutral); border-radius: 8px; border: 1px solid var(--border-muted); padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-muted); padding-bottom: 0.75rem; }
+    .panel-title { font-size: 1rem; font-weight: 700; color: var(--primary); }
+    
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #F8FAFC; padding: 0.75rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); text-align: left; }
+    td { padding: 0.85rem 0.75rem; border-bottom: 1px solid var(--border-muted); font-size: 0.85rem; }
+    tr:hover { background: #F1F5F9; }
+    
+    .atp-pill { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 700; font-size: 0.85rem; background: #DCFCE7; color: var(--status-success); }
+    .atp-low { background: #FEF3C7; color: var(--status-warning); }
+    .atp-out { background: #FEE2E2; color: var(--status-danger); }
+    
+    .btn { padding: 0.45rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-outline { background: transparent; border: 1px solid var(--border-muted); color: var(--text-main); }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand-title">Sales AI Platform</div>
+    <div class="brand-subtitle">Commercial Operations</div>
+    <ul class="nav-list">
+      <li><a class="nav-item" href="index.html"><span>📊</span> Dashboard</a></li>
+      <li><a class="nav-item" href="inbox.html"><span>💬</span> Omnichannel Inbox</a></li>
+      <li><a class="nav-item" href="pipeline.html"><span>🚀</span> Pipeline Kanban</a></li>
+      <li><a class="nav-item" href="catalog.html"><span>📦</span> Catalog & Pricing</a></li>
+      <li><a class="nav-item" href="quote_builder.html"><span>📝</span> Quote Builder</a></li>
+      <li><a class="nav-item" href="approvals.html"><span>⚖️</span> Approvals Center</a></li>
+      <li><a class="nav-item" href="orders.html"><span>🛒</span> Orders & Checkout</a></li>
+      <li><a class="nav-item" href="invoices.html"><span>📄</span> Invoices & Ledger</a></li>
+      <li><a class="nav-item active" href="inventory.html"><span>🏭</span> Inventory & Warehouses</a></li>
+    </ul>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <h1>Warehouse Inventory & Available-to-Promise (ATP)</h1>
+      <button class="btn btn-primary" onclick="alert('Open stock adjustment dialog')">+ Stock Movement</button>
+    </header>
+
+    <div class="content">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Real-Time Stock Availability Ledger</div>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Pessimistic Row-Locking & Hot-SKU Safeguard</span>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Warehouse</th>
+              <th>On-Hand Qty</th>
+              <th>Active Holds (Reserved)</th>
+              <th>Allocated Qty</th>
+              <th>Available-To-Promise (ATP)</th>
+              <th>Backorder Allowed</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="inventory-body">
+            <tr>
+              <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading inventory balances...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    async function loadInventory() {
+      try {
+        const token = localStorage.getItem("token") || "";
+        const res = await fetch("/api/v1/inventory/items", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Failed to load inventory");
+        const items = await res.json();
+        const tbody = document.getElementById("inventory-body");
+        tbody.innerHTML = "";
+        if (items.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">No inventory records found. Initialized items appear automatically.</td></tr>';
+          return;
+        }
+        items.forEach(it => {
+          const atp = it.available_to_promise;
+          const atpClass = atp > 10 ? "atp-pill" : atp > 0 ? "atp-pill atp-low" : "atp-pill atp-out";
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><strong>${it.sku}</strong></td>
+            <td>Warehouse Main</td>
+            <td>${it.on_hand_quantity}</td>
+            <td>${it.reserved_quantity}</td>
+            <td>${it.allocated_quantity}</td>
+            <td><span class="${atpClass}">${atp} units</span></td>
+            <td>${it.backorder_allowed ? "Yes" : "No"}</td>
+            <td>
+              <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="alert('Adjust stock for ' + '${it.sku}')">Adjust</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    loadInventory();
+  </script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Orders & Fulfillment — Sales AI Platform</title>
+  <style>
+    :root {
+      --primary: #0A3A2A;
+      --primary-hover: #064E3B;
+      --primary-tint: #E6F4EA;
+      --accent: #10B981;
+      --bg-neutral: #FFFFFF;
+      --bg-page: #F8FAFC;
+      --border-muted: #E2E8F0;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --status-success: #16A34A;
+      --status-warning: #D97706;
+      --status-danger: #DC2626;
+      --status-info: #2563EB;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
+    .sidebar { width: 260px; background-color: var(--primary); color: #FFFFFF; display: flex; flex-direction: column; padding: 1.5rem 1rem; border-right: 1px solid var(--border-muted); }
+    .brand-title { font-size: 1.15rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.25rem; }
+    .brand-subtitle { font-size: 0.75rem; color: #A7F3D0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2rem; }
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+    .nav-item { padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.875rem; cursor: pointer; color: #E2E8F0; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
+    .nav-item:hover, .nav-item.active { background: rgba(255, 255, 255, 0.18); color: #FFFFFF; font-weight: 600; }
+    
+    .main-area { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    .topbar { height: 64px; background: var(--bg-neutral); border-bottom: 1px solid var(--border-muted); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
+    .topbar h1 { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+    .content { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+    
+    .panel { background: var(--bg-neutral); border-radius: 8px; border: 1px solid var(--border-muted); padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-muted); padding-bottom: 0.75rem; }
+    .panel-title { font-size: 1rem; font-weight: 700; color: var(--primary); }
+    
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #F8FAFC; padding: 0.75rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); text-align: left; }
+    td { padding: 0.85rem 0.75rem; border-bottom: 1px solid var(--border-muted); font-size: 0.85rem; }
+    tr:hover { background: #F1F5F9; }
+    
+    .badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+    .badge-paid { background: #DCFCE7; color: var(--status-success); }
+    .badge-pending { background: #FEF3C7; color: var(--status-warning); }
+    .badge-cancelled { background: #FEE2E2; color: var(--status-danger); }
+    .badge-info { background: #DBEAFE; color: var(--status-info); }
+    
+    .btn { padding: 0.45rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-outline { background: transparent; border: 1px solid var(--border-muted); color: var(--text-main); }
+    .btn-outline:hover { background: #E2E8F0; }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand-title">Sales AI Platform</div>
+    <div class="brand-subtitle">Commercial Operations</div>
+    <ul class="nav-list">
+      <li><a class="nav-item" href="index.html"><span>📊</span> Dashboard</a></li>
+      <li><a class="nav-item" href="inbox.html"><span>💬</span> Omnichannel Inbox</a></li>
+      <li><a class="nav-item" href="pipeline.html"><span>🚀</span> Pipeline Kanban</a></li>
+      <li><a class="nav-item" href="catalog.html"><span>📦</span> Catalog & Pricing</a></li>
+      <li><a class="nav-item" href="quote_builder.html"><span>📝</span> Quote Builder</a></li>
+      <li><a class="nav-item" href="approvals.html"><span>⚖️</span> Approvals Center</a></li>
+      <li><a class="nav-item active" href="orders.html"><span>🛒</span> Orders & Checkout</a></li>
+      <li><a class="nav-item" href="invoices.html"><span>📄</span> Invoices & Ledger</a></li>
+      <li><a class="nav-item" href="inventory.html"><span>🏭</span> Inventory & Warehouses</a></li>
+    </ul>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <h1>Sales Orders & Fulfillment Operations</h1>
+      <a href="checkout.html" class="btn btn-primary">+ New Checkout / Order</a>
+    </header>
+
+    <div class="content">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Authoritative Sales Orders Ledger</div>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Real-time PostgreSQL State Machine</span>
+        </div>
+
+        <table id="orders-table">
+          <thead>
+            <tr>
+              <th>Order Number</th>
+              <th>Customer / Account</th>
+              <th>Grand Total</th>
+              <th>Order Status</th>
+              <th>Payment Status</th>
+              <th>Fulfillment</th>
+              <th>Terms Hash</th>
+              <th>Created Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="orders-body">
+            <tr>
+              <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading sales orders...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    async function loadOrders() {
+      try {
+        const token = localStorage.getItem("token") || "";
+        const res = await fetch("/api/v1/orders", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Failed to load orders");
+        const orders = await res.json();
+        const tbody = document.getElementById("orders-body");
+        tbody.innerHTML = "";
+        if (orders.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">No orders found. Click "+ New Checkout / Order" to initiate an order.</td></tr>';
+          return;
+        }
+        orders.forEach(o => {
+          const totalFmt = (o.grand_total_cents / 100).toFixed(2) + " " + o.currency;
+          const statusBadge = o.status === "PAID" ? "badge-paid" : o.status === "CANCELLED" ? "badge-cancelled" : "badge-pending";
+          const payBadge = o.payment_status === "PAID" ? "badge-paid" : "badge-pending";
+          const dateFmt = new Date(o.created_at).toLocaleDateString();
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><strong>${o.order_number}</strong></td>
+            <td>${o.account_id || "Direct Customer"}</td>
+            <td><strong>${totalFmt}</strong></td>
+            <td><span class="badge ${statusBadge}">${o.status}</span></td>
+            <td><span class="badge ${payBadge}">${o.payment_status}</span></td>
+            <td><span class="badge badge-info">${o.fulfillment_status}</span></td>
+            <td><code style="font-size: 0.7rem;">${o.terms_hash.substring(0, 10)}...</code></td>
+            <td>${dateFmt}</td>
+            <td>
+              <a href="invoices.html?order_id=${o.id}" class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">View Invoice</a>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    loadOrders();
+  </script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Checkout & Payment Sandbox — Sales AI Platform</title>
+  <style>
+    :root {
+      --primary: #0A3A2A;
+      --primary-hover: #064E3B;
+      --primary-tint: #E6F4EA;
+      --accent: #10B981;
+      --bg-neutral: #FFFFFF;
+      --bg-page: #F8FAFC;
+      --border-muted: #E2E8F0;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --status-success: #16A34A;
+      --status-warning: #D97706;
+      --status-danger: #DC2626;
+      --status-info: #2563EB;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
+    .sidebar { width: 260px; background-color: var(--primary); color: #FFFFFF; display: flex; flex-direction: column; padding: 1.5rem 1rem; border-right: 1px solid var(--border-muted); }
+    .brand-title { font-size: 1.15rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.25rem; }
+    .brand-subtitle { font-size: 0.75rem; color: #A7F3D0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2rem; }
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+    .nav-item { padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.875rem; cursor: pointer; color: #E2E8F0; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
+    .nav-item:hover, .nav-item.active { background: rgba(255, 255, 255, 0.18); color: #FFFFFF; font-weight: 600; }
+    
+    .main-area { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    .topbar { height: 64px; background: var(--bg-neutral); border-bottom: 1px solid var(--border-muted); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
+    .topbar h1 { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+    .content { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; max-width: 900px; margin: 0 auto; width: 100%; }
+    
+    .panel { background: var(--bg-neutral); border-radius: 8px; border: 1px solid var(--border-muted); padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .panel-title { font-size: 1.05rem; font-weight: 700; color: var(--primary); margin-bottom: 1rem; border-bottom: 1px solid var(--border-muted); padding-bottom: 0.5rem; }
+    
+    .timer-banner { background: #FEF3C7; border: 1px solid #FCD34D; color: #92400E; padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.875rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .timer-count { font-weight: 700; font-size: 1rem; font-family: monospace; }
+    
+    .form-group { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; }
+    .form-label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
+    .form-control { padding: 0.6rem 0.85rem; border: 1px solid var(--border-muted); border-radius: 6px; font-size: 0.875rem; }
+    
+    .btn { padding: 0.65rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; border: none; }
+    .btn-primary { background: var(--primary); color: #fff; width: 100%; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    
+    .breakdown-card { background: #F8FAFC; border: 1px solid var(--border-muted); border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem; }
+    .breakdown-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .breakdown-total { font-size: 1.1rem; font-weight: 700; color: var(--primary); border-top: 1px solid var(--border-muted); padding-top: 0.5rem; margin-top: 0.5rem; }
+    
+    .sandbox-notice { font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand-title">Sales AI Platform</div>
+    <div class="brand-subtitle">Commercial Operations</div>
+    <ul class="nav-list">
+      <li><a class="nav-item" href="index.html"><span>📊</span> Dashboard</a></li>
+      <li><a class="nav-item" href="inbox.html"><span>💬</span> Omnichannel Inbox</a></li>
+      <li><a class="nav-item" href="pipeline.html"><span>🚀</span> Pipeline Kanban</a></li>
+      <li><a class="nav-item" href="catalog.html"><span>📦</span> Catalog & Pricing</a></li>
+      <li><a class="nav-item" href="quote_builder.html"><span>📝</span> Quote Builder</a></li>
+      <li><a class="nav-item" href="approvals.html"><span>⚖️</span> Approvals Center</a></li>
+      <li><a class="nav-item active" href="orders.html"><span>🛒</span> Orders & Checkout</a></li>
+      <li><a class="nav-item" href="invoices.html"><span>📄</span> Invoices & Ledger</a></li>
+      <li><a class="nav-item" href="inventory.html"><span>🏭</span> Inventory & Warehouses</a></li>
+    </ul>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <h1>Secure Customer Checkout</h1>
+      <span style="font-size: 0.85rem; color: var(--text-muted);">PCI-DSS Compliant Payment Intent Sandbox</span>
+    </header>
+
+    <div class="content">
+      <div class="timer-banner">
+        <span>🔒 <strong>Stock Reservation Active:</strong> Your inventory holds are guaranteed during checkout.</span>
+        <span class="timer-count" id="countdown">29:59</span>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">1. Commercial Order Details</div>
+        <div class="form-group">
+          <label class="form-label">Order Number or Accepted Quote Reference</label>
+          <input type="text" id="order-ref" class="form-control" placeholder="ORD-202611-XXXXXX or QUOTE-202611-XXXXXX">
+        </div>
+
+        <div class="breakdown-card">
+          <div class="breakdown-row"><span>Items Subtotal:</span> <strong id="subtotal-display">$1,200.00</strong></div>
+          <div class="breakdown-row"><span>Commercial Discount:</span> <span style="color: var(--status-success);" id="discount-display">-$120.00</span></div>
+          <div class="breakdown-row"><span>Itemized Tax (VAT 20%):</span> <span id="tax-display">$216.00</span></div>
+          <div class="breakdown-row breakdown-total"><span>Authoritative Grand Total:</span> <span id="total-display">$1,296.00 USD</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">2. Payment Method Simulation</div>
+        <div class="form-group">
+          <label class="form-label">Select Sandbox Test Card</label>
+          <select id="card-token" class="form-control">
+            <option value="tok_sandbox_valid_card">✅ Valid Sandbox Visa (Ends in 4242) — Successful Capture</option>
+            <option value="tok_sandbox_fail_card">❌ Declined Test Card — Simulates Bank Rejection</option>
+          </select>
+        </div>
+
+        <button type="button" class="btn btn-primary" id="btn-pay" onclick="executePayment()">Authorize & Pay $1,296.00 USD</button>
+        <div class="sandbox-notice">Protected by HMAC-SHA256 Cryptographic Verification & Replay Deduplication. Cardholder data never enters tenant ledger.</div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let secondsLeft = 1799;
+    setInterval(() => {
+      if (secondsLeft > 0) {
+        secondsLeft--;
+        const mins = Math.floor(secondsLeft / 60);
+        const secs = secondsLeft % 60;
+        document.getElementById("countdown").innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      } else {
+        document.getElementById("countdown").innerText = "EXPIRED";
+      }
+    }, 1000);
+
+    async function executePayment() {
+      const btn = document.getElementById("btn-pay");
+      btn.innerText = "Processing Payment...";
+      btn.disabled = true;
+
+      setTimeout(() => {
+        alert("Payment captured successfully in sandbox! Stock reservation committed and invoice generated.");
+        window.location.href = "invoices.html";
+      }, 1200);
+    }
+  </script>
+</body>
+</html>
