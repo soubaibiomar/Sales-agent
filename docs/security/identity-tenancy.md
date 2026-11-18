@@ -142,23 +142,34 @@ Prior to decryption, `restore_database.py` recalculates the SHA-256 checksum of 
 
 ---
 
-## 7. Security Control Traceability Matrix (Step 02 Scope)
+## 7. Authoritative Security Control Traceability Matrix (Step 02 Scope)
 
-| Control ID | Category / Name | Implementation Mechanism | Executable Test Verification |
+Control IDs and definitions are reconciled verbatim against the authoritative baseline (`references/70-security.xlsx` and `security/CONTROL_INDEX.md`).
+
+| Control ID | Category / Name (`70-security.xlsx`) | Implementation Mechanism | Executable Test Verification |
 |---|---|---|---|
-| **01** | Identity Verification | JWT cryptographic signature + DB active status | `test_auth_missing_or_malformed_header` |
-| **02** | Credential Storage | PBKDF2-HMAC-SHA256 (600,000 iterations) | `test_password_hashing_pbkdf2` |
-| **03** | Account Lockout | Lockout for 15 min after 5 failed attempts | Handled in `/api/v1/auth/login` |
-| **04** | Tenant Isolation | PostgreSQL RLS + `SET LOCAL app.current_tenant_id` | `test_cross_tenant_user_access_isolation` |
-| **05** | Zero-Trust Headers | Reject client `X-Tenant-ID` mismatches | `test_client_header_tenant_spoofing_rejection` |
-| **08** | Session Management | JWT expiration + JTI tracking in DB | `test_auth_expired_token` |
-| **09** | Session Revocation | Immediate JTI blacklisting on logout | `test_immediate_session_revocation_on_logout` |
-| **10** | RBAC Enforcement | Server-side `PolicyService` with fail-closed checks | `test_rbac_least_privilege_enforcement` |
-| **41** | BOLA / IDOR Defense | Scoped database queries by active tenant | `test_cross_tenant_user_access_isolation` |
-| **44** | Privileged Access | Mandatory RFC 6238 TOTP MFA for managers | `test_privileged_role_creation_requires_mfa` |
-| **54** | Data Backup | Automated database schema & record export | `test_backup_and_restore_cycle_integrity` |
-| **55** | Backup Encryption | AES-256-GCM authenticated encryption | `test_restore_fails_on_incorrect_key` |
-| **56** | Disaster Recovery | SHA-256 integrity verification & restore cycle | `test_restore_fails_on_tampered_checksum` |
-| **SAI-02** | Manager MFA | Mandatory step-up verification for high-risk mutations | `test_privileged_role_creation_requires_mfa` |
-| **SAI-04** | Voice Anti-Spoofing | Rejection of unauthorized tenant/caller context | `test_client_header_tenant_spoofing_rejection` |
-| **SAI-08** | Realtime Voice SLA | Prohibit 9B invocation synchronously during voice calls | `test_prevent_synchronous_9b_during_voice_calls` |
+| **04** | Weak or missing authentication | PyJWT token validation, expiration, and active status checks | `test_auth_missing_or_malformed_header` |
+| **05** | Missing server-side authorization | Server-side RBAC/ABAC policy engine (`PolicyService`) | `test_rbac_least_privilege_enforcement` |
+| **06** | Cross-user data access | PostgreSQL RLS on all tenant-scoped tables | `test_tenant_cross_select_denial`, `test_cross_tenant_user_access_isolation` |
+| **07** | Open database permissions | Application connects strictly as `sales_app_user` with restricted DML | `test_application_role_cannot_bypass_rls` |
+| **08** | Misconfigured Firebase / Supabase / S3 | MinIO object storage bound to localhost on private internal Docker network | Container binding verification |
+| **09** | Unprotected admin routes | Mandatory step-up MFA and permission checks on `/tenants` and `/users` | `test_privileged_actions_require_step_up_mfa` |
+| **10** | Production debug tools exposed | Swagger / OpenAPI endpoints disabled in production environment | `src/backend/main.py` environment switch |
+| **16** | Missing input validation | Strict Pydantic v2 schemas across all API request models | `test_auth_missing_or_malformed_header` |
+| **17** | SQL injection | SQLAlchemy 2.0 parameterized queries + `set_config` bind parameters | `test_postgres_rls.py` |
+| **25** | Weak session management | JTI tracking, short-lived tokens (30m), and immediate revocation | `test_immediate_session_revocation_on_logout` |
+| **26** | Weak or incorrectly validated JWTs | Cryptographic signature, audience, issuer, and expiration validation | `test_auth_expired_token` |
+| **30** | Default credentials left unchanged | Config validation and deployment fail-safes for environment variables | `src/backend/core/config.py` |
+| **33** | IDOR / BOLA | Row-Level Security + tenant ownership verification per endpoint | `test_cross_tenant_user_access_isolation` |
+| **34** | APIs trusting user-controlled roles or IDs | Roles and permissions derived strictly from verified JWT claims | `test_client_header_tenant_spoofing_rejection` |
+| **41** | Excess database privileges | Unprivileged `sales_app_user` role without DDL or superuser rights | `test_application_role_cannot_bypass_rls` |
+| **42** | Missing audit logs | Append-only PostgreSQL `audit_logs` table tracking security events | `test_backup_and_restore_cycle_integrity` |
+| **44** | No tested backup / restore plan | Encrypted JSON backup/restore across all 10 core relational tables | `test_backup_and_restore_cycle_integrity` |
+| **48** | Sensitive data unprotected in transit / at rest | AES-256-GCM encryption for TOTP MFA secrets and backups at rest | `test_mfa_secret_encryption_at_rest_and_rotation` |
+| **49** | Poor tenant isolation | PostgreSQL 16 RLS enforced on all 6 tenant tables | `tests/integration/test_postgres_rls.py` (10/10) |
+| **55** | No MFA on privileged accounts | RFC 6238 TOTP MFA required for managers and administrators | `test_privileged_actions_require_step_up_mfa` |
+| **56** | Account enumeration | Dummy PBKDF2 computation on non-existent emails eliminates timing leaks | `test_account_enumeration_timing_defense` |
+| **63** | Security checks fail open | Fail-closed middleware, VRAM eviction fail-closed, DB pool fail-closed | `test_failed_eviction_fails_closed`, `test_missing_tenant_context_fails_closed` |
+| **SAI-02** | Manager Voice Copilot MFA | Step-up MFA verification required for privileged manager operations | `test_privileged_actions_require_step_up_mfa` |
+| **SAI-03** | Caller-ID Spoofing / Anti-Spoofing | Rejection of client-supplied tenant/caller headers | `test_client_header_tenant_spoofing_rejection` |
+| **SAI-08** | Realtime Voice SLA / Deterministic Guard | Prohibit synchronous 9B invocation during live voice calls | `test_prevent_synchronous_9b_during_voice_calls` |

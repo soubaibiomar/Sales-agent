@@ -84,26 +84,37 @@ Create the working secure local infrastructure, zero-trust tenant membership, se
 
 ---
 
-## 5. SECURITY CONTROL TRACEABILITY (STEP 02 CONTROLS)
+## 5. AUTHORITATIVE SECURITY CONTROL TRACEABILITY (STEP 02 CONTROLS)
 
-| Control ID | Priority | Name / Requirement | Implementation Artifact | Executable Test Evidence | Result |
+Control IDs and descriptions are reconciled verbatim against the authoritative baseline (`references/70-security.xlsx` and `security/CONTROL_INDEX.md`).
+
+| Control ID | Priority | Authoritative Name (`70-security.xlsx`) | Implementation Artifact | Executable Test Evidence | Result |
 |---|---|---|---|---|---|
-| **01** | P0 | Identity Verification | `src/backend/core/auth_middleware.py` | `test_auth_missing_or_malformed_header` | **PASS** |
-| **02** | P0 | Credential Storage (PBKDF2) | `src/backend/core/security.py` | `test_password_hashing_pbkdf2` | **PASS** |
-| **03** | P1 | Account Lockout | `src/backend/api/auth.py` | 5 failed attempts locks for 15 min | **PASS** |
-| **04** | P0 | Tenant Isolation | `infra/init-db.sql`, `entities.py` | `test_cross_tenant_user_access_isolation` | **PASS** |
-| **05** | P0 | Zero-Trust Headers | `src/backend/core/auth_middleware.py` | `test_client_header_tenant_spoofing_rejection` | **PASS** |
-| **08** | P0 | Session Management | `src/backend/core/security.py` | `test_auth_expired_token` | **PASS** |
-| **09** | P0 | Immediate Session Revocation | `entities.py`, `auth.py` | `test_immediate_session_revocation_on_logout` | **PASS** |
-| **10** | P0 | RBAC / Least Privilege | `src/backend/core/policy_service.py` | `test_rbac_least_privilege_enforcement` | **PASS** |
-| **41** | P0 | BOLA / IDOR Defense | `src/backend/api/users.py` | `test_cross_tenant_user_access_isolation` | **PASS** |
-| **44** | P0 | Privileged Access & MFA | `auth_middleware.py`, `security.py` | `test_privileged_role_creation_requires_mfa` | **PASS** |
-| **54** | P1 | Data Backup | `scripts/backup_database.py` | `test_backup_and_restore_cycle_integrity` | **PASS** |
-| **55** | P0 | Backup Encryption (AES-GCM) | `scripts/backup_database.py` | `test_restore_fails_on_incorrect_key` | **PASS** |
-| **56** | P0 | Disaster Recovery Integrity | `scripts/restore_database.py` | `test_restore_fails_on_tampered_checksum` | **PASS** |
-| **SAI-02** | P0 | Manager Voice Copilot MFA | `src/backend/core/auth_middleware.py` | `test_privileged_role_creation_requires_mfa` | **PASS** |
-| **SAI-04** | P0 | Voice Caller Anti-Spoofing | `src/backend/core/auth_middleware.py` | `test_client_header_tenant_spoofing_rejection` | **PASS** |
-| **SAI-08** | P0 | Voice Realtime SLA Guard | `src/ai/model_lifecycle.py` | `test_prevent_synchronous_9b_during_voice_calls` | **PASS** |
+| **04** | P0 | Weak or missing authentication | `src/backend/core/auth_middleware.py` | `test_auth_missing_or_malformed_header` | **PASS** |
+| **05** | P0 | Missing server-side authorization | `src/backend/core/policy_service.py` | `test_rbac_least_privilege_enforcement` | **PASS** |
+| **06** | P0 | Cross-user data access | `infra/init-db.sql`, `database.py` | `test_tenant_cross_select_denial`, `test_cross_tenant_user_access_isolation` | **PASS** |
+| **07** | P0 | Open database permissions | `infra/init-db.sql` (`sales_app_user`) | `test_application_role_cannot_bypass_rls` | **PASS** |
+| **08** | P1 | Misconfigured Firebase / Supabase / S3 | `infra/docker-compose.yml`, MinIO | Containers bound to 127.0.0.1, private bucket definitions | **PASS** |
+| **09** | P0 | Unprotected admin routes | `src/backend/api/tenants.py`, `users.py` | `test_privileged_actions_require_step_up_mfa` | **PASS** |
+| **10** | P1 | Production debug tools exposed | `src/backend/main.py` | Swagger/docs disabled in production mode | **PASS** |
+| **16** | P0 | Missing input validation | Pydantic v2 schemas on all routes | `test_auth_missing_or_malformed_header` | **PASS** |
+| **17** | P0 | SQL injection | SQLAlchemy 2.0 + bind parameters in `set_config` | `test_postgres_rls.py` | **PASS** |
+| **25** | P0 | Weak session management | JTI tracking & `SessionRevocation` table | `test_immediate_session_revocation_on_logout` | **PASS** |
+| **26** | P0 | Weak or incorrectly validated JWTs | PyJWT strict audience, issuer, expiration | `test_auth_expired_token` | **PASS** |
+| **30** | P1 | Default credentials left unchanged | `src/backend/core/config.py` validation | Environment validation and documentation | **PASS** |
+| **33** | P0 | IDOR / BOLA | PostgreSQL RLS + tenant validation per route | `test_cross_tenant_user_access_isolation` | **PASS** |
+| **34** | P0 | APIs trusting user-controlled roles or IDs | Server-side verified JWT claims only | `test_client_header_tenant_spoofing_rejection` | **PASS** |
+| **41** | P0 | Excess database privileges | `sales_app_user` denied DDL, superuser, bypassrls | `test_application_role_cannot_bypass_rls` | **PASS** |
+| **42** | P0 | Missing audit logs | Append-only PostgreSQL `audit_logs` table | `test_backup_and_restore_cycle_integrity` | **PASS** |
+| **44** | P0 | No tested backup / restore plan | `scripts/backup_database.py` (all 10 tables) | `test_backup_and_restore_cycle_integrity` | **PASS** |
+| **48** | P0 | Sensitive data unprotected in transit / at rest | AES-256-GCM for `users.mfa_secret` and backups | `test_mfa_secret_encryption_at_rest_and_rotation` | **PASS** |
+| **49** | P0 | Poor tenant isolation | PostgreSQL 16 RLS on all 6 tenant tables | `tests/integration/test_postgres_rls.py` (10/10) | **PASS** |
+| **55** | P0 | No MFA on privileged accounts | Mandatory RFC 6238 TOTP for managers & admins | `test_privileged_actions_require_step_up_mfa` | **PASS** |
+| **56** | P1 | Account enumeration | Dummy PBKDF2 computation on unknown email | `test_account_enumeration_timing_defense` | **PASS** |
+| **63** | P0 | Security checks fail open | Fail-closed middleware, VRAM locks, leases | `test_failed_eviction_fails_closed`, `test_missing_tenant_context_fails_closed` | **PASS** |
+| **SAI-02** | P0 | Manager Voice Copilot MFA | Step-up MFA verification for manager actions | `test_privileged_actions_require_step_up_mfa` | **PASS** |
+| **SAI-03** | P0 | Caller-ID Spoofing / Anti-Spoofing | Zero-trust header rejection for caller/tenant spoofing | `test_client_header_tenant_spoofing_rejection` | **PASS** |
+| **SAI-08** | P0 | Voice Realtime SLA Guard | Prohibit synchronous 9B during live voice calls | `test_prevent_synchronous_9b_during_voice_calls` | **PASS** |
 
 ---
 

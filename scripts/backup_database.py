@@ -1,10 +1,12 @@
 """
 Automated Encrypted Database Backup Utility.
 Performs:
-1. Extraction of database records across all schemas.
+1. Extraction of complete relational database records across all 10 core tables:
+   - tenants, roles, permissions, role_permissions, organization_sites,
+   - users, user_roles, session_revocations, audit_logs, feature_flags.
 2. Derivation of 256-bit encryption key via PBKDF2-HMAC-SHA256.
-3. AES-GCM authenticated encryption (confidentiality + integrity).
-4. SHA-256 integrity checksum generation.
+3. AES-256-GCM authenticated encryption (confidentiality + integrity).
+4. SHA-256 integrity checksum generation over ciphertext.
 5. Strict omission of plain secrets, passwords, or PII in stdout/logs.
 """
 import os
@@ -22,8 +24,11 @@ from sqlalchemy import select
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.backend.core.config import settings
-from src.backend.core.database import create_engine_instance, AsyncSessionLocal
-from src.backend.models.entities import Tenant, User, Role, Permission, AuditEvent, FeatureFlag
+from src.backend.core.database import AsyncSessionLocal
+from src.backend.models.entities import (
+    Tenant, OrganizationSite, User, Role, Permission,
+    role_permissions, UserRole, SessionRevocation, AuditEvent, FeatureFlag
+)
 
 BACKUP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backups"))
 
@@ -39,13 +44,18 @@ def derive_key(master_secret: str, salt: bytes) -> bytes:
 async def export_data(session) -> dict:
     data = {
         "tenants": [],
-        "users": [],
         "roles": [],
         "permissions": [],
+        "role_permissions": [],
+        "organization_sites": [],
+        "users": [],
+        "user_roles": [],
+        "session_revocations": [],
         "audit_logs": [],
         "feature_flags": []
     }
     
+    # 1. Tenants
     t_res = await session.execute(select(Tenant))
     for t in t_res.scalars().all():
         data["tenants"].append({
@@ -53,6 +63,37 @@ async def export_data(session) -> dict:
             "created_at": t.created_at.isoformat() if t.created_at else None
         })
 
+    # 2. Roles
+    r_res = await session.execute(select(Role))
+    for r in r_res.scalars().all():
+        data["roles"].append({
+            "id": r.id, "name": r.name, "description": r.description, "is_privileged": r.is_privileged
+        })
+
+    # 3. Permissions
+    p_res = await session.execute(select(Permission))
+    for p in p_res.scalars().all():
+        data["permissions"].append({
+            "id": p.id, "code": p.code, "description": p.description, "domain": p.domain
+        })
+
+    # 4. Role Permissions (join table)
+    rp_res = await session.execute(select(role_permissions))
+    for row in rp_res.all():
+        data["role_permissions"].append({
+            "role_id": row.role_id, "permission_id": row.permission_id
+        })
+
+    # 5. Organization Sites
+    s_res = await session.execute(select(OrganizationSite))
+    for s in s_res.scalars().all():
+        data["organization_sites"].append({
+            "id": s.id, "tenant_id": s.tenant_id, "name": s.name, "code": s.code,
+            "timezone": s.timezone, "currency": s.currency, "is_active": s.is_active,
+            "created_at": s.created_at.isoformat() if s.created_at else None
+        })
+
+    # 6. Users
     u_res = await session.execute(select(User))
     for u in u_res.scalars().all():
         data["users"].append({
@@ -60,21 +101,28 @@ async def export_data(session) -> dict:
             "hashed_password": u.hashed_password, "full_name": u.full_name,
             "is_active": u.is_active, "is_verified": u.is_verified, "mfa_enabled": u.mfa_enabled,
             "mfa_secret": u.mfa_secret, "failed_login_attempts": u.failed_login_attempts,
+            "locked_until": u.locked_until.isoformat() if u.locked_until else None,
             "created_at": u.created_at.isoformat() if u.created_at else None
         })
 
-    r_res = await session.execute(select(Role))
-    for r in r_res.scalars().all():
-        data["roles"].append({
-            "id": r.id, "name": r.name, "description": r.description, "is_privileged": r.is_privileged
+    # 7. User Roles
+    ur_res = await session.execute(select(UserRole))
+    for ur in ur_res.scalars().all():
+        data["user_roles"].append({
+            "user_id": ur.user_id, "role_id": ur.role_id, "tenant_id": ur.tenant_id
         })
 
-    p_res = await session.execute(select(Permission))
-    for p in p_res.scalars().all():
-        data["permissions"].append({
-            "id": p.id, "code": p.code, "description": p.description, "domain": p.domain
+    # 8. Session Revocations
+    sr_res = await session.execute(select(SessionRevocation))
+    for sr in sr_res.scalars().all():
+        data["session_revocations"].append({
+            "id": sr.id, "token_jti": sr.token_jti, "tenant_id": sr.tenant_id,
+            "user_id": sr.user_id, "reason": sr.reason,
+            "revoked_at": sr.revoked_at.isoformat() if sr.revoked_at else None,
+            "expires_at": sr.expires_at.isoformat() if sr.expires_at else None
         })
 
+    # 9. Audit Logs
     a_res = await session.execute(select(AuditEvent))
     for a in a_res.scalars().all():
         data["audit_logs"].append({
@@ -84,6 +132,7 @@ async def export_data(session) -> dict:
             "timestamp": a.timestamp.isoformat() if a.timestamp else None
         })
 
+    # 10. Feature Flags
     f_res = await session.execute(select(FeatureFlag))
     for f in f_res.scalars().all():
         data["feature_flags"].append({
@@ -140,6 +189,7 @@ async def run_backup(
         "nonce_hex": nonce.hex(),
         "sha256_checksum": sha256_checksum,
         "backup_file": enc_filename,
+        "tables_included": list(data.keys()),
         "records_count": {k: len(v) for k, v in data.items()}
     }
     

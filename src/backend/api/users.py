@@ -144,6 +144,7 @@ async def update_user_status(
     user_id: str,
     req: UserUpdateRequest,
     context: SecurityContext = Depends(require_permission("users:write")),
+    _mfa: SecurityContext = Depends(require_privileged_mfa),
     db: AsyncSession = Depends(get_db_session)
 ):
     """Enables or disables a user account in the current tenant."""

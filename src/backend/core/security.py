@@ -14,6 +14,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional, List, Tuple
 import jwt
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from src.backend.core.config import settings
 
 # PBKDF2 parameters according to OWASP recommendations
@@ -56,6 +57,62 @@ class SecurityService:
         except Exception:
             return False
 
+    @classmethod
+    def verify_dummy_password(cls, plain_password: str) -> None:
+        """
+        Executes PBKDF2 hash calculation with the same iterations against a dummy salt.
+        Eliminates account enumeration timing side-channels when an email is not found.
+        """
+        dummy_salt = b"\x00" * SALT_BYTES
+        hashlib.pbkdf2_hmac(
+            PBKDF2_ALGORITHM,
+            plain_password.encode("utf-8"),
+            dummy_salt,
+            PBKDF2_ITERATIONS
+        )
+
+    # --- MFA Secret Encryption at Rest (AES-256-GCM) ---
+    @staticmethod
+    def get_mfa_encryption_key(key: Optional[str] = None) -> bytes:
+        """Derives a deterministic 32-byte AES key from settings or custom key."""
+        raw = key or settings.mfa_encryption_key
+        return hashlib.sha256(raw.encode("utf-8")).digest()
+
+    @classmethod
+    def encrypt_mfa_secret(cls, secret_b32: str, key: Optional[str] = None) -> str:
+        """
+        Encrypts an MFA Base32 secret using AES-256-GCM with a random 12-byte per-record nonce.
+        Format: v1:<nonce_hex>:<ciphertext_hex>
+        """
+        if not secret_b32:
+            return ""
+        aes_key = cls.get_mfa_encryption_key(key)
+        aesgcm = AESGCM(aes_key)
+        nonce = os.urandom(12)
+        ciphertext = aesgcm.encrypt(nonce, secret_b32.strip().encode("utf-8"), None)
+        return f"v1:{nonce.hex()}:{ciphertext.hex()}"
+
+    @classmethod
+    def decrypt_mfa_secret(cls, encrypted_str: str, key: Optional[str] = None) -> str:
+        """
+        Decrypts an MFA secret encrypted with AES-256-GCM.
+        Supports seamless backward-compatibility if secret is not yet prefixed with 'v1:'.
+        """
+        if not encrypted_str:
+            return ""
+        if not encrypted_str.startswith("v1:"):
+            # Plaintext fallback for legacy records
+            return encrypted_str
+        parts = encrypted_str.split(":")
+        if len(parts) != 3:
+            raise ValueError("Invalid encrypted MFA secret format; expected v1:<nonce>:<ciphertext>")
+        nonce = bytes.fromhex(parts[1])
+        ciphertext = bytes.fromhex(parts[2])
+        aes_key = cls.get_mfa_encryption_key(key)
+        aesgcm = AESGCM(aes_key)
+        decrypted_bytes = aesgcm.decrypt(nonce, ciphertext, None)
+        return decrypted_bytes.decode("utf-8")
+
     # --- RFC 6238 TOTP Multi-Factor Authentication ---
     @staticmethod
     def generate_totp_secret() -> str:
@@ -80,17 +137,19 @@ class SecurityService:
         return f"{code:06d}"
 
     @classmethod
-    def verify_totp(cls, secret_b32: str, code: str, allowed_drift_windows: int = 1) -> bool:
+    def verify_totp(cls, secret_b32: str, code: str, allowed_drift_windows: int = 1, key: Optional[str] = None) -> bool:
         """
         Verifies TOTP code with time drift window tolerance (+/- 30 seconds default).
         Prevents clock skew rejections.
+        Automatically decrypts if the secret is stored in encrypted format (v1: prefix).
         """
         if not secret_b32 or not code or len(code) != 6 or not code.isdigit():
             return False
             
+        plain_secret = cls.decrypt_mfa_secret(secret_b32, key=key)
         current_time = time.time()
         for window in range(-allowed_drift_windows, allowed_drift_windows + 1):
-            expected = cls.generate_totp_code(secret_b32, current_time + window * 30)
+            expected = cls.generate_totp_code(plain_secret, current_time + window * 30)
             if hmac.compare_digest(expected, code):
                 return True
         return False

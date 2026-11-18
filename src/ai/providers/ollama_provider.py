@@ -73,26 +73,32 @@ class OllamaProvider(BaseModelProvider):
         )
 
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                tracker.record_first_token()
-                content = data.get("response", "")
-                tracker.record_tokens(len(content.split()))
-                metrics = tracker.finish()
-                
-                # If this was an on-demand reasoning turn, evict 9B after completion
-                if is_reasoning:
-                    lifecycle_manager.evict_gpu_model(actual_model)
+            with lifecycle_manager.generation_lease(actual_model):
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    tracker.record_first_token()
+                    content = data.get("response", "")
+                    tracker.record_tokens(len(content.split()))
+                    metrics = tracker.finish()
                     
-                return {
-                    "content": content,
-                    "model": actual_model,
-                    "metrics": metrics,
-                    "num_ctx": effective_num_ctx
-                }
+            # If this was an on-demand reasoning turn, evict 9B after lease is released
+            if is_reasoning:
+                lifecycle_manager.evict_gpu_model(actual_model)
+                
+            return {
+                "content": content,
+                "model": actual_model,
+                "metrics": metrics,
+                "num_ctx": effective_num_ctx
+            }
         except Exception as e:
             # Fallback mock for local testing environments when Ollama server is paused
             metrics = tracker.finish()
+            if is_reasoning:
+                try:
+                    lifecycle_manager.evict_gpu_model(actual_model)
+                except Exception:
+                    pass
             return {
                 "content": f"[Local Ollama Simulated Output for {actual_model}]: Processed request successfully.",
                 "model": actual_model,
@@ -112,9 +118,10 @@ class OllamaProvider(BaseModelProvider):
     ) -> AsyncIterator[str]:
         target_model = model or ai_config.primary_llm
         actual_model = lifecycle_manager.prepare_for_inference(target_model, channel=channel)
-        # Yield initial token chunk
-        yield f"[{actual_model} Stream]: "
-        yield "Response token stream initiated."
+        with lifecycle_manager.generation_lease(actual_model):
+            # Yield initial token chunk
+            yield f"[{actual_model} Stream]: "
+            yield "Response token stream initiated."
 
     async def embed(
         self,

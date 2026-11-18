@@ -23,7 +23,7 @@ GRANT USAGE ON SCHEMA public TO sales_app_user;
 
 -- Tenants Table
 CREATE TABLE IF NOT EXISTS tenants (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     slug VARCHAR(100) UNIQUE NOT NULL,
     tier VARCHAR(50) NOT NULL DEFAULT 'standard',
@@ -34,8 +34,8 @@ CREATE TABLE IF NOT EXISTS tenants (
 
 -- Organization Sites / Facilities
 CREATE TABLE IF NOT EXISTS organization_sites (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     code VARCHAR(50) NOT NULL,
     timezone VARCHAR(50) NOT NULL DEFAULT 'Africa/Casablanca',
@@ -47,8 +47,8 @@ CREATE TABLE IF NOT EXISTS organization_sites (
 
 -- Users Table
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     email VARCHAR(255) NOT NULL,
     hashed_password VARCHAR(255) NOT NULL,
     full_name VARCHAR(255) NOT NULL,
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- System Roles Catalog
 CREATE TABLE IF NOT EXISTS roles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(100) UNIQUE NOT NULL,
     description TEXT,
     is_privileged BOOLEAN NOT NULL DEFAULT false
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS roles (
 
 -- Granular Permissions Catalog
 CREATE TABLE IF NOT EXISTS permissions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id VARCHAR(36) PRIMARY KEY,
     code VARCHAR(100) UNIQUE NOT NULL,
     description TEXT,
     domain VARCHAR(50) NOT NULL
@@ -81,25 +81,25 @@ CREATE TABLE IF NOT EXISTS permissions (
 
 -- Role-Permission Mapping
 CREATE TABLE IF NOT EXISTS role_permissions (
-    role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-    permission_id UUID NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+    role_id VARCHAR(36) NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    permission_id VARCHAR(36) NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
     PRIMARY KEY (role_id, permission_id)
 );
 
 -- User-Role Tenant Scoped Assignment
 CREATE TABLE IF NOT EXISTS user_roles (
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    user_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role_id VARCHAR(36) NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     PRIMARY KEY (user_id, role_id, tenant_id)
 );
 
 -- Session Revocation Blacklist (JTI tracking)
 CREATE TABLE IF NOT EXISTS session_revocations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id VARCHAR(36) PRIMARY KEY,
     token_jti VARCHAR(255) UNIQUE NOT NULL,
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    user_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     revoked_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
     expires_at TIMESTAMPTZ NOT NULL,
     reason VARCHAR(255) NOT NULL DEFAULT 'logout'
@@ -107,9 +107,9 @@ CREATE TABLE IF NOT EXISTS session_revocations (
 
 -- Immutable Security & Operational Audit Log (Controls 42, ADR-010)
 CREATE TABLE IF NOT EXISTS audit_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    actor_id UUID,
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    actor_id VARCHAR(36),
     event_type VARCHAR(100) NOT NULL,
     resource_type VARCHAR(100) NOT NULL,
     resource_id VARCHAR(255),
@@ -123,8 +123,8 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 
 -- Feature Flags Table
 CREATE TABLE IF NOT EXISTS feature_flags (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     key VARCHAR(100) NOT NULL,
     is_enabled BOOLEAN NOT NULL DEFAULT false,
     rules JSONB DEFAULT '{}'::jsonb,
@@ -156,22 +156,40 @@ ALTER TABLE feature_flags FORCE ROW LEVEL SECURITY;
 -- If the session variable is unset or empty, NULLIF returns NULL and comparison fails closed (0 rows).
 
 CREATE POLICY tenant_isolation_sites ON organization_sites
-    FOR ALL USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);
+    AS RESTRICTIVE
+    FOR ALL
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
 
 CREATE POLICY tenant_isolation_users ON users
-    FOR ALL USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);
+    AS RESTRICTIVE
+    FOR ALL
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
 
 CREATE POLICY tenant_isolation_user_roles ON user_roles
-    FOR ALL USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);
+    AS RESTRICTIVE
+    FOR ALL
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
 
 CREATE POLICY tenant_isolation_session_revocations ON session_revocations
-    FOR ALL USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);
+    AS RESTRICTIVE
+    FOR ALL
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
 
 CREATE POLICY tenant_isolation_audit_logs ON audit_logs
-    FOR ALL USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);
+    AS RESTRICTIVE
+    FOR ALL
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
 
 CREATE POLICY tenant_isolation_feature_flags ON feature_flags
-    FOR ALL USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);
+    AS RESTRICTIVE
+    FOR ALL
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
 
 -- 6. Grant least-privilege DML permissions to sales_app_user
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO sales_app_user;
@@ -182,22 +200,22 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE O
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO sales_app_user;
 
 -- 7. Seed System Roles & Initial Baseline Permissions
-INSERT INTO roles (name, description, is_privileged) VALUES
-    ('platform_admin', 'Global platform infrastructure superuser', true),
-    ('tenant_admin', 'Tenant administrator with account and policy authority', true),
-    ('sales_manager', 'Sales director with quotation approval and voice copilot authority', true),
-    ('sales_rep', 'Internal sales executive managing leads, opportunities and quotes', false),
-    ('support_agent', 'Operations and customer support specialist', false),
-    ('customer', 'External commercial customer or prospect', false)
+INSERT INTO roles (id, name, description, is_privileged) VALUES
+    ('role_platform_admin', 'platform_admin', 'Global platform infrastructure superuser', true),
+    ('role_tenant_admin', 'tenant_admin', 'Tenant administrator with account and policy authority', true),
+    ('role_sales_manager', 'sales_manager', 'Sales director with quotation approval and voice copilot authority', true),
+    ('role_sales_rep', 'sales_rep', 'Internal sales executive managing leads, opportunities and quotes', false),
+    ('role_support_agent', 'support_agent', 'Operations and customer support specialist', false),
+    ('role_customer', 'customer', 'External commercial customer or prospect', false)
 ON CONFLICT (name) DO NOTHING;
 
-INSERT INTO permissions (code, description, domain) VALUES
-    ('tenants:manage', 'Provision and configure tenant settings', 'IAM'),
-    ('users:manage', 'Create, update and disable tenant users', 'IAM'),
-    ('roles:assign', 'Assign and revoke user roles', 'IAM'),
-    ('quotes:approve', 'Approve quotations exceeding policy discount thresholds', 'COMMERCE'),
-    ('quotes:create', 'Create and send commercial quotations', 'COMMERCE'),
-    ('orders:read', 'View customer order and shipment status', 'COMMERCE'),
-    ('voice:copilot', 'Access privileged Manager Voice Copilot interface', 'VOICE'),
-    ('audit:read', 'View compliance and security audit logs', 'SECURITY')
+INSERT INTO permissions (id, code, description, domain) VALUES
+    ('perm_tenants_manage', 'tenants:manage', 'Provision and configure tenant settings', 'IAM'),
+    ('perm_users_manage', 'users:manage', 'Create, update and disable tenant users', 'IAM'),
+    ('perm_roles_assign', 'roles:assign', 'Assign and revoke user roles', 'IAM'),
+    ('perm_quotes_approve', 'quotes:approve', 'Approve quotations exceeding policy discount thresholds', 'COMMERCE'),
+    ('perm_quotes_create', 'quotes:create', 'Create and send commercial quotations', 'COMMERCE'),
+    ('perm_orders_read', 'orders:read', 'View customer order and shipment status', 'COMMERCE'),
+    ('perm_voice_copilot', 'voice:copilot', 'Access privileged Manager Voice Copilot interface', 'VOICE'),
+    ('perm_audit_read', 'audit:read', 'View compliance and security audit logs', 'SECURITY')
 ON CONFLICT (code) DO NOTHING;

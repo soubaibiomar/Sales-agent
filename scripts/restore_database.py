@@ -4,8 +4,11 @@ Performs:
 1. Integrity verification against SHA-256 metadata checksum before decryption.
 2. Derivation of 256-bit encryption key via PBKDF2-HMAC-SHA256.
 3. AES-GCM authenticated decryption.
-4. Data deserialization and atomic database restoration.
-5. Verification of restored record counts.
+4. Data deserialization and atomic database restoration across all 10 core tables:
+   - tenants, roles, permissions, role_permissions, organization_sites,
+   - users, user_roles, session_revocations, audit_logs, feature_flags.
+5. Strict transaction rollback protection on failure.
+6. Verification of restored record counts and relational integrity.
 """
 import os
 import sys
@@ -22,8 +25,11 @@ from sqlalchemy import select, delete
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.backend.core.config import settings
-from src.backend.core.database import create_engine_instance, AsyncSessionLocal
-from src.backend.models.entities import Tenant, User, Role, Permission, AuditEvent, FeatureFlag, Base
+from src.backend.core.database import AsyncSessionLocal
+from src.backend.models.entities import (
+    Tenant, OrganizationSite, User, Role, Permission,
+    role_permissions, UserRole, SessionRevocation, AuditEvent, FeatureFlag
+)
 
 class ChecksumMismatchError(Exception):
     """Raised when backup file does not match SHA-256 checksum in metadata."""
@@ -41,6 +47,11 @@ def derive_key(master_secret: str, salt: bytes) -> bytes:
         iterations=100000
     )
     return kdf.derive(master_secret.encode("utf-8"))
+
+def parse_iso(dt_str):
+    if not dt_str:
+        return None
+    return datetime.fromisoformat(dt_str)
 
 async def restore_from_backup(
     metadata_path: str,
@@ -79,60 +90,136 @@ async def restore_from_backup(
 
     data = json.loads(plaintext.decode("utf-8"))
 
-    # 3. Database restoration
+    # 3. Database restoration inside an atomic transaction
     async def _restore(session):
-        # Insert tenants
-        for t in data.get("tenants", []):
-            existing = (await session.execute(select(Tenant).where(Tenant.id == t["id"]))).scalars().first()
-            if not existing:
-                session.add(Tenant(
-                    id=t["id"], name=t["name"], slug=t["slug"], tier=t["tier"], is_active=t["is_active"]
-                ))
-        await session.flush()
+        try:
+            # 1. Tenants
+            for t in data.get("tenants", []):
+                existing = (await session.execute(select(Tenant).where(Tenant.id == t["id"]))).scalars().first()
+                if not existing:
+                    session.add(Tenant(
+                        id=t["id"], name=t["name"], slug=t["slug"], tier=t["tier"], is_active=t["is_active"],
+                        created_at=parse_iso(t.get("created_at"))
+                    ))
+            await session.flush()
 
-        # Insert users
-        for u in data.get("users", []):
-            existing = (await session.execute(select(User).where(User.id == u["id"]))).scalars().first()
-            if not existing:
-                session.add(User(
-                    id=u["id"], tenant_id=u["tenant_id"], email=u["email"],
-                    hashed_password=u["hashed_password"], full_name=u["full_name"],
-                    is_active=u["is_active"], is_verified=u["is_verified"],
-                    mfa_enabled=u["mfa_enabled"], mfa_secret=u.get("mfa_secret")
-                ))
-        await session.flush()
+            # 2. Roles
+            for r in data.get("roles", []):
+                existing = (await session.execute(select(Role).where(Role.id == r["id"]))).scalars().first()
+                if not existing:
+                    session.add(Role(
+                        id=r["id"], name=r["name"], description=r.get("description"),
+                        is_privileged=r.get("is_privileged", False)
+                    ))
+            await session.flush()
 
-        # Insert roles
-        for r in data.get("roles", []):
-            existing = (await session.execute(select(Role).where(Role.id == r["id"]))).scalars().first()
-            if not existing:
-                session.add(Role(
-                    id=r["id"], name=r["name"], description=r.get("description"),
-                    is_privileged=r.get("is_privileged", False)
-                ))
-        await session.flush()
+            # 3. Permissions
+            for p in data.get("permissions", []):
+                existing = (await session.execute(select(Permission).where(Permission.id == p["id"]))).scalars().first()
+                if not existing:
+                    session.add(Permission(
+                        id=p["id"], code=p["code"], description=p.get("description"), domain=p["domain"]
+                    ))
+            await session.flush()
 
-        # Insert permissions
-        for p in data.get("permissions", []):
-            existing = (await session.execute(select(Permission).where(Permission.id == p["id"]))).scalars().first()
-            if not existing:
-                session.add(Permission(
-                    id=p["id"], code=p["code"], description=p.get("description"), domain=p["domain"]
-                ))
-        await session.flush()
+            # 4. Role Permissions
+            for rp in data.get("role_permissions", []):
+                stmt = select(role_permissions).where(
+                    role_permissions.c.role_id == rp["role_id"],
+                    role_permissions.c.permission_id == rp["permission_id"]
+                )
+                existing = (await session.execute(stmt)).first()
+                if not existing:
+                    await session.execute(
+                        role_permissions.insert().values(
+                            role_id=rp["role_id"],
+                            permission_id=rp["permission_id"]
+                        )
+                    )
+            await session.flush()
 
-        # Insert audit logs
-        for a in data.get("audit_logs", []):
-            existing = (await session.execute(select(AuditEvent).where(AuditEvent.id == a["id"]))).scalars().first()
-            if not existing:
-                session.add(AuditEvent(
-                    id=a["id"], tenant_id=a["tenant_id"], actor_id=a.get("actor_id"),
-                    event_type=a["event_type"], resource_type=a["resource_type"],
-                    resource_id=a.get("resource_id"), action=a["action"],
-                    ip_address=a.get("ip_address"), status=a["status"]
-                ))
+            # 5. Organization Sites
+            for s in data.get("organization_sites", []):
+                existing = (await session.execute(select(OrganizationSite).where(OrganizationSite.id == s["id"]))).scalars().first()
+                if not existing:
+                    session.add(OrganizationSite(
+                        id=s["id"], tenant_id=s["tenant_id"], name=s["name"], code=s["code"],
+                        timezone=s.get("timezone", "Africa/Casablanca"), currency=s.get("currency", "MAD"),
+                        is_active=s.get("is_active", True), created_at=parse_iso(s.get("created_at"))
+                    ))
+            await session.flush()
 
-        await session.commit()
+            # 6. Users
+            for u in data.get("users", []):
+                existing = (await session.execute(select(User).where(User.id == u["id"]))).scalars().first()
+                if not existing:
+                    session.add(User(
+                        id=u["id"], tenant_id=u["tenant_id"], email=u["email"],
+                        hashed_password=u["hashed_password"], full_name=u["full_name"],
+                        is_active=u["is_active"], is_verified=u["is_verified"],
+                        mfa_enabled=u["mfa_enabled"], mfa_secret=u.get("mfa_secret"),
+                        failed_login_attempts=u.get("failed_login_attempts", 0),
+                        locked_until=parse_iso(u.get("locked_until")),
+                        created_at=parse_iso(u.get("created_at"))
+                    ))
+            await session.flush()
+
+            # 7. User Roles
+            for ur in data.get("user_roles", []):
+                existing = (await session.execute(
+                    select(UserRole).where(
+                        UserRole.user_id == ur["user_id"],
+                        UserRole.role_id == ur["role_id"],
+                        UserRole.tenant_id == ur["tenant_id"]
+                    )
+                )).scalars().first()
+                if not existing:
+                    session.add(UserRole(
+                        user_id=ur["user_id"],
+                        role_id=ur["role_id"],
+                        tenant_id=ur["tenant_id"]
+                    ))
+            await session.flush()
+
+            # 8. Session Revocations
+            for sr in data.get("session_revocations", []):
+                existing = (await session.execute(
+                    select(SessionRevocation).where(SessionRevocation.token_jti == sr["token_jti"])
+                )).scalars().first()
+                if not existing:
+                    session.add(SessionRevocation(
+                        id=sr["id"], token_jti=sr["token_jti"], tenant_id=sr["tenant_id"],
+                        user_id=sr["user_id"], reason=sr.get("reason", "logout"),
+                        revoked_at=parse_iso(sr.get("revoked_at")),
+                        expires_at=parse_iso(sr.get("expires_at"))
+                    ))
+            await session.flush()
+
+            # 9. Audit Logs
+            for a in data.get("audit_logs", []):
+                existing = (await session.execute(select(AuditEvent).where(AuditEvent.id == a["id"]))).scalars().first()
+                if not existing:
+                    session.add(AuditEvent(
+                        id=a["id"], tenant_id=a["tenant_id"], actor_id=a.get("actor_id"),
+                        event_type=a["event_type"], resource_type=a["resource_type"],
+                        resource_id=a.get("resource_id"), action=a["action"],
+                        ip_address=a.get("ip_address"), status=a["status"],
+                        timestamp=parse_iso(a.get("timestamp"))
+                    ))
+
+            # 10. Feature Flags
+            for f in data.get("feature_flags", []):
+                existing = (await session.execute(select(FeatureFlag).where(FeatureFlag.id == f["id"]))).scalars().first()
+                if not existing:
+                    session.add(FeatureFlag(
+                        id=f["id"], tenant_id=f["tenant_id"], key=f["key"], is_enabled=f["is_enabled"],
+                        rules_json=f.get("rules_json", "{}")
+                    ))
+
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
     if session_override:
         await _restore(session_override)

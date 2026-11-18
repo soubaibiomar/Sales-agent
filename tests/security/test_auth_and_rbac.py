@@ -356,3 +356,190 @@ async def test_rbac_least_privilege_enforcement():
         finally:
             db_mod.AsyncSessionLocal = orig_factory
             mw.AsyncSessionLocal = orig_factory
+
+def test_mfa_secret_encryption_at_rest_and_rotation():
+    """
+    Finding IAM-02 Remediation:
+    Verifies that TOTP secrets are encrypted at rest using AES-256-GCM with per-record nonces.
+    Verifies transparent decryption in verify_totp and seamless key rotation support.
+    """
+    plain_secret = "JBSWY3DPEHPK3PXP"
+    master_key_1 = "first_master_key_minimum_32_chars_long!"
+    master_key_2 = "second_rotated_master_key_32_chars_len!"
+
+    # 1. Encrypt secret
+    encrypted = SecurityService.encrypt_mfa_secret(plain_secret, key=master_key_1)
+    assert encrypted.startswith("v1:")
+    parts = encrypted.split(":")
+    assert len(parts) == 3
+    nonce_hex, ct_hex = parts[1], parts[2]
+    assert len(nonce_hex) == 24 # 12 bytes = 24 hex characters
+    assert plain_secret not in encrypted # Never plaintext
+
+    # 2. Decrypt secret
+    decrypted = SecurityService.decrypt_mfa_secret(encrypted, key=master_key_1)
+    assert decrypted == plain_secret
+
+    # 3. Transparent TOTP verification from encrypted secret
+    code = SecurityService.generate_totp_code(plain_secret)
+    assert SecurityService.verify_totp(encrypted, code, key=master_key_1) is True
+
+    # 3b. Verification with system default master key
+    default_enc = SecurityService.encrypt_mfa_secret(plain_secret)
+    assert SecurityService.verify_totp(default_enc, code) is True
+
+    # 4. Key rotation test: Decrypt with key 1, re-encrypt with key 2
+    rotated_enc = SecurityService.encrypt_mfa_secret(
+        SecurityService.decrypt_mfa_secret(encrypted, key=master_key_1),
+        key=master_key_2
+    )
+    assert rotated_enc != encrypted
+    assert SecurityService.decrypt_mfa_secret(rotated_enc, key=master_key_2) == plain_secret
+
+@pytest.mark.asyncio
+async def test_account_enumeration_timing_defense():
+    """
+    Finding IAM-01 Remediation:
+    Verifies that logging in with a non-existent email executes constant-time dummy verification,
+    eliminating timing side-channels that leak account existence.
+    """
+    from unittest.mock import patch
+
+    async with get_test_auth_db() as (engine, session_factory):
+        import src.backend.core.auth_middleware as mw
+        import src.backend.core.database as db_mod
+        orig_factory = db_mod.AsyncSessionLocal
+        db_mod.AsyncSessionLocal = session_factory
+        mw.AsyncSessionLocal = session_factory
+
+        try:
+            with patch.object(SecurityService, "verify_dummy_password", wraps=SecurityService.verify_dummy_password) as mock_dummy:
+                transport = ASGITransport(app=app)
+                async with AsyncClient(transport=transport, base_url="http://test") as client:
+                    resp = await client.post(
+                        "/api/v1/auth/login",
+                        json={"email": "nonexistent_ghost_user@active.com", "password": "AnyPassword123!"}
+                    )
+                    assert resp.status_code == 401
+                    assert resp.json()["detail"]["error"] == "Invalid email or password"
+                    # Dummy PBKDF2 verification was executed
+                    mock_dummy.assert_called_once_with("AnyPassword123!")
+        finally:
+            db_mod.AsyncSessionLocal = orig_factory
+            mw.AsyncSessionLocal = orig_factory
+
+@pytest.mark.asyncio
+async def test_account_lockout_after_five_failed_attempts():
+    """
+    Finding IAM-01 & Baseline Lockout:
+    Verifies that 5 consecutive failed login attempts lock the user account for 15 minutes,
+    rejecting subsequent attempts with HTTP 403 Forbidden.
+    """
+    async with get_test_auth_db() as (engine, session_factory):
+        import src.backend.core.auth_middleware as mw
+        import src.backend.core.database as db_mod
+        orig_factory = db_mod.AsyncSessionLocal
+        db_mod.AsyncSessionLocal = session_factory
+        mw.AsyncSessionLocal = session_factory
+
+        try:
+            transport = ASGITransport(app=app)
+            async with AsyncClient(transport=transport, base_url="http://test") as client:
+                # 4 failed attempts -> 401 Unauthorized
+                for i in range(4):
+                    resp = await client.post(
+                        "/api/v1/auth/login",
+                        json={"email": "rep@active.com", "password": f"WrongPass{i}!"}
+                    )
+                    assert resp.status_code == 401
+
+                # 5th failed attempt -> locks account, returns 401
+                resp5 = await client.post(
+                    "/api/v1/auth/login",
+                    json={"email": "rep@active.com", "password": "WrongPass5!"}
+                )
+                assert resp5.status_code == 401
+
+                # 6th attempt -> 403 Forbidden (Account locked)
+                resp6 = await client.post(
+                    "/api/v1/auth/login",
+                    json={"email": "rep@active.com", "password": "RepPass123!"} # Even with correct password
+                )
+                assert resp6.status_code == 403
+                assert "Account is temporarily locked" in resp6.json()["detail"]["error"]
+        finally:
+            db_mod.AsyncSessionLocal = orig_factory
+            mw.AsyncSessionLocal = orig_factory
+
+@pytest.mark.asyncio
+async def test_privileged_actions_require_step_up_mfa():
+    """
+    Finding IAM-03 Remediation:
+    Verifies that privileged operations (tenant creation, disabling administrative users)
+    strictly require step-up MFA (mfa_verified=True).
+    """
+    async with get_test_auth_db() as (engine, session_factory):
+        token_no_mfa, _, _ = SecurityService.create_access_token(
+            user_id="u_active",
+            tenant_id="tenant_active",
+            email="manager@active.com",
+            roles=["tenant_admin"],
+            permissions=["*", "users:write"],
+            mfa_verified=False
+        )
+        token_mfa, _, _ = SecurityService.create_access_token(
+            user_id="u_active",
+            tenant_id="tenant_active",
+            email="manager@active.com",
+            roles=["tenant_admin"],
+            permissions=["*", "users:write"],
+            mfa_verified=True
+        )
+
+        import src.backend.core.auth_middleware as mw
+        import src.backend.core.database as db_mod
+        orig_factory = db_mod.AsyncSessionLocal
+        db_mod.AsyncSessionLocal = session_factory
+        mw.AsyncSessionLocal = session_factory
+
+        try:
+            transport = ASGITransport(app=app)
+            async with AsyncClient(transport=transport, base_url="http://test") as client:
+                # 1. POST /api/v1/tenants without MFA -> 403
+                r_tenant_fail = await client.post(
+                    "/api/v1/tenants",
+                    json={"name": "New Tenant", "slug": "new-tenant"},
+                    headers={"Authorization": f"Bearer {token_no_mfa}"}
+                )
+                assert r_tenant_fail.status_code == 403
+                assert "Step-up MFA verification required" in r_tenant_fail.json()["detail"]["error"]
+
+                # 2. POST /api/v1/tenants with MFA -> 200
+                r_tenant_ok = await client.post(
+                    "/api/v1/tenants",
+                    json={"name": "New Tenant", "slug": "new-tenant"},
+                    headers={"Authorization": f"Bearer {token_mfa}"}
+                )
+                assert r_tenant_ok.status_code == 200
+                assert r_tenant_ok.json()["slug"] == "new-tenant"
+
+                # 3. PUT /api/v1/users/{id}/status without MFA -> 403
+                r_user_fail = await client.put(
+                    "/api/v1/users/u_rep/status",
+                    json={"is_active": False},
+                    headers={"Authorization": f"Bearer {token_no_mfa}"}
+                )
+                assert r_user_fail.status_code == 403
+                assert "Step-up MFA verification required" in r_user_fail.json()["detail"]["error"]
+
+                # 4. PUT /api/v1/users/{id}/status with MFA -> 200
+                r_user_ok = await client.put(
+                    "/api/v1/users/u_rep/status",
+                    json={"is_active": False},
+                    headers={"Authorization": f"Bearer {token_mfa}"}
+                )
+                assert r_user_ok.status_code == 200
+                assert r_user_ok.json()["is_active"] is False
+        finally:
+            db_mod.AsyncSessionLocal = orig_factory
+            mw.AsyncSessionLocal = orig_factory

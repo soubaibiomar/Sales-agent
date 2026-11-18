@@ -45,17 +45,20 @@ async def login(
     user = res.scalars().first()
 
     if not user or not user.is_active:
+        SecurityService.verify_dummy_password(req.password)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={"error": "Invalid email or password", "correlation_id": correlation_id}
         )
 
     # Check account lockout
-    if user.locked_until and user.locked_until > datetime.now(timezone.utc):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"error": "Account is temporarily locked due to multiple failed login attempts.", "correlation_id": correlation_id}
-        )
+    if user.locked_until:
+        locked_time = user.locked_until if user.locked_until.tzinfo else user.locked_until.replace(tzinfo=timezone.utc)
+        if locked_time > datetime.now(timezone.utc):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={"error": "Account is temporarily locked due to multiple failed login attempts.", "correlation_id": correlation_id}
+            )
 
     # Verify password
     if not SecurityService.verify_password(req.password, user.hashed_password):
@@ -252,7 +255,7 @@ async def setup_mfa(
     res = await db.execute(stmt)
     user = res.scalars().first()
     if user:
-        user.mfa_secret = secret
+        user.mfa_secret = SecurityService.encrypt_mfa_secret(secret)
         user.mfa_enabled = True
         await db.commit()
 

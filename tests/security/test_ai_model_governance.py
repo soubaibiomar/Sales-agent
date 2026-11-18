@@ -14,7 +14,8 @@ from unittest.mock import patch, MagicMock
 from filelock import FileLock
 
 from src.ai.model_lifecycle import (
-    ModelLifecycleManager, VRAMMutualExclusionError, VoiceModelSafetyError, lifecycle_manager
+    ModelLifecycleManager, VRAMMutualExclusionError, VRAMEvictionConflictError,
+    VoiceModelSafetyError, lifecycle_manager
 )
 from src.ai.providers.ollama_provider import OllamaProvider, MAX_9B_CONTEXT_TOKENS
 from src.ai.config import ai_config
@@ -131,3 +132,73 @@ def test_mutual_exclusion_cycle_preservation():
         m2 = manager.prepare_for_inference("qwen3.5:9b-q4_K_M", is_complex_reasoning=True)
         assert "9b" in m2.lower()
         mock_evict.assert_called_with("qwen3.5:4b", verify=True)
+
+def test_active_generation_lease_blocks_eviction():
+    """
+    Finding AI-01 Remediation:
+    Verifies that an active generation lease prevents model eviction,
+    failing closed with VRAMEvictionConflictError to prevent truncating an active token stream.
+    """
+    manager = ModelLifecycleManager()
+    model = "qwen3.5:4b"
+    manager.active_gpu_model = model
+
+    # 1. Acquire lease
+    with manager.generation_lease(model) as lease_id:
+        assert manager.get_active_lease_count(model) == 1
+        # 2. Attempting eviction while leased must raise VRAMEvictionConflictError
+        with pytest.raises(VRAMEvictionConflictError) as exc:
+            manager.evict_gpu_model(model)
+        assert "active generation lease(s) in flight" in str(exc.value)
+
+    # 3. After lease release, lease count drops to 0 and eviction is permitted
+    assert manager.get_active_lease_count(model) == 0
+    with patch.object(manager, "get_running_ollama_models", return_value=[]):
+        with patch("urllib.request.urlopen"):
+            success = manager.evict_gpu_model(model, verify=False)
+            assert success is True
+
+def test_active_generation_lease_blocks_model_switching():
+    """
+    Finding AI-01 Remediation:
+    Verifies that if Process 1 has an active generation lease on 4B,
+    Process 2 requesting 9B cannot evict 4B and is rejected with VRAMEvictionConflictError.
+    """
+    manager = ModelLifecycleManager()
+    manager.active_gpu_model = "qwen3.5:4b"
+
+    with manager.generation_lease("qwen3.5:4b"):
+        # Attempting to prepare 9B requires evicting 4B, which must be blocked
+        with pytest.raises(VRAMEvictionConflictError) as exc:
+            manager.prepare_for_inference("qwen3.5:9b-q4_K_M", is_complex_reasoning=True)
+        assert "Cannot switch to" in str(exc.value)
+        assert "active generation lease(s) in flight" in str(exc.value)
+
+@pytest.mark.asyncio
+async def test_streaming_holds_active_generation_lease():
+    """
+    Finding AI-01 Remediation:
+    Verifies that OllamaProvider.stream holds a generation lease during token consumption,
+    preventing eviction mid-stream.
+    """
+    provider = OllamaProvider()
+    stream_gen = provider.stream("Stream prompt", model="qwen3.5:4b")
+
+    # Fetch first chunk from generator
+    first_chunk = await stream_gen.__anext__()
+    assert "Stream" in first_chunk
+
+    # While stream is open, active lease must be held for 4B
+    assert lifecycle_manager.get_active_lease_count("qwen3.5:4b") >= 1
+    with pytest.raises(VRAMEvictionConflictError):
+        lifecycle_manager.evict_gpu_model("qwen3.5:4b")
+
+    # Consume remaining chunks until stream ends
+    try:
+        while True:
+            await stream_gen.__anext__()
+    except StopAsyncIteration:
+        pass
+
+    # Once stream completes, lease must be released
+    assert lifecycle_manager.get_active_lease_count("qwen3.5:4b") == 0

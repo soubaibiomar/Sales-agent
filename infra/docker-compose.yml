@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   sales-ai-postgres:
     image: postgres:16-alpine
@@ -20,6 +18,11 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2048M
     networks:
       - sales_ai_internal
     security_opt:
@@ -45,6 +48,11 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
     networks:
       - sales_ai_internal
     security_opt:
@@ -54,7 +62,7 @@ services:
     image: quay.io/minio/minio:RELEASE.2025-02-07T23-21-09Z
     container_name: sales-ai-minio
     restart: unless-stopped
-    command: server /data --console-address ":9001"
+    command: server /data --console-address "127.0.0.1:9001"
     environment:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minio_dev_access_key}
       MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minio_dev_secret_key}
@@ -68,6 +76,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1024M
     networks:
       - sales_ai_internal
     security_opt:
@@ -75,8 +88,8 @@ services:
 
 networks:
   sales_ai_internal:
-    driver: bridge
     name: sales_ai_internal
+    driver: bridge
 
 volumes:
   postgres_data:

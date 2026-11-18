@@ -11,7 +11,7 @@ from src.backend.core.database import get_db_session
 from src.backend.core.security import SecurityService
 from src.backend.core.policy_service import policy_service
 from src.backend.core.auth_middleware import (
-    get_security_context, SecurityContext, require_permission
+    get_security_context, SecurityContext, require_permission, require_privileged_mfa
 )
 from src.backend.schemas.identity import (
     TenantCreateRequest, TenantResponse
@@ -43,6 +43,7 @@ async def get_current_tenant(
 async def create_tenant(
     req: TenantCreateRequest,
     context: SecurityContext = Depends(require_permission("*")),
+    _mfa: SecurityContext = Depends(require_privileged_mfa),
     db: AsyncSession = Depends(get_db_session)
 ):
     """Provisions a new tenant. Restricted to super_admin."""

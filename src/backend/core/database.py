@@ -65,10 +65,10 @@ async def tenant_session(
         dialect_name = bind.dialect.name
         
         if dialect_name == "postgresql":
-            # Set transactional local session variable in PostgreSQL
+            # Set transactional local session variable in PostgreSQL using injection-safe set_config
             await session.execute(
-                text("SET LOCAL app.current_tenant_id = :tenant_id"),
-                {"tenant_id": tenant_id}
+                text("SELECT set_config('app.current_tenant_id', :tenant_id, true)"),
+                {"tenant_id": str(tenant_id)}
             )
         
         yield session
@@ -96,8 +96,8 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
             bind = session.bind or engine
             if bind.dialect.name == "postgresql":
                 await session.execute(
-                    text("SET LOCAL app.current_tenant_id = :tenant_id"),
-                    {"tenant_id": active_tenant}
+                    text("SELECT set_config('app.current_tenant_id', :tenant_id, true)"),
+                    {"tenant_id": str(active_tenant)}
                 )
         try:
             yield session

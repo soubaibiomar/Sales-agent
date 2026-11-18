@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
     enforce_mfa_for_managers: bool = True
+    mfa_encryption_key: str = Field(
+        default="sales_ai_mfa_dev_master_key_32_bytes_min_length_secret!",
+        min_length=32,
+        description="Master key used to encrypt TOTP MFA seeds at rest"
+    )
 
     # S3 Object Storage
     s3_endpoint_url: str = "http://localhost:9000"

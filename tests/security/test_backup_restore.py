@@ -7,11 +7,15 @@ import os
 import json
 import tempfile
 import asyncio
+from datetime import datetime, timezone, timedelta
 from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy import select
 
-from src.backend.models.entities import Base, Tenant, User, Role
+from src.backend.models.entities import (
+    Base, Tenant, User, Role, Permission, role_permissions,
+    OrganizationSite, UserRole, SessionRevocation, AuditEvent, FeatureFlag
+)
 from src.backend.core.security import SecurityService
 from scripts.backup_database import run_backup
 from scripts.restore_database import restore_from_backup, ChecksumMismatchError, DecryptionError
@@ -31,6 +35,26 @@ async def get_test_backup_db():
         session.add(t1)
         await session.flush()
 
+        site1 = OrganizationSite(
+            id="site_backup_1",
+            tenant_id="tenant_backup_1",
+            name="Main Casablanca Hub",
+            code="HUB-CASA-01",
+            currency="MAD",
+            timezone="Africa/Casablanca"
+        )
+        session.add(site1)
+
+        r1 = Role(id="role_backup_admin", name="admin", is_privileged=True)
+        session.add(r1)
+        await session.flush()
+
+        p1 = Permission(id="perm_backup_read", code="catalog:read", description="Read catalog items", domain="catalog")
+        session.add(p1)
+        await session.flush()
+
+        await session.execute(role_permissions.insert().values(role_id=r1.id, permission_id=p1.id))
+
         u1 = User(
             id="user_backup_1",
             tenant_id="tenant_backup_1",
@@ -41,6 +65,43 @@ async def get_test_backup_db():
             is_verified=True
         )
         session.add(u1)
+        await session.flush()
+
+        ur1 = UserRole(user_id=u1.id, role_id=r1.id, tenant_id="tenant_backup_1")
+        session.add(ur1)
+
+        rev1 = SessionRevocation(
+            id="rev_backup_1",
+            token_jti="jti-backup-revoked-001",
+            tenant_id="tenant_backup_1",
+            user_id="user_backup_1",
+            reason="admin_revocation",
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=1)
+        )
+        session.add(rev1)
+
+        audit1 = AuditEvent(
+            id="audit_backup_1",
+            tenant_id="tenant_backup_1",
+            actor_id="user_backup_1",
+            event_type="AUTH_LOGIN",
+            resource_type="USER",
+            resource_id="user_backup_1",
+            action="LOGIN",
+            status="SUCCESS",
+            ip_address="127.0.0.1"
+        )
+        session.add(audit1)
+
+        ff1 = FeatureFlag(
+            id="ff_backup_1",
+            tenant_id="tenant_backup_1",
+            key="ai_voice_v2",
+            is_enabled=True,
+            rules_json="{}"
+        )
+        session.add(ff1)
+
         await session.commit()
 
     try:
@@ -101,14 +162,45 @@ async def test_backup_and_restore_cycle_integrity():
                 assert restore_res["status"] == "RESTORED"
                 assert restore_res["verified_checksum"] == backup_result["sha256_checksum"]
 
-                # 3. Assert restored data exists in target DB
+                # 3. Assert restored data exists in target DB across all 10 core tables
                 t_restored = (await s_target.execute(select(Tenant).where(Tenant.id == "tenant_backup_1"))).scalars().first()
                 assert t_restored is not None
                 assert t_restored.name == "Backup Test Corp"
 
+                site_restored = (await s_target.execute(select(OrganizationSite).where(OrganizationSite.id == "site_backup_1"))).scalars().first()
+                assert site_restored is not None
+                assert site_restored.code == "HUB-CASA-01"
+
+                role_restored = (await s_target.execute(select(Role).where(Role.id == "role_backup_admin"))).scalars().first()
+                assert role_restored is not None
+                assert role_restored.name == "admin"
+
+                perm_restored = (await s_target.execute(select(Permission).where(Permission.id == "perm_backup_read"))).scalars().first()
+                assert perm_restored is not None
+                assert perm_restored.code == "catalog:read"
+
+                rp_restored = (await s_target.execute(select(role_permissions).where(role_permissions.c.role_id == "role_backup_admin"))).all()
+                assert len(rp_restored) >= 1
+
                 u_restored = (await s_target.execute(select(User).where(User.id == "user_backup_1"))).scalars().first()
                 assert u_restored is not None
                 assert u_restored.email == "backup_admin@corp.com"
+
+                ur_restored = (await s_target.execute(select(UserRole).where(UserRole.user_id == "user_backup_1"))).scalars().first()
+                assert ur_restored is not None
+                assert ur_restored.role_id == "role_backup_admin"
+
+                rev_restored = (await s_target.execute(select(SessionRevocation).where(SessionRevocation.id == "rev_backup_1"))).scalars().first()
+                assert rev_restored is not None
+                assert rev_restored.token_jti == "jti-backup-revoked-001"
+
+                audit_restored = (await s_target.execute(select(AuditEvent).where(AuditEvent.id == "audit_backup_1"))).scalars().first()
+                assert audit_restored is not None
+                assert audit_restored.event_type == "AUTH_LOGIN"
+
+                ff_restored = (await s_target.execute(select(FeatureFlag).where(FeatureFlag.id == "ff_backup_1"))).scalars().first()
+                assert ff_restored is not None
+                assert ff_restored.key == "ai_voice_v2"
 
             await restore_engine.dispose()
 
