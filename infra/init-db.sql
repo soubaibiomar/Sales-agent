@@ -136,10 +136,31 @@ CREATE TABLE IF NOT EXISTS feature_flags (
 -- STEP 03 OMNICHANNEL CONVERSATIONS & EVENT INGESTION SCHEMA
 -- =============================================================================
 
+-- Accounts Table (B2B/B2C Organization or Client Account)
+CREATE TABLE IF NOT EXISTS accounts (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    account_type VARCHAR(50) NOT NULL DEFAULT 'CUSTOMER',
+    tax_identifier VARCHAR(100),
+    industry VARCHAR(100),
+    website VARCHAR(255),
+    phone VARCHAR(50),
+    billing_address TEXT,
+    shipping_address TEXT,
+    assigned_user_id VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    metadata_json TEXT DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    CONSTRAINT uq_tenant_account_name UNIQUE (tenant_id, name)
+);
+
 -- Contacts Table
 CREATE TABLE IF NOT EXISTS contacts (
     id VARCHAR(36) PRIMARY KEY,
     tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    account_id VARCHAR(36) REFERENCES accounts(id) ON DELETE SET NULL,
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     display_name VARCHAR(200) NOT NULL,
@@ -280,6 +301,247 @@ CREATE INDEX IF NOT EXISTS idx_outbox_claim ON outbox_events(status, claim_expir
 CREATE INDEX IF NOT EXISTS idx_channel_integrations_tenant ON tenant_channel_integrations(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_channel_integrations_asset ON tenant_channel_integrations(channel_type, provider_asset_id);
 
+-- =============================================================================
+-- STEP 04 CRM, CATALOG, PRICING, QUOTATIONS & APPROVALS SCHEMA
+-- =============================================================================
+
+-- Leads Table
+CREATE TABLE IF NOT EXISTS leads (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    company_name VARCHAR(200),
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    status VARCHAR(50) NOT NULL DEFAULT 'NEW',
+    source VARCHAR(50) NOT NULL DEFAULT 'MANUAL',
+    score INT NOT NULL DEFAULT 0,
+    assigned_user_id VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
+    converted_account_id VARCHAR(36) REFERENCES accounts(id) ON DELETE SET NULL,
+    converted_contact_id VARCHAR(36) REFERENCES contacts(id) ON DELETE SET NULL,
+    converted_opportunity_id VARCHAR(36),
+    notes TEXT,
+    metadata_json TEXT DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+
+-- Opportunities Table
+CREATE TABLE IF NOT EXISTS opportunities (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    account_id VARCHAR(36) REFERENCES accounts(id) ON DELETE CASCADE,
+    contact_id VARCHAR(36) REFERENCES contacts(id) ON DELETE SET NULL,
+    lead_id VARCHAR(36) REFERENCES leads(id) ON DELETE SET NULL,
+    title VARCHAR(255) NOT NULL,
+    stage VARCHAR(50) NOT NULL DEFAULT 'DISCOVERY',
+    amount_cents BIGINT NOT NULL DEFAULT 0,
+    currency VARCHAR(10) NOT NULL DEFAULT 'MAD',
+    probability_percent INT NOT NULL DEFAULT 20,
+    expected_close_date TIMESTAMPTZ,
+    assigned_user_id VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
+    lost_reason VARCHAR(255),
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+
+-- Add foreign key constraint on leads for converted_opportunity_id
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'fk_lead_converted_opportunity'
+    ) THEN
+        ALTER TABLE leads ADD CONSTRAINT fk_lead_converted_opportunity 
+        FOREIGN KEY (converted_opportunity_id) REFERENCES opportunities(id) ON DELETE SET NULL;
+    END IF;
+END $$;
+
+-- Activities Table (CRM Tasks, Calls, Notes, Meetings)
+CREATE TABLE IF NOT EXISTS activities (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    activity_type VARCHAR(50) NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    description TEXT,
+    due_date TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
+    assigned_user_id VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
+    lead_id VARCHAR(36) REFERENCES leads(id) ON DELETE CASCADE,
+    opportunity_id VARCHAR(36) REFERENCES opportunities(id) ON DELETE CASCADE,
+    account_id VARCHAR(36) REFERENCES accounts(id) ON DELETE CASCADE,
+    contact_id VARCHAR(36) REFERENCES contacts(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+
+-- Products Table (Catalog Products & Services)
+CREATE TABLE IF NOT EXISTS products (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    sku VARCHAR(100) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    product_type VARCHAR(50) NOT NULL DEFAULT 'PHYSICAL',
+    uom VARCHAR(50) NOT NULL DEFAULT 'UNIT',
+    category VARCHAR(100),
+    base_price_cents BIGINT NOT NULL DEFAULT 0,
+    cost_cents BIGINT NOT NULL DEFAULT 0,
+    currency VARCHAR(10) NOT NULL DEFAULT 'MAD',
+    tax_rate_percent NUMERIC(5,2) NOT NULL DEFAULT 20.00,
+    min_margin_percent NUMERIC(5,2) NOT NULL DEFAULT 15.00,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    metadata_json TEXT DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    CONSTRAINT uq_tenant_product_sku UNIQUE (tenant_id, sku)
+);
+
+-- Product SKU Variants Table
+CREATE TABLE IF NOT EXISTS product_variants (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    product_id VARCHAR(36) NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    sku_variant VARCHAR(100) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    attributes_json TEXT NOT NULL DEFAULT '{}',
+    price_adjustment_cents BIGINT NOT NULL DEFAULT 0,
+    cost_adjustment_cents BIGINT NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    CONSTRAINT uq_tenant_variant_sku UNIQUE (tenant_id, sku_variant)
+);
+
+-- Price Lists Table
+CREATE TABLE IF NOT EXISTS price_lists (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    code VARCHAR(50) NOT NULL,
+    currency VARCHAR(10) NOT NULL DEFAULT 'MAD',
+    description TEXT,
+    is_default BOOLEAN NOT NULL DEFAULT false,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    valid_from TIMESTAMPTZ,
+    valid_to TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    CONSTRAINT uq_tenant_pricelist_code UNIQUE (tenant_id, code)
+);
+
+-- Price List Items Table
+CREATE TABLE IF NOT EXISTS price_list_items (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    price_list_id VARCHAR(36) NOT NULL REFERENCES price_lists(id) ON DELETE CASCADE,
+    product_id VARCHAR(36) NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    variant_id VARCHAR(36) REFERENCES product_variants(id) ON DELETE CASCADE,
+    unit_price_cents BIGINT NOT NULL,
+    min_quantity INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+
+-- Quotes Table (Commercial Quotations & State Machine)
+CREATE TABLE IF NOT EXISTS quotes (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    quote_number VARCHAR(100) NOT NULL,
+    opportunity_id VARCHAR(36) REFERENCES opportunities(id) ON DELETE SET NULL,
+    account_id VARCHAR(36) REFERENCES accounts(id) ON DELETE SET NULL,
+    contact_id VARCHAR(36) REFERENCES contacts(id) ON DELETE SET NULL,
+    price_list_id VARCHAR(36) REFERENCES price_lists(id) ON DELETE SET NULL,
+    currency VARCHAR(10) NOT NULL DEFAULT 'MAD',
+    status VARCHAR(50) NOT NULL DEFAULT 'DRAFT',
+    version INT NOT NULL DEFAULT 1,
+    subtotal_cents BIGINT NOT NULL DEFAULT 0,
+    discount_total_cents BIGINT NOT NULL DEFAULT 0,
+    tax_total_cents BIGINT NOT NULL DEFAULT 0,
+    grand_total_cents BIGINT NOT NULL DEFAULT 0,
+    margin_percent NUMERIC(5,2) NOT NULL DEFAULT 0.00,
+    requires_approval BOOLEAN NOT NULL DEFAULT false,
+    approval_reason VARCHAR(255),
+    terms_hash VARCHAR(64) NOT NULL,
+    valid_until TIMESTAMPTZ NOT NULL,
+    payment_terms VARCHAR(100) DEFAULT 'NET_30',
+    notes TEXT,
+    issued_at TIMESTAMPTZ,
+    accepted_at TIMESTAMPTZ,
+    created_by_user_id VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    CONSTRAINT uq_tenant_quote_number UNIQUE (tenant_id, quote_number)
+);
+
+-- Quote Items Table (Line Items Snapshot)
+CREATE TABLE IF NOT EXISTS quote_items (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    quote_id VARCHAR(36) NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
+    product_id VARCHAR(36) REFERENCES products(id) ON DELETE SET NULL,
+    variant_id VARCHAR(36) REFERENCES product_variants(id) ON DELETE SET NULL,
+    sku_snapshot VARCHAR(100) NOT NULL,
+    name_snapshot VARCHAR(255) NOT NULL,
+    quantity INT NOT NULL,
+    uom_snapshot VARCHAR(50) NOT NULL,
+    unit_price_cents BIGINT NOT NULL,
+    unit_cost_cents BIGINT NOT NULL DEFAULT 0,
+    discount_percent NUMERIC(5,2) NOT NULL DEFAULT 0.00,
+    discount_cents BIGINT NOT NULL DEFAULT 0,
+    tax_rate_percent NUMERIC(5,2) NOT NULL DEFAULT 20.00,
+    subtotal_cents BIGINT NOT NULL,
+    tax_cents BIGINT NOT NULL,
+    total_cents BIGINT NOT NULL,
+    margin_percent NUMERIC(5,2) NOT NULL DEFAULT 0.00,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    CONSTRAINT chk_quote_item_quantity_positive CHECK (quantity > 0)
+);
+
+-- Quote Approvals Table (Canonical Approval Queue with Exact Terms Hash)
+CREATE TABLE IF NOT EXISTS quote_approvals (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    quote_id VARCHAR(36) NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
+    quote_version INT NOT NULL,
+    terms_hash VARCHAR(64) NOT NULL,
+    requested_by_user_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    requested_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    decided_by_user_id VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
+    decided_at TIMESTAMPTZ,
+    decision_reason VARCHAR(255),
+    mfa_verified BOOLEAN NOT NULL DEFAULT false,
+    decision_signature VARCHAR(255),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+
+-- Quote Documents Table (Hash-addressed generated pro-forma/quote documents)
+CREATE TABLE IF NOT EXISTS quote_documents (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    quote_id VARCHAR(36) NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
+    quote_version INT NOT NULL,
+    document_type VARCHAR(50) NOT NULL DEFAULT 'PRO_FORMA',
+    document_hash VARCHAR(64) NOT NULL,
+    file_path VARCHAR(500) NOT NULL,
+    content_json TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+
+-- Indexes for Step 04 Performance
+CREATE INDEX IF NOT EXISTS idx_accounts_tenant ON accounts(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_contacts_account ON contacts(account_id);
+CREATE INDEX IF NOT EXISTS idx_leads_tenant_status ON leads(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_opportunities_tenant_stage ON opportunities(tenant_id, stage);
+CREATE INDEX IF NOT EXISTS idx_activities_tenant ON activities(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_products_tenant ON products(tenant_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_price_lists_tenant ON price_lists(tenant_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_quotes_tenant_status ON quotes(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_quote_items_quote ON quote_items(quote_id);
+CREATE INDEX IF NOT EXISTS idx_quote_approvals_quote ON quote_approvals(quote_id, status);
+CREATE INDEX IF NOT EXISTS idx_quote_documents_quote ON quote_documents(quote_id);
+
 -- 4. Enable Row-Level Security (RLS) on all tenant-partitioned tables
 ALTER TABLE organization_sites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE organization_sites FORCE ROW LEVEL SECURITY;
@@ -319,6 +581,42 @@ ALTER TABLE message_attachments FORCE ROW LEVEL SECURITY;
 
 ALTER TABLE outbox_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE outbox_events FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE accounts FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE leads FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE opportunities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE opportunities FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE activities FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE products FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE product_variants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_variants FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE price_lists ENABLE ROW LEVEL SECURITY;
+ALTER TABLE price_lists FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE price_list_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE price_list_items FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE quotes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quotes FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE quote_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quote_items FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE quote_approvals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quote_approvals FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE quote_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quote_documents FORCE ROW LEVEL SECURITY;
 
 -- 5. Define RLS Isolation Policies
 CREATE POLICY tenant_isolation_sites ON organization_sites
@@ -412,6 +710,66 @@ CREATE POLICY tenant_isolation_outbox_events ON outbox_events
     USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
     WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
 
+CREATE POLICY tenant_isolation_accounts ON accounts
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_leads ON leads
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_opportunities ON opportunities
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_activities ON activities
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_products ON products
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_product_variants ON product_variants
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_price_lists ON price_lists
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_price_list_items ON price_list_items
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_quotes ON quotes
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_quote_items ON quote_items
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_quote_approvals ON quote_approvals
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_quote_documents ON quote_documents
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
 -- 6. Grant least-privilege DML permissions to sales_app_user
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO sales_app_user;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO sales_app_user;
@@ -438,5 +796,11 @@ INSERT INTO permissions (id, code, description, domain) VALUES
     ('perm_quotes_create', 'quotes:create', 'Create and send commercial quotations', 'COMMERCE'),
     ('perm_orders_read', 'orders:read', 'View customer order and shipment status', 'COMMERCE'),
     ('perm_voice_copilot', 'voice:copilot', 'Access privileged Manager Voice Copilot interface', 'VOICE'),
-    ('perm_audit_read', 'audit:read', 'View compliance and security audit logs', 'SECURITY')
+    ('perm_audit_read', 'audit:read', 'View compliance and security audit logs', 'SECURITY'),
+    ('perm_crm_read', 'crm:read', 'View CRM leads, accounts and opportunities', 'CRM'),
+    ('perm_crm_write', 'crm:write', 'Create and modify CRM leads, accounts and opportunities', 'CRM'),
+    ('perm_catalog_read', 'catalog:read', 'View catalog products and price lists', 'COMMERCE'),
+    ('perm_catalog_write', 'catalog:write', 'Manage products and price lists', 'COMMERCE'),
+    ('perm_quotes_read', 'quotes:read', 'View commercial quotations and proposals', 'COMMERCE'),
+    ('perm_quotes_write', 'quotes:write', 'Create and update quotations', 'COMMERCE')
 ON CONFLICT (code) DO NOTHING;

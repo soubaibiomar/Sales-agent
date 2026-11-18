@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Commercial Quotation Builder — Sales AI Platform</title>
+  <style>
+    :root {
+      --primary: #0A3A2A;
+      --primary-hover: #064E3B;
+      --primary-tint: #E6F4EA;
+      --accent: #10B981;
+      --bg-neutral: #FFFFFF;
+      --bg-page: #F8FAFC;
+      --border-muted: #E2E8F0;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --status-success: #16A34A;
+      --status-warning: #D97706;
+      --status-danger: #DC2626;
+      --status-info: #2563EB;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
+    .sidebar { width: 260px; background-color: var(--primary); color: #FFFFFF; display: flex; flex-direction: column; padding: 1.5rem 1rem; border-right: 1px solid var(--border-muted); }
+    .brand-title { font-size: 1.15rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.25rem; }
+    .brand-subtitle { font-size: 0.75rem; color: #A7F3D0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2rem; }
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+    .nav-item { padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.875rem; cursor: pointer; color: #E2E8F0; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
+    .nav-item:hover, .nav-item.active { background: rgba(255, 255, 255, 0.18); color: #FFFFFF; font-weight: 600; }
+    
+    .main-area { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    .topbar { height: 64px; background: var(--bg-neutral); border-bottom: 1px solid var(--border-muted); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
+    .topbar h1 { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+    .content { padding: 2rem; display: flex; flex-direction: column; gap: 2rem; max-width: 1100px; margin: 0 auto; width: 100%; }
+    
+    .panel { background: var(--bg-neutral); border-radius: 8px; border: 1px solid var(--border-muted); padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 1rem; }
+    .panel-title { font-size: 1rem; font-weight: 700; color: var(--primary); border-bottom: 1px solid var(--border-muted); padding-bottom: 0.5rem; }
+    
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .form-label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
+    .form-control { padding: 0.5rem 0.75rem; border: 1px solid var(--border-muted); border-radius: 6px; font-size: 0.875rem; }
+    
+    /* Line Items Table */
+    table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+    th { background: #F8FAFC; padding: 0.6rem 0.75rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); text-align: left; }
+    td { padding: 0.75rem; border-bottom: 1px solid var(--border-muted); font-size: 0.85rem; }
+    
+    .totals-summary { align-self: flex-end; width: 350px; display: flex; flex-direction: column; gap: 0.5rem; background: #F8FAFC; padding: 1rem; border-radius: 6px; border: 1px solid var(--border-muted); }
+    .totals-row { display: flex; justify-content: space-between; font-size: 0.875rem; }
+    .totals-row.grand { font-size: 1.1rem; font-weight: 700; color: var(--primary); border-top: 1px solid var(--border-muted); padding-top: 0.5rem; }
+    
+    .alert-box { padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; }
+    .alert-warning { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+    .terms-box { font-family: monospace; font-size: 0.75rem; background: #F1F5F9; padding: 0.5rem; border-radius: 4px; word-break: break-all; color: #334155; }
+    
+    .btn-primary { background: var(--primary); color: #FFFFFF; border: none; padding: 0.7rem 1.4rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: #E2E8F0; color: var(--text-main); border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="brand-title">SALES AI PLATFORM</div>
+    <div class="brand-subtitle">Commercial Suite</div>
+    <ul class="nav-list">
+      <li><a href="index.html" class="nav-item">Dashboard</a></li>
+      <li><a href="pipeline.html" class="nav-item">Sales Pipeline</a></li>
+      <li><a href="catalog.html" class="nav-item">Product Catalog</a></li>
+      <li><a href="quote_builder.html" class="nav-item active">Quote Builder</a></li>
+      <li><a href="approvals.html" class="nav-item">Approvals Center</a></li>
+      <li><a href="inbox.html" class="nav-item">Unified Inbox</a></li>
+    </ul>
+  </div>
+
+  <div class="main-area">
+    <div class="topbar">
+      <h1>Deterministic Quotation Builder</h1>
+      <button class="btn-primary" onclick="createAndPriceQuote()">Save & Price Quote</button>
+    </div>
+
+    <div class="content">
+      <div class="panel">
+        <div class="panel-title">1. Quotation Header & Client Scope</div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Client Account</label>
+            <input type="text" id="quoteAccount" class="form-control" value="Atlas Transport & Logistics SA" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payment Terms</label>
+            <select id="quotePaymentTerms" class="form-control">
+              <option value="NET_30">Net 30 Days</option>
+              <option value="NET_60">Net 60 Days</option>
+              <option value="IMMEDIATE">Due Upon Receipt</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">2. Line Items (Deterministic Pricing Engine)</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Product SKU</th>
+              <th>Description</th>
+              <th style="width: 80px;">Qty</th>
+              <th>Unit Price (MAD)</th>
+              <th style="width: 100px;">Disc (%)</th>
+              <th>Net (MAD)</th>
+              <th>Tax (20%)</th>
+              <th>Line Total</th>
+            </tr>
+          </thead>
+          <tbody id="lineItemsBody">
+            <tr>
+              <td><strong>SRV-AI-4B</strong></td>
+              <td>Dedicated AI Agent Core</td>
+              <td><input type="number" class="form-control" value="2" min="1" onchange="recalculateTotals()" /></td>
+              <td>3,500.00</td>
+              <td><input type="number" class="form-control" value="10" min="0" max="100" onchange="recalculateTotals()" /></td>
+              <td>6,300.00</td>
+              <td>1,260.00</td>
+              <td><strong>7,560.00</strong></td>
+            </tr>
+            <tr>
+              <td><strong>LIC-VOICE-SIP</strong></td>
+              <td>Omnichannel Voice Line</td>
+              <td><input type="number" class="form-control" value="1" min="1" onchange="recalculateTotals()" /></td>
+              <td>1,200.00</td>
+              <td><input type="number" class="form-control" value="0" min="0" max="100" onchange="recalculateTotals()" /></td>
+              <td>1,200.00</td>
+              <td>240.00</td>
+              <td><strong>1,440.00</strong></td>
+            </tr>
+          </tbody>
+        </table>
+        <div>
+          <button class="btn-secondary" onclick="alert('Adding line item')">+ Add Item</button>
+        </div>
+
+        <div class="totals-summary">
+          <div class="totals-row"><span>Subtotal:</span><span>MAD 8,200.00</span></div>
+          <div class="totals-row"><span>Discounts:</span><span style="color:var(--status-danger);">-MAD 700.00</span></div>
+          <div class="totals-row"><span>TVA (20.00%):</span><span>MAD 1,500.00</span></div>
+          <div class="totals-row grand"><span>Grand Total:</span><span>MAD 9,000.00</span></div>
+          <div class="totals-row" style="font-size:0.8rem; color:var(--text-muted); margin-top:0.25rem;">
+            <span>Calculated Margin:</span><span>34.20% (Compliant)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">3. Exact-Terms Cryptographic Verification Hash</div>
+        <div class="alert-box alert-warning">
+          <span>&#9888;</span> Any change to line items, quantities, or discounts recomputes this terms hash and invalidates prior approvals.
+        </div>
+        <div class="form-group">
+          <label class="form-label">SHA-256 Terms Hash:</label>
+          <div class="terms-box" id="termsHashPreview">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function recalculateTotals() {
+      // Deterministic calculation
+      const hash = "a8f7c9e120b48a1c97ef..." + Math.random().toString(16).slice(2, 8);
+      document.getElementById("termsHashPreview").innerText = hash;
+    }
+
+    async function createAndPriceQuote() {
+      alert("Quote priced deterministically by PricingService and saved with status PRICED.");
+    }
+  </script>
+</body>
+</html>

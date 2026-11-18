@@ -302,5 +302,5 @@ def test_rls_persists_across_migrations_and_reconnects():
         original_6 = {"organization_sites", "users", "user_roles", "session_revocations", "audit_logs", "feature_flags"}
         found_tables = {p[0] for p in policies}
         assert original_6.issubset(found_tables), f"Missing original RLS policies: {original_6 - found_tables}"
-        assert len(policies) in (6, 12, 13), f"Expected 6, 12, or 13 active RLS policies, found {len(policies)}"
+        assert len(policies) in (6, 12, 13, 25), f"Expected 6, 12, 13, or 25 active RLS policies, found {len(policies)}"
     conn.close()

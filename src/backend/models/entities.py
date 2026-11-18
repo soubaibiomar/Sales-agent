@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional, List
 from sqlalchemy import (
-    Column, String, Boolean, DateTime, ForeignKey, Integer, Text, Table, UniqueConstraint, JSON
+    Column, String, Boolean, DateTime, ForeignKey, Integer, BigInteger, Numeric, Text, Table, UniqueConstraint, JSON
 )
 from sqlalchemy.orm import declarative_base, relationship, synonym
 from sqlalchemy.dialects.postgresql import JSONB
@@ -147,11 +147,36 @@ class FeatureFlag(Base):
 
     __table_args__ = (UniqueConstraint("tenant_id", "key", name="uq_tenant_feature_key"),)
 
+class Account(Base):
+    __tablename__ = "accounts"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    account_type = Column(String(50), nullable=False, default="CUSTOMER")  # CUSTOMER, PROSPECT, PARTNER, VENDOR
+    tax_identifier = Column(String(100), nullable=True)  # ICE, VAT, EIN
+    industry = Column(String(100), nullable=True)
+    website = Column(String(255), nullable=True)
+    phone = Column(String(50), nullable=True)
+    billing_address = Column(Text, nullable=True)
+    shipping_address = Column(Text, nullable=True)
+    assigned_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True)
+    metadata_json = Column(Text, nullable=True, default="{}")
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    tenant = relationship("Tenant")
+    assigned_user = relationship("User")
+    contacts = relationship("Contact", back_populates="account")
+    __table_args__ = (UniqueConstraint("tenant_id", "name", name="uq_tenant_account_name"),)
+
 class Contact(Base):
     __tablename__ = "contacts"
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
     tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    account_id = Column(String(36), ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True, index=True)
     first_name = Column(String(100), nullable=True)
     last_name = Column(String(100), nullable=True)
     display_name = Column(String(200), nullable=False)
@@ -163,6 +188,7 @@ class Contact(Base):
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
 
     tenant = relationship("Tenant")
+    account = relationship("Account", back_populates="contacts")
     identities = relationship("ChannelIdentity", back_populates="contact", cascade="all, delete-orphan")
     conversations = relationship("Conversation", back_populates="contact", cascade="all, delete-orphan")
 
@@ -301,3 +327,268 @@ class TenantChannelIntegration(Base):
 
 
 
+
+
+class Lead(Base):
+    __tablename__ = "leads"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    first_name = Column(String(100), nullable=True)
+    last_name = Column(String(100), nullable=True)
+    company_name = Column(String(200), nullable=True)
+    email = Column(String(255), nullable=True)
+    phone = Column(String(50), nullable=True)
+    status = Column(String(50), nullable=False, default="NEW")  # NEW, CONTACTED, QUALIFIED, CONVERTED, DISQUALIFIED
+    source = Column(String(50), nullable=False, default="MANUAL")  # WEB_CHAT, WHATSAPP, EMAIL, VOICE_SIP, MANUAL, REFERRAL
+    score = Column(Integer, nullable=False, default=0)
+    assigned_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    converted_account_id = Column(String(36), ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True)
+    converted_contact_id = Column(String(36), ForeignKey("contacts.id", ondelete="SET NULL"), nullable=True)
+    converted_opportunity_id = Column(String(36), ForeignKey("opportunities.id", ondelete="SET NULL"), nullable=True)
+    notes = Column(Text, nullable=True)
+    metadata_json = Column(Text, nullable=True, default="{}")
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    tenant = relationship("Tenant")
+    assigned_user = relationship("User")
+
+
+class Opportunity(Base):
+    __tablename__ = "opportunities"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    account_id = Column(String(36), ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False, index=True)
+    contact_id = Column(String(36), ForeignKey("contacts.id", ondelete="SET NULL"), nullable=True)
+    lead_id = Column(String(36), ForeignKey("leads.id", ondelete="SET NULL"), nullable=True)
+    title = Column(String(255), nullable=False)
+    stage = Column(String(50), nullable=False, default="DISCOVERY")  # DISCOVERY, QUALIFICATION, PROPOSAL, NEGOTIATION, CLOSED_WON, CLOSED_LOST
+    amount_cents = Column(BigInteger, nullable=False, default=0)
+    currency = Column(String(10), nullable=False, default="MAD")
+    probability_percent = Column(Integer, nullable=False, default=20)
+    expected_close_date = Column(DateTime(timezone=True), nullable=True)
+    assigned_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    lost_reason = Column(String(255), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    tenant = relationship("Tenant")
+    account = relationship("Account")
+    contact = relationship("Contact")
+    assigned_user = relationship("User")
+    quotes = relationship("Quote", back_populates="opportunity", cascade="all, delete-orphan")
+
+
+class Activity(Base):
+    __tablename__ = "activities"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    activity_type = Column(String(50), nullable=False)  # NOTE, CALL, EMAIL, MEETING, TASK
+    subject = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    due_date = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    assigned_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    lead_id = Column(String(36), ForeignKey("leads.id", ondelete="CASCADE"), nullable=True)
+    opportunity_id = Column(String(36), ForeignKey("opportunities.id", ondelete="CASCADE"), nullable=True)
+    account_id = Column(String(36), ForeignKey("accounts.id", ondelete="CASCADE"), nullable=True)
+    contact_id = Column(String(36), ForeignKey("contacts.id", ondelete="CASCADE"), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    tenant = relationship("Tenant")
+    assigned_user = relationship("User")
+
+
+class Product(Base):
+    __tablename__ = "products"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    sku = Column(String(100), nullable=False)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    product_type = Column(String(50), nullable=False, default="PHYSICAL")  # PHYSICAL, SERVICE, SUBSCRIPTION
+    uom = Column(String(50), nullable=False, default="UNIT")  # UNIT, HOUR, DAY, KG, METER, BOX, PACK
+    category = Column(String(100), nullable=True)
+    base_price_cents = Column(BigInteger, nullable=False, default=0)
+    cost_cents = Column(BigInteger, nullable=False, default=0)
+    currency = Column(String(10), nullable=False, default="MAD")
+    tax_rate_percent = Column(Numeric(5, 2), nullable=False, default=20.00)
+    min_margin_percent = Column(Numeric(5, 2), nullable=False, default=15.00)
+    is_active = Column(Boolean, nullable=False, default=True)
+    metadata_json = Column(Text, nullable=True, default="{}")
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    tenant = relationship("Tenant")
+    variants = relationship("ProductVariant", back_populates="product", cascade="all, delete-orphan")
+    __table_args__ = (UniqueConstraint("tenant_id", "sku", name="uq_tenant_product_sku"),)
+
+
+class ProductVariant(Base):
+    __tablename__ = "product_variants"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    sku_variant = Column(String(100), nullable=False)
+    name = Column(String(255), nullable=False)
+    attributes_json = Column(Text, nullable=False, default="{}")
+    price_adjustment_cents = Column(BigInteger, nullable=False, default=0)
+    cost_adjustment_cents = Column(BigInteger, nullable=False, default=0)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    product = relationship("Product", back_populates="variants")
+    __table_args__ = (UniqueConstraint("tenant_id", "sku_variant", name="uq_tenant_variant_sku"),)
+
+
+class PriceList(Base):
+    __tablename__ = "price_lists"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    code = Column(String(50), nullable=False)
+    currency = Column(String(10), nullable=False, default="MAD")
+    description = Column(Text, nullable=True)
+    is_default = Column(Boolean, nullable=False, default=False)
+    is_active = Column(Boolean, nullable=False, default=True)
+    valid_from = Column(DateTime(timezone=True), nullable=True)
+    valid_to = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    tenant = relationship("Tenant")
+    items = relationship("PriceListItem", back_populates="price_list", cascade="all, delete-orphan")
+    __table_args__ = (UniqueConstraint("tenant_id", "code", name="uq_tenant_pricelist_code"),)
+
+
+class PriceListItem(Base):
+    __tablename__ = "price_list_items"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    price_list_id = Column(String(36), ForeignKey("price_lists.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    variant_id = Column(String(36), ForeignKey("product_variants.id", ondelete="CASCADE"), nullable=True)
+    unit_price_cents = Column(BigInteger, nullable=False)
+    min_quantity = Column(Integer, nullable=False, default=1)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    price_list = relationship("PriceList", back_populates="items")
+    product = relationship("Product")
+    variant = relationship("ProductVariant")
+
+
+class Quote(Base):
+    __tablename__ = "quotes"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    quote_number = Column(String(100), nullable=False)
+    opportunity_id = Column(String(36), ForeignKey("opportunities.id", ondelete="SET NULL"), nullable=True, index=True)
+    account_id = Column(String(36), ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True)
+    contact_id = Column(String(36), ForeignKey("contacts.id", ondelete="SET NULL"), nullable=True)
+    price_list_id = Column(String(36), ForeignKey("price_lists.id", ondelete="SET NULL"), nullable=True)
+    currency = Column(String(10), nullable=False, default="MAD")
+    status = Column(String(50), nullable=False, default="DRAFT")  # DRAFT, PRICED, PENDING_APPROVAL, APPROVED, ISSUED, SENT, ACCEPTED, REJECTED, EXPIRED, CANCELLED
+    version = Column(Integer, nullable=False, default=1)
+    subtotal_cents = Column(BigInteger, nullable=False, default=0)
+    discount_total_cents = Column(BigInteger, nullable=False, default=0)
+    tax_total_cents = Column(BigInteger, nullable=False, default=0)
+    grand_total_cents = Column(BigInteger, nullable=False, default=0)
+    margin_percent = Column(Numeric(5, 2), nullable=False, default=0.00)
+    requires_approval = Column(Boolean, nullable=False, default=False)
+    approval_reason = Column(String(255), nullable=True)
+    terms_hash = Column(String(64), nullable=False)  # Cryptographic SHA-256 of line items and pricing terms
+    valid_until = Column(DateTime(timezone=True), nullable=False)
+    payment_terms = Column(String(100), nullable=True, default="NET_30")
+    notes = Column(Text, nullable=True)
+    issued_at = Column(DateTime(timezone=True), nullable=True)
+    accepted_at = Column(DateTime(timezone=True), nullable=True)
+    created_by_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    tenant = relationship("Tenant")
+    opportunity = relationship("Opportunity", back_populates="quotes")
+    account = relationship("Account")
+    contact = relationship("Contact")
+    created_by_user = relationship("User")
+    items = relationship("QuoteItem", back_populates="quote", cascade="all, delete-orphan")
+    approvals = relationship("QuoteApproval", back_populates="quote", cascade="all, delete-orphan")
+    documents = relationship("QuoteDocument", back_populates="quote", cascade="all, delete-orphan")
+    __table_args__ = (UniqueConstraint("tenant_id", "quote_number", name="uq_tenant_quote_number"),)
+
+
+class QuoteItem(Base):
+    __tablename__ = "quote_items"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    quote_id = Column(String(36), ForeignKey("quotes.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(String(36), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    variant_id = Column(String(36), ForeignKey("product_variants.id", ondelete="SET NULL"), nullable=True)
+    sku_snapshot = Column(String(100), nullable=False)
+    name_snapshot = Column(String(255), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    uom_snapshot = Column(String(50), nullable=False)
+    unit_price_cents = Column(BigInteger, nullable=False)
+    unit_cost_cents = Column(BigInteger, nullable=False, default=0)
+    discount_percent = Column(Numeric(5, 2), nullable=False, default=0.00)
+    discount_cents = Column(BigInteger, nullable=False, default=0)
+    tax_rate_percent = Column(Numeric(5, 2), nullable=False, default=20.00)
+    subtotal_cents = Column(BigInteger, nullable=False)
+    tax_cents = Column(BigInteger, nullable=False)
+    total_cents = Column(BigInteger, nullable=False)
+    margin_percent = Column(Numeric(5, 2), nullable=False, default=0.00)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    quote = relationship("Quote", back_populates="items")
+    product = relationship("Product")
+    variant = relationship("ProductVariant")
+
+
+class QuoteApproval(Base):
+    __tablename__ = "quote_approvals"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    quote_id = Column(String(36), ForeignKey("quotes.id", ondelete="CASCADE"), nullable=False, index=True)
+    quote_version = Column(Integer, nullable=False)
+    terms_hash = Column(String(64), nullable=False)
+    requested_by_user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    requested_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    status = Column(String(50), nullable=False, default="PENDING")  # PENDING, APPROVED, REJECTED, INVALIDATED
+    decided_by_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    decided_at = Column(DateTime(timezone=True), nullable=True)
+    decision_reason = Column(String(255), nullable=True)
+    mfa_verified = Column(Boolean, nullable=False, default=False)
+    decision_signature = Column(String(255), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    quote = relationship("Quote", back_populates="approvals")
+    requested_by = relationship("User", foreign_keys=[requested_by_user_id])
+    decided_by = relationship("User", foreign_keys=[decided_by_user_id])
+
+
+class QuoteDocument(Base):
+    __tablename__ = "quote_documents"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    quote_id = Column(String(36), ForeignKey("quotes.id", ondelete="CASCADE"), nullable=False, index=True)
+    quote_version = Column(Integer, nullable=False)
+    document_type = Column(String(50), nullable=False, default="PRO_FORMA")  # PRO_FORMA, FORMAL_QUOTE
+    document_hash = Column(String(64), nullable=False)  # Cryptographic SHA-256 of document content
+    file_path = Column(String(500), nullable=False)
+    content_json = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    quote = relationship("Quote", back_populates="documents")

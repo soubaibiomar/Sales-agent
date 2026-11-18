@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Catalog & Price Lists — Sales AI Platform</title>
+  <style>
+    :root {
+      --primary: #0A3A2A;
+      --primary-hover: #064E3B;
+      --primary-tint: #E6F4EA;
+      --accent: #10B981;
+      --bg-neutral: #FFFFFF;
+      --bg-page: #F8FAFC;
+      --border-muted: #E2E8F0;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --status-success: #16A34A;
+      --status-warning: #D97706;
+      --status-danger: #DC2626;
+      --status-info: #2563EB;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
+    .sidebar { width: 260px; background-color: var(--primary); color: #FFFFFF; display: flex; flex-direction: column; padding: 1.5rem 1rem; border-right: 1px solid var(--border-muted); }
+    .brand-title { font-size: 1.15rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.25rem; }
+    .brand-subtitle { font-size: 0.75rem; color: #A7F3D0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2rem; }
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+    .nav-item { padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.875rem; cursor: pointer; color: #E2E8F0; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
+    .nav-item:hover, .nav-item.active { background: rgba(255, 255, 255, 0.18); color: #FFFFFF; font-weight: 600; }
+    
+    .main-area { flex: 1; display: flex; flex-direction: column; }
+    .topbar { height: 64px; background: var(--bg-neutral); border-bottom: 1px solid var(--border-muted); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
+    .topbar h1 { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+    .content { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
+    
+    .table-container { background: var(--bg-neutral); border-radius: 8px; border: 1px solid var(--border-muted); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { background: #F1F5F9; padding: 0.75rem 1rem; font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; }
+    td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border-muted); font-size: 0.875rem; }
+    tr:last-child td { border-bottom: none; }
+    .btn-primary { background: var(--primary); color: #FFFFFF; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+    .badge-success { background: #DCFCE7; color: var(--status-success); }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="brand-title">SALES AI PLATFORM</div>
+    <div class="brand-subtitle">Commercial Suite</div>
+    <ul class="nav-list">
+      <li><a href="index.html" class="nav-item">Dashboard</a></li>
+      <li><a href="pipeline.html" class="nav-item">Sales Pipeline</a></li>
+      <li><a href="catalog.html" class="nav-item active">Product Catalog</a></li>
+      <li><a href="quote_builder.html" class="nav-item">Quote Builder</a></li>
+      <li><a href="approvals.html" class="nav-item">Approvals Center</a></li>
+      <li><a href="inbox.html" class="nav-item">Unified Inbox</a></li>
+    </ul>
+  </div>
+
+  <div class="main-area">
+    <div class="topbar">
+      <h1>Products & Price Lists Catalog</h1>
+      <button class="btn-primary" onclick="alert('Product addition modal')">+ Add Product</button>
+    </div>
+
+    <div class="content">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Product Name</th>
+              <th>Type / UOM</th>
+              <th>Base Price</th>
+              <th>Cost</th>
+              <th>TVA Tax Rate</th>
+              <th>Margin Floor</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="catalogTable">
+            <!-- Dynamically populated or rendered -->
+            <tr>
+              <td><strong>SRV-AI-4B</strong></td>
+              <td>Dedicated AI Agent Core (4B Model)</td>
+              <td>SERVICE / MONTH</td>
+              <td>MAD 3,500.00</td>
+              <td>MAD 1,800.00</td>
+              <td>20.00%</td>
+              <td>25.00%</td>
+              <td><span class="badge badge-success">ACTIVE</span></td>
+            </tr>
+            <tr>
+              <td><strong>SRV-AI-9B</strong></td>
+              <td>Advanced Reasoning Copilot (9B High Complexity)</td>
+              <td>SERVICE / MONTH</td>
+              <td>MAD 6,500.00</td>
+              <td>MAD 3,200.00</td>
+              <td>20.00%</td>
+              <td>30.00%</td>
+              <td><span class="badge badge-success">ACTIVE</span></td>
+            </tr>
+            <tr>
+              <td><strong>LIC-VOICE-SIP</strong></td>
+              <td>Dual-Mode Omnichannel Voice Line (SIP/WebRTC)</td>
+              <td>SUBSCRIPTION / LINE</td>
+              <td>MAD 1,200.00</td>
+              <td>MAD 450.00</td>
+              <td>20.00%</td>
+              <td>15.00%</td>
+              <td><span class="badge badge-success">ACTIVE</span></td>
+            </tr>
+            <tr>
+              <td><strong>DEV-INTEG-ONBOARD</strong></td>
+              <td>Custom CRM & ERP Integration Pack</td>
+              <td>SERVICE / UNIT</td>
+              <td>MAD 15,000.00</td>
+              <td>MAD 8,000.00</td>
+              <td>20.00%</td>
+              <td>20.00%</td>
+              <td><span class="badge badge-success">ACTIVE</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
