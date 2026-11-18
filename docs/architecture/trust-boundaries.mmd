@@ -1,0 +1,109 @@
+flowchart TD
+    %% Trust Boundaries & STRIDE Threat Model Diagram
+    
+    subgraph TB1["Trust Boundary 1: Customer Inbound & Voice Media"]
+        CustPhone["Customer Telephony / PSTN"]
+        CustWeb["Customer Web Browser / WebRTC"]
+        VoiceEdge["Voice Ingress Edge (SIP / SRTP / WSS)"]
+        CallerIDVerify{"Caller-ID Verified?<br>Sensitive Data Request?"}
+        OTPService["Secondary OTP Verification Service (SMS/WhatsApp)"]
+        PublicCatalogView["Public Product / Catalog Info (Safe)"]
+        PrivateOrderView["Private Customer Account / Order Data"]
+        
+        CustPhone -->|"Untrusted Caller ID"| VoiceEdge
+        CustWeb -->|"Web Audio Session"| VoiceEdge
+        VoiceEdge --> CallerIDVerify
+        CallerIDVerify -->|"No / Public Intent"| PublicCatalogView
+        CallerIDVerify -->|"Yes / Sensitive Intent"| OTPService
+        OTPService -->|"Verified OTP Token"| PrivateOrderView
+    end
+
+    subgraph TB2["Trust Boundary 2: Manager Voice Copilot & Privileged Actions"]
+        ManagerDevice["Manager Workstation / App"]
+        ManagerSession["Authenticated OIDC Session + Active MFA"]
+        VoiceCopilot["Manager Voice Copilot Interface"]
+        ActionRiskGate{"Action Risk Evaluation<br>(High-Risk Financial Mutation?)"}
+        SpokenBriefing["Spoken Analytics & Pipeline Briefing"]
+        StepUpMFAUI["Step-Up UI Confirmation & Second-Factor Approval"]
+        
+        ManagerDevice --> ManagerSession
+        ManagerSession --> VoiceCopilot
+        VoiceCopilot --> ActionRiskGate
+        ActionRiskGate -->|"Low Risk / Read Only"| SpokenBriefing
+        ActionRiskGate -->|"High Risk (>25% Discount / Refund / Wire)"| StepUpMFAUI
+    end
+
+    subgraph TB3["Trust Boundary 3: External Provider Webhooks"]
+        ExtProvider["External Gateways (Stripe, WhatsApp, Twilio)"]
+        WebhookEndpoint["Public Ingress Webhook Endpoint"]
+        HMACValidator{"Cryptographic HMAC<br>Signature Valid?"}
+        ReplayCache{"Replay Detector<br>(Redis Nonce / Idempotency Key)"}
+        DomainEventQueue["Verified Domain Event Outbox"]
+        RejectDrop["HTTP 401/409 Drop & Security Alert"]
+        
+        ExtProvider -->|"Webhook Request + Signature Header"| WebhookEndpoint
+        WebhookEndpoint --> HMACValidator
+        HMACValidator -->|"Invalid Signature"| RejectDrop
+        HMACValidator -->|"Valid Signature"| ReplayCache
+        ReplayCache -->|"Duplicate / Already Processed"| RejectDrop
+        ReplayCache -->|"Fresh Event"| DomainEventQueue
+    end
+
+    subgraph TB4["Trust Boundary 4: AI Tool Execution Boundary"]
+        LLMModel["AI LLM Reasoning Engine"]
+        ToolCallPayload["Proposed Tool Call JSON"]
+        ToolGatewayGuard{"Typed Schema Valid &<br>Caller Has Scope?"}
+        InjectedContext["Server-Injected SecurityContext<br>(TenantID, UserID, Permissions)"]
+        DomainServiceExec["Deterministic Domain Service Execution"]
+        ToolReject["Tool Call Rejected & Logged"]
+        
+        LLMModel --> ToolCallPayload
+        ToolCallPayload --> ToolGatewayGuard
+        ToolGatewayGuard -->|"Invalid Schema / Scope Violation"| ToolReject
+        ToolGatewayGuard -->|"Valid Schema & Scope"| InjectedContext
+        InjectedContext --> DomainServiceExec
+    end
+
+    subgraph TB5["Trust Boundary 5: RAG & Document Knowledge Boundary"]
+        DocIngest["Knowledge Document Ingestion"]
+        ACLTagging["Tenant & Role ACL Tagging"]
+        VectorDB[("pgvector Embeddings Table")]
+        UserQuery["User Semantic Search Query"]
+        RLSScopeFilter{"PostgreSQL RLS Filter<br>(tenant_id = current_tenant_id<br>AND user_role IN acl)"}
+        FilteredContext["Secure Document Context for LLM"]
+        
+        DocIngest --> ACLTagging
+        ACLTagging --> VectorDB
+        UserQuery --> RLSScopeFilter
+        VectorDB --> RLSScopeFilter
+        RLSScopeFilter --> FilteredContext
+    end
+
+    subgraph TB6["Trust Boundary 6: Payment Events & Financial Transactions"]
+        PaymentTrigger["Checkout Commitment"]
+        PaymentStateMachine["Payment State Machine (Pending -> Authorized -> Captured)"]
+        LedgerAudit["Immutable Financial Ledger & Outbox"]
+        
+        PaymentTrigger --> PaymentStateMachine
+        PaymentStateMachine -->|"Atomic ACID Commit"| LedgerAudit
+    end
+
+    subgraph TB7["Trust Boundary 7: Stock Ledger & Inventory Reservation"]
+        CartCheckout["Active Cart Checkout (15m Timer)"]
+        StockPessimisticLock["Pessimistic Lock (SELECT FOR UPDATE)"]
+        StockDeduction["Reserve Available Quantity"]
+        ExpirationRelease["Temporal Expiration Timer -> Release Stock"]
+        
+        CartCheckout --> StockPessimisticLock
+        StockPessimisticLock --> StockDeduction
+        StockDeduction -.->|"If Unpaid After 15m"| ExpirationRelease
+    end
+
+    subgraph TB8["Trust Boundary 8: Approval Hierarchy & Quote Discounts"]
+        QuoteProposal["Quote Proposal (Requested Discount %)"]
+        PolicyMatrix{"Discount Threshold Policy<br>Tier 1: <=10% Auto<br>Tier 2: <=25% Manager<br>Tier 3: >25% Executive"}
+        SignedApproval["Cryptographic Signed Approval Record"]
+        
+        QuoteProposal --> PolicyMatrix
+        PolicyMatrix --> SignedApproval
+    end

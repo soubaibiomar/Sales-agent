@@ -1,0 +1,64 @@
+flowchart TD
+    %% Container Diagram (C4 Level 2)
+    subgraph Clients["Client Applications & Interfaces"]
+        WebAdmin["Next.js Management Console (TypeScript, Tailwind, Deep-Green UI)"]
+        CustomerWidget["Embeddable Web Chat & Voice Widget (React / WebRTC)"]
+        WhatsAppClient["WhatsApp User Interface (Meta Mobile / Web)"]
+        PSTNClient["Customer Phone / PSTN Mobile"]
+    end
+
+    subgraph EdgeLayer["Ingress & Edge Security"]
+        NginxWAF["Reverse Proxy & WAF (Rate Limiting, TLS 1.3, DDoS Mitigation)"]
+        AuthGateway["OIDC Authentication Gateway (JWT Verification, MFA Validation)"]
+    end
+
+    subgraph AppContainers["Application Service Containers"]
+        FastAPICore["Modular Business Core API (Python / FastAPI)<br>- CRM & Pipeline<br>- Catalog & Pricing<br>- Quotes & Approvals<br>- Orders & Invoices<br>- Payments & Settlements<br>- Inventory & Warehouses<br>- Support & Appointments"]
+        
+        VoiceGateway["Voice Media Gateway (Python / C++ / WebRTC / SIP)<br>- LiveKit / Asterisk / SIP Adapter<br>- Streaming VAD & Echo Cancellation<br>- STT / TTS Streaming Client<br>- Dual-Mode Session Manager"]
+        
+        ModelGatewayService["Controlled Model Gateway & RAG Service<br>- Multi-LLM Provider Router<br>- PII Redaction Filter<br>- Prompt Injection Detector<br>- Typed Tool Execution Dispatcher<br>- Deterministic Output Guard"]
+        
+        TemporalEngine["Temporal Orchestrator & Workers<br>- Checkout Sagas<br>- Stock Hold Expiration Timers<br>- Multi-tier Approval Escalations<br>- Shipment Tracking Workflows"]
+        
+        PeripheralN8N["Peripheral Automation Service (n8n)<br>- Non-authoritative marketing webhooks<br>- Outbound notification formatting"]
+    end
+
+    subgraph DataContainers["Data & Storage Infrastructure"]
+        PostgresDB[("PostgreSQL 16 Primary (Authoritative Truth)<br>- Row-Level Security (RLS)<br>- Relational Business Tables<br>- pgvector Semantic Embeddings<br>- Transactional Outbox")]
+        
+        RedisInstance[("Redis 7.2 Cluster (Ephemeral Store)<br>- Distributed Rate Limiting<br>- Sliding Window Session Cache<br>- Pub/Sub Realtime Events<br>- Redlock Mutex (TTL <= 30s)")]
+        
+        S3Storage[("Encrypted Object Store (MinIO / AWS S3)<br>- Private Buckets: documents, recordings<br>- Auto-deletion Lifecycle (Audio: 90 days)<br>- Presigned URL Access (TTL <= 15m)")]
+    end
+
+    %% Client Interactions
+    WebAdmin -->|"HTTPS / REST / WSS"| NginxWAF
+    CustomerWidget -->|"HTTPS / WSS / WebRTC"| NginxWAF
+    WhatsAppClient -->|"Meta Inbound Webhook (HMAC)"| NginxWAF
+    PSTNClient -->|"SIP Signaling / RTP Audio"| VoiceGateway
+
+    %% Ingress Flow
+    NginxWAF --> AuthGateway
+    AuthGateway -->|"Authenticated Requests + SecurityContext"| FastAPICore
+    AuthGateway -->|"Voice Session Token"| VoiceGateway
+
+    %% Service Interconnections
+    VoiceGateway -->|"Streaming Audio Tokens"| ModelGatewayService
+    VoiceGateway -->|"Deterministic Lookups / OTP Verification"| FastAPICore
+    
+    FastAPICore -->|"Invoke Reasoning / Draft Proposals"| ModelGatewayService
+    FastAPICore -->|"Schedule Durable Workflows"| TemporalEngine
+    FastAPICore -->|"Dispatch Outbox Events"| PeripheralN8N
+    
+    ModelGatewayService -->|"Execute Typed Tools (Validated Context)"| FastAPICore
+    TemporalEngine -->|"Execute Transactional Activities"| FastAPICore
+
+    %% Data Connections
+    FastAPICore -->|"ACID SQL Transactions (SET LOCAL tenant_id)"| PostgresDB
+    FastAPICore -->|"Ephemeral Cache & Idempotency Keys"| RedisInstance
+    FastAPICore -->|"Issue Presigned URLs"| S3Storage
+    
+    ModelGatewayService -->|"pgvector Cosine Search (RLS-Scoped)"| PostgresDB
+    VoiceGateway -->|"Store Encrypted Audio Chunks"| S3Storage
+    TemporalEngine -->|"Workflow State Persistence"| PostgresDB

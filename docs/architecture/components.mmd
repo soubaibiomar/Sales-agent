@@ -1,0 +1,63 @@
+flowchart TD
+    %% Component Diagram (C4 Level 3 - FastAPI Core & Model Gateway)
+    subgraph FastAPICoreComponents["Modular FastAPI Business Core Components"]
+        APIEndpoints["REST & WebSocket Controllers<br>(/crm, /catalog, /quotes, /orders, /payments)"]
+        SecurityMiddleware["Security & Auth Middleware<br>(JWT Decoding, RLS Session Injection, TenantContext)"]
+        
+        subgraph DomainServices["Deterministic Business Services"]
+            CRMService["CRM Service (Leads, Contacts, Opportunities, Pipeline)"]
+            CatalogService["Catalog & Pricing Service (Products, Tiers, Price Rules)"]
+            QuoteService["Quote & Approval Service (Drafting, Discount Policies, Signatures)"]
+            OrderService["Order & Checkout Service (Commitment, Invoicing, Tax Calculations)"]
+            PaymentService["Payment & Reconciliation Service (Gateway Adapters, Webhooks, Ledgers)"]
+            InventoryService["Inventory Service (Stock Ledgers, Multi-Warehouse Holds, Pessimistic Locks)"]
+            LogisticsService["Procurement & Logistics Service (Suppliers, POs, Shipments, Tracking)"]
+            SupportService["Support & Appointment Service (Tickets, Resolution, Calendaring)"]
+            AuditService["Security & Compliance Audit Service (Immutable Hash-Chained Logs)"]
+        end
+        
+        OutboxProcessor["Transactional Outbox Event Publisher"]
+    end
+
+    subgraph ModelGatewayComponents["Governed AI & Model Gateway Components"]
+        RouterClassifier["Inbound Router & Intent Classifier"]
+        Supervisor["Conversation Supervisor (State & Active Specialist Selection)"]
+        
+        subgraph Specialists["Interactive Specialist Catalog (On-Demand)"]
+            DiscoverySpec["Discovery & Qualification"]
+            ProductSpec["Product & Catalog"]
+            QuoteSpec["Quotation & Pricing"]
+            OrderSpec["Order & Checkout"]
+            InventorySpec["Inventory Availability"]
+            LogisticsSpec["Logistics & Tracking"]
+            SupportSpec["Support & Issues"]
+            AppointmentSpec["Appointments"]
+            ReturnsSpec["Returns & Refunds"]
+        end
+        
+        PromptFilter["Multilingual Prompt Injection & Jailbreak Filter"]
+        PIIRedactor["PII & Sensitive Data Redaction Layer"]
+        ToolGateway["Typed Tool Gateway (Pydantic Schema Validation)"]
+        OutputGuard["Deterministic Claim & Output Verification Guard"]
+    end
+
+    %% Internal Component Wiring
+    APIEndpoints --> SecurityMiddleware
+    SecurityMiddleware --> DomainServices
+
+    %% Inbound AI Flow
+    APIEndpoints --> RouterClassifier
+    RouterClassifier -->|"High Confidence Reasoning Turn"| Supervisor
+    RouterClassifier -->|"Deterministic Direct Read"| DomainServices
+
+    Supervisor --> Specialists
+    Specialists --> PromptFilter
+    PromptFilter --> PIIRedactor
+    PIIRedactor --> ToolGateway
+    
+    ToolGateway -->|"Invoke Domain Logic with SecurityContext"| DomainServices
+    DomainServices --> AuditService
+    DomainServices --> OutboxProcessor
+    
+    DomainServices --> OutputGuard
+    OutputGuard -->|"Verified Response with Source Evidence"| APIEndpoints

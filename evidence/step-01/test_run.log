@@ -1,0 +1,35 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\omar\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\omar\Documents\Sales agent
+plugins: anyio-4.14.2, arize-phoenix-client-3.5.0, deepeval-4.2.5, asyncio-1.4.0, repeat-0.9.4, rerunfailures-16.7, xdist-3.8.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 20 items
+
+tests/step01/test_architecture_consistency.py::test_all_10_adrs_exist_and_accepted PASSED [  5%]
+tests/step01/test_architecture_consistency.py::test_c4_mermaid_diagrams_exist PASSED [ 10%]
+tests/step01/test_architecture_consistency.py::test_c4_container_diagram_includes_key_containers PASSED [ 15%]
+tests/step01/test_architecture_consistency.py::test_trust_boundaries_diagram_covers_all_8_threat_domains PASSED [ 20%]
+tests/step01/test_architecture_consistency.py::test_risk_register_covers_stride_and_launch_blockers PASSED [ 25%]
+tests/step01/test_repo_hygiene.py::test_gitignore_exists_and_contains_critical_patterns PASSED [ 30%]
+tests/step01/test_repo_hygiene.py::test_env_example_has_no_real_secrets PASSED [ 35%]
+tests/step01/test_repo_hygiene.py::test_agents_instructions_completeness PASSED [ 40%]
+tests/step01/test_repo_hygiene.py::test_no_hardcoded_private_keys_in_repo PASSED [ 45%]
+tests/step01/test_requirements_traceability.py::test_requirements_file_exists PASSED [ 50%]
+tests/step01/test_requirements_traceability.py::test_actors_coverage PASSED [ 55%]
+tests/step01/test_requirements_traceability.py::test_core_user_journeys_coverage PASSED [ 60%]
+tests/step01/test_requirements_traceability.py::test_voice_modes_explicit_requirements PASSED [ 65%]
+tests/step01/test_requirements_traceability.py::test_all_requirements_have_service_owners_apis_tests PASSED [ 70%]
+tests/step01/test_requirements_traceability.py::test_major_business_domains_covered PASSED [ 75%]
+tests/step01/test_security_controls.py::test_control_mapping_file_exists PASSED [ 80%]
+tests/step01/test_security_controls.py::test_excel_workbook_integrity PASSED [ 85%]
+tests/step01/test_security_controls.py::test_baseline_controls_traceability_in_mapping PASSED [ 90%]
+tests/step01/test_security_controls.py::test_sai_extension_controls_traceability PASSED [ 95%]
+tests/step01/test_security_controls.py::test_priority_reclassifications_for_sales_ai PASSED [100%]
+
+============================= 20 passed in 0.42s ==============================
+Execution Timestamp: 2026-11-18T10:39:59Z
+Environment: Windows 11, Python 3.14.6, pytest 9.1.1
+Repository: C:\Users\omar\Documents\Sales agent
+Command: python -m pytest tests/step01 -v
+Result: SUCCESS (Exit Code 0)

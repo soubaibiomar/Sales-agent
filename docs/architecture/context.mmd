@@ -1,0 +1,73 @@
+flowchart TD
+    %% System Context Diagram (C4 Level 1)
+    subgraph Users["Platform Users & Stakeholders"]
+        Customer["Customer (B2B / B2C)"]
+        SalesRep["Sales Representative"]
+        OpsAgent["Support & Operations Agent"]
+        Manager["Sales Manager & Executive"]
+        TenantAdmin["Tenant Administrator"]
+        PlatformAdmin["Platform Super Admin"]
+    end
+
+    subgraph Channels["Omnichannel Ingress & Interaction"]
+        WebChat["Web & Mobile Chat App"]
+        WhatsApp["WhatsApp Business Channel"]
+        Email["Email & Gmail Integration"]
+        CustomerVoice["Customer Voice (SIP / WebRTC)"]
+        ManagerVoice["Manager Voice Copilot (Web / App)"]
+        AdminConsole["Enterprise Management Console"]
+    end
+
+    subgraph System["Sales AI Management Platform (Unified SaaS)"]
+        Edge["Edge & API Gateway (WAF, Rate Limiting, OIDC/MFA)"]
+        ExecutionRouter["Execution Router & Intent Classifier"]
+        AICore["Governed AI Core (Model Gateway, RAG, 18-Role Catalog)"]
+        BusinessCore["Deterministic Business Core (CRM, Catalog, Quotes, Orders, Payments, Logistics)"]
+        StateStore["Transactional & Durable State (PostgreSQL + RLS, Temporal, S3, Redis)"]
+    end
+
+    subgraph ExternalServices["External Providers & Systems"]
+        PaymentGateways["Payment Gateways (Stripe, CMI, Local Moroccan Gateways)"]
+        TelephonyProviders["Telephony & Voice Providers (Twilio, SIP Trunks, WebRTC)"]
+        LLMProviders["AI Model Providers (Gemini, Anthropic, OpenAI, Local Ollama)"]
+        MessagingAPIs["Messaging Gateways (Meta Cloud API, SendGrid, Gmail API)"]
+        ShippingCarriers["Logistics & Shipping Carriers (Aramex, CTM, DHL)"]
+        IdP["Identity Providers (Keycloak, OIDC, Corporate SSO)"]
+    end
+
+    %% User to Channel connections
+    Customer --> WebChat
+    Customer --> WhatsApp
+    Customer --> Email
+    Customer --> CustomerVoice
+
+    SalesRep --> AdminConsole
+    OpsAgent --> AdminConsole
+    Manager --> AdminConsole
+    Manager --> ManagerVoice
+
+    TenantAdmin --> AdminConsole
+    PlatformAdmin --> AdminConsole
+
+    %% Channels to System Edge
+    WebChat --> Edge
+    WhatsApp --> Edge
+    Email --> Edge
+    CustomerVoice --> Edge
+    ManagerVoice --> Edge
+    AdminConsole --> Edge
+
+    %% Internal System Flow
+    Edge --> ExecutionRouter
+    ExecutionRouter -->|"Direct Safe Reads"| BusinessCore
+    ExecutionRouter -->|"Bounded Reasoning"| AICore
+    AICore -->|"Typed Tool Invocations"| BusinessCore
+    BusinessCore -->|"ACID State & RLS"| StateStore
+
+    %% System to External Services
+    Edge -.->|"OIDC Auth Verification"| IdP
+    BusinessCore -.->|"Process Charges / Webhooks"| PaymentGateways
+    BusinessCore -.->|"Dispatch Shipments"| ShippingCarriers
+    AICore -.->|"Prompt & Inference Tokens"| LLMProviders
+    Edge -.->|"SIP Signaling & RTP Audio"| TelephonyProviders
+    StateStore -.->|"Dispatch External Events"| MessagingAPIs
