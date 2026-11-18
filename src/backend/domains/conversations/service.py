@@ -14,10 +14,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.backend.models.entities import (
     Contact, ChannelIdentity, Conversation, InboundRawEvent,
-    ConversationMessage, MessageAttachment, AuditEvent, User
+    ConversationMessage, MessageAttachment, AuditEvent, User, OutboxEvent
 )
 from src.backend.integrations.base import NormalizedInboundEvent
 from src.backend.core.media_security import validate_attachment_metadata
+from src.backend.domains.conversations.outbox import OutboxService
 
 # Multilingual STOP Regex Patterns (English, French, Standard Arabic, Moroccan Darija/Arabizi)
 STOP_PATTERNS = [
@@ -48,6 +49,14 @@ class StaleTurnError(ConversationDomainError):
 
 class OptedOutChannelError(ConversationDomainError):
     pass
+
+def ensure_utc(dt: Optional[datetime]) -> Optional[datetime]:
+    """Ensures datetime is timezone-aware UTC for cross-database compatibility (SQLite/Postgres)."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
 
 def redact_pii(text: str) -> str:
     """Redacts sensitive payment credentials, PINs, and passwords from message content."""
@@ -227,6 +236,7 @@ class ConversationService:
         conversation = conv_res.scalars().first()
 
         now = datetime.now(timezone.utc)
+        event_time = event.timestamp if event.timestamp else now
         if not conversation:
             conversation = Conversation(
                 id=str(uuid.uuid4()),
@@ -238,8 +248,8 @@ class ConversationService:
                 version=1,
                 is_ai_silenced=identity.is_opted_out,
                 unread_count=1,
-                last_message_at=now,
-                created_at=now,
+                last_message_at=event_time,
+                created_at=event_time,
                 updated_at=now
             )
             session.add(conversation)
@@ -247,7 +257,10 @@ class ConversationService:
         else:
             conversation.version += 1
             conversation.unread_count += 1
-            conversation.last_message_at = now
+            last_dt = ensure_utc(conversation.last_message_at)
+            ev_dt = ensure_utc(event_time)
+            if last_dt is None or (ev_dt and ev_dt > last_dt):
+                conversation.last_message_at = event_time
             conversation.updated_at = now
             if identity.is_opted_out:
                 conversation.is_ai_silenced = True
@@ -266,7 +279,7 @@ class ConversationService:
             event_type=msg_type,
             conversation_version=conversation.version,
             attachments_json=json.dumps(event.attachments),
-            created_at=now
+            created_at=event_time
         )
         session.add(msg)
         await session.flush()
@@ -291,11 +304,11 @@ class ConversationService:
                 file_size_bytes=file_size,
                 storage_path=att.get("url") or f"attachments/{event.tenant_id}/{msg.id}/{file_name}",
                 is_safe=is_safe,
-                created_at=now
+                created_at=event_time
             )
             session.add(attachment)
 
-        # 5. If STOP occurred, also append a SYSTEM notice
+        # 5. If STOP occurred, also append a SYSTEM notice and enqueue high-priority outbox event
         if is_stop:
             sys_msg = ConversationMessage(
                 id=str(uuid.uuid4()),
@@ -306,9 +319,25 @@ class ConversationService:
                 content_redacted="Consent STOP directive received. Automated AI messaging is permanently halted on this channel.",
                 event_type="CONSENT_STOP",
                 conversation_version=conversation.version,
-                created_at=now
+                created_at=event_time
             )
             session.add(sys_msg)
+
+            # High-priority STOP acknowledgement outbox event
+            await OutboxService.enqueue_outbound_event(
+                session=session,
+                tenant_id=event.tenant_id,
+                channel_type=event.channel_type,
+                recipient_identifier=event.sender_identifier,
+                event_type="CONSENT_STOP_ACK",
+                payload_dict={
+                    "notice": f"STOP directive received ('{matched_keyword}'). You have been unsubscribed.",
+                    "channel": event.channel_type
+                },
+                conversation_id=conversation.id,
+                is_high_priority=True,
+                now=now
+            )
 
         await session.commit()
         await session.refresh(msg)
@@ -468,6 +497,20 @@ class ConversationService:
             created_at=now
         )
         session.add(msg)
+
+        # Enqueue outbound event to transactional outbox
+        await OutboxService.enqueue_outbound_event(
+            session=session,
+            tenant_id=tenant_id,
+            channel_type=conv.channel_type,
+            recipient_identifier=conv.channel_identifier,
+            event_type="DISPATCH_AI_REPLY",
+            payload_dict={"text": content},
+            conversation_id=conv.id,
+            is_high_priority=False,
+            now=now
+        )
+
         await session.commit()
         await session.refresh(msg)
         return msg
@@ -513,6 +556,20 @@ class ConversationService:
             created_at=now
         )
         session.add(msg)
+
+        # Enqueue outbound event to transactional outbox
+        await OutboxService.enqueue_outbound_event(
+            session=session,
+            tenant_id=tenant_id,
+            channel_type=conv.channel_type,
+            recipient_identifier=conv.channel_identifier,
+            event_type="DISPATCH_AGENT_REPLY",
+            payload_dict={"text": content, "attachments": attachments or []},
+            conversation_id=conv.id,
+            is_high_priority=False,
+            now=now
+        )
+
         await session.commit()
         await session.refresh(msg)
         return msg

@@ -35,7 +35,8 @@ def test_omnichannel_missing_tenant_context_fails_closed(setup_omnichannel_tenan
             cur.execute("RESET app.current_tenant_id;")
             tables = [
                 "contacts", "channel_identities", "conversations",
-                "inbound_raw_events", "conversation_messages", "message_attachments"
+                "inbound_raw_events", "conversation_messages", "message_attachments",
+                "outbox_events"
             ]
             for tbl in tables:
                 cur.execute(f"SELECT * FROM {tbl};")
@@ -59,6 +60,10 @@ def test_omnichannel_cross_tenant_isolation(setup_omnichannel_tenants):
                 INSERT INTO conversation_messages (id, conversation_id, tenant_id, sender_type, content)
                 VALUES ('msg_alpha_1', 'conv_alpha_1', 't_omni_alpha', 'CUSTOMER', 'Alpha secret query');
             """)
+            cur.execute("""
+                INSERT INTO outbox_events (id, tenant_id, conversation_id, event_type, channel_type, recipient_identifier, payload_json)
+                VALUES ('out_alpha_1', 't_omni_alpha', 'conv_alpha_1', 'DISPATCH_MESSAGE', 'WHATSAPP', '+212600112233', '{"text":"hello"}');
+            """)
             conn.commit()
 
         # 2. Insert Beta Data
@@ -75,6 +80,10 @@ def test_omnichannel_cross_tenant_isolation(setup_omnichannel_tenants):
             cur.execute("""
                 INSERT INTO conversation_messages (id, conversation_id, tenant_id, sender_type, content)
                 VALUES ('msg_beta_1', 'conv_beta_1', 't_omni_beta', 'CUSTOMER', 'Beta confidential query');
+            """)
+            cur.execute("""
+                INSERT INTO outbox_events (id, tenant_id, conversation_id, event_type, channel_type, recipient_identifier, payload_json)
+                VALUES ('out_beta_1', 't_omni_beta', 'conv_beta_1', 'DISPATCH_MESSAGE', 'WHATSAPP', '+212699887766', '{"text":"secret"}');
             """)
             conn.commit()
 
@@ -93,6 +102,10 @@ def test_omnichannel_cross_tenant_isolation(setup_omnichannel_tenants):
             msgs = cur.fetchall()
             assert len(msgs) == 1 and msgs[0][0] == 'msg_alpha_1'
 
+            cur.execute("SELECT id, recipient_identifier FROM outbox_events;")
+            outs = cur.fetchall()
+            assert len(outs) == 1 and outs[0][0] == 'out_alpha_1'
+
         # 4. Attempt Cross-Tenant INSERT as Alpha into Beta -> InsufficientPrivilege
         with conn.cursor() as cur:
             cur.execute("SET LOCAL app.current_tenant_id = 't_omni_alpha';")
@@ -103,6 +116,14 @@ def test_omnichannel_cross_tenant_isolation(setup_omnichannel_tenants):
                 """)
             conn.rollback()
 
+            cur.execute("SET LOCAL app.current_tenant_id = 't_omni_alpha';")
+            with pytest.raises(errors.InsufficientPrivilege):
+                cur.execute("""
+                    INSERT INTO outbox_events (id, tenant_id, event_type, channel_type, recipient_identifier, payload_json)
+                    VALUES ('out_attack_1', 't_omni_beta', 'DISPATCH_MESSAGE', 'WHATSAPP', '+212699887766', '{}');
+                """)
+            conn.rollback()
+
         # 5. Attempt Cross-Tenant UPDATE and DELETE as Alpha on Beta -> 0 rows affected
         with conn.cursor() as cur:
             cur.execute("SET LOCAL app.current_tenant_id = 't_omni_alpha';")
@@ -110,5 +131,11 @@ def test_omnichannel_cross_tenant_isolation(setup_omnichannel_tenants):
             assert cur.rowcount == 0
 
             cur.execute("DELETE FROM conversation_messages WHERE id = 'msg_beta_1';")
+            assert cur.rowcount == 0
+
+            cur.execute("UPDATE outbox_events SET status = 'DELIVERED' WHERE id = 'out_beta_1';")
+            assert cur.rowcount == 0
+
+            cur.execute("DELETE FROM outbox_events WHERE id = 'out_beta_1';")
             assert cur.rowcount == 0
             conn.commit()

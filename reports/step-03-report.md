@@ -1,5 +1,5 @@
 # STEP 03 IMPLEMENTATION & VALIDATION REPORT
-## Omnichannel Ingestion, Conversation Ownership & Sales Workspace Inbox
+## Omnichannel Ingestion, Conversation Ownership, Transactional Outbox & Sales Workspace Inbox
 
 **Project:** Sales AI Management Platform  
 **Sprint:** 2 — Connect  
@@ -13,9 +13,9 @@
 
 ## 1. EXECUTIVE SUMMARY & OBJECTIVE
 
-STEP 03 delivers the **Omnichannel Communication Gateway, Durable Event Ingestion Pipeline, and Sales Workspace Unified Inbox**. 
+STEP 03 delivers the **Omnichannel Communication Gateway, Durable Event Ingestion Pipeline, Transactional Outbox with Dead-Letter Queue (DLQ), and Sales Workspace Unified Inbox**. 
 
-The platform normalizes inbound traffic from four primary commercial channels:
+The platform normalizes inbound and outbound traffic across four primary commercial channels:
 1. **WhatsApp Business** (Cloud API webhooks, HMAC-SHA256 signature verification, WAMID deduplication)
 2. **Gmail / Inbound Email** (MIME parsing, SPF/DKIM verification check simulation, HTML XSS sanitization)
 3. **Authenticated Web Chat** (Session token validation, guest/authenticated customer context, rate limiting)
@@ -25,8 +25,11 @@ The platform normalizes inbound traffic from four primary commercial channels:
 - **Durable Ingest Before Routing:** Raw provider envelopes are persisted in the PostgreSQL operational database (`inbound_raw_events`) before batching, debouncing, or routing. Replayed or duplicated events are rejected without side effects.
 - **Deterministic Commercial Authority:** Contact matching does not perform fuzzy or unverified auto-merges across channels. Deterministic multilingual STOP/opt-out directives (English, French, Standard Arabic, Moroccan Darija/Arabizi) outrank all LLM suggestions and halt automated outbound messaging immediately.
 - **Atomic Human Handoff & Versioning:** Conversations enforce monotonic integer versioning (`version`). When a human operator claims a conversation (`status = 'HUMAN_ACTIVE'`), the AI assistant is silenced (`is_ai_silenced = True`). Any in-flight background AI turn with a stale expected version is rejected upon submission with `StaleTurnError`.
-- **Zero-Trust Multi-Tenancy & RLS:** All 6 newly introduced omnichannel tables enforce PostgreSQL 16 Row-Level Security (`ENABLE ROW LEVEL SECURITY` and `FORCE ROW LEVEL SECURITY`) with permissive policies tied to `app.current_tenant_id`. Unprivileged role `sales_app_user` cannot access cross-tenant data.
-- **Hardware Envelope Integrity:** Ingestion, deduplication, contact resolution, STOP detection, and inbox management run deterministically on the CPU/backend, preserving discrete GPU VRAM (8 GB) for active AI model lifecycle turns.
+- **Out-of-Order Message Ingestion Handling:** Inbound messages arriving out of sequence retain physical event timestamps, ensure chronological timeline sorting (`created_at.asc()`), prevent `last_message_at` regression, and advance versioning to immediately fence stale AI turns.
+- **Transactional Outbox & Dead-Letter Queue (DLQ):** Outbound events (`outbox_events`) are enqueued atomically with state transitions. Failed deliveries retry with exponential backoff (`base * 2^retry`), route to `DEAD_LETTER` upon exhausting retries with `AuditEvent` emission, and support high-priority immediate safety bypass for STOP confirmations and alerts.
+- **Zero-Trust Multi-Tenancy & RLS:** All 13 platform tables (6 core + 7 omnichannel) enforce PostgreSQL 16 Row-Level Security (`ENABLE ROW LEVEL SECURITY` and `FORCE ROW LEVEL SECURITY`) with permissive policies tied to `app.current_tenant_id`. Unprivileged role `sales_app_user` cannot access cross-tenant data.
+- **Canonical Parity Verified:** An automated parity verifier (`scripts/verify_init_db_parity.py`) verified 100% catalog, column, nullability, RLS, and policy parity between `infra/init-db.sql` and the live migrated database.
+- **Hardware Envelope Integrity:** Ingestion, deduplication, contact resolution, STOP detection, outbox dispatch, and inbox management run deterministically on the CPU/backend, preserving discrete GPU VRAM (8 GB) for active AI model lifecycle turns.
 
 ---
 
@@ -40,6 +43,7 @@ The platform normalizes inbound traffic from four primary commercial channels:
   - `sales-ai-minio`: MinIO Object Storage on `127.0.0.1:9000` (Healthy)
   - `ollama`: Ollama v0.5.12 on `127.0.0.1:11434` (Healthy)
 - **Starting Test Baseline:** 79/79 tests passing.
+- **Current Test Count:** 136/136 tests passing.
 
 ---
 
@@ -67,6 +71,7 @@ The platform normalizes inbound traffic from four primary commercial channels:
         [ Deterministic Multilingual STOP Guard ]
   (English, French, Standard Arabic, Darija/Arabizi)
         ├── If STOP -> is_opted_out = True -> Audit Log -> Silence AI
+        │               └── Enqueue High-Priority STOP Ack to Outbox
         └── If Normal -> Continue
                          │
                          ▼
@@ -80,16 +85,35 @@ The platform normalizes inbound traffic from four primary commercial channels:
                          ▼
         [ Normalized Conversation Timeline & Attachments ]
   (conversation_messages + message_attachments + PII Redaction)
+                         │
+                         ▼
+        [ Transactional Outbox & DLQ Service ]
+  (outbox_events: PENDING -> PROCESSING -> DELIVERED / FAILED / DEAD_LETTER)
 ```
 
-### 3.2 Monotonic Conversation State Machine
+### 3.2 Monotonic Conversation State Machine & Out-of-Order Handling
 Conversations transition through deterministic states:
 - `BOT_ACTIVE` (Default): Automated AI specialists can propose draft replies if expected version matches.
 - `HUMAN_PENDING`: Customer requested human agent or issue resolution requires escalation.
 - `HUMAN_ACTIVE`: A sales representative or support agent took over the session; `is_ai_silenced = True`. AI replies are rejected.
 - `CLOSED`: Conversation concluded.
 
-### 3.3 Anti-SSRF URL & Media Security (Baseline Controls 20, 21, 23)
+**Out-of-Order Ingestion Resolution:**
+- Provider event timestamps are preserved in `ConversationMessage.created_at`.
+- Queries order messages strictly chronologically: `.order_by(ConversationMessage.created_at.asc())`.
+- `last_message_at` is set to `max(current_last_message_at, event_timestamp)`, preventing timestamp regression.
+- Every ingested message increments `conversation.version += 1`, immediately cancelling any in-flight AI turn whose `expected_version` was captured before the late message arrived.
+
+### 3.3 Transactional Outbox, Exponential Backoff & DLQ Architecture
+Outbound communication is governed by `OutboxService` (`src/backend/domains/conversations/outbox.py`):
+1. **Atomic Enqueue:** When replies or alerts are generated, an `OutboxEvent` record is written inside the same ACID transaction as the message or state mutation.
+2. **State Machine:** `PENDING` -> `PROCESSING` -> `DELIVERED` | `FAILED` -> `DEAD_LETTER`.
+3. **Exponential Backoff:** When external delivery fails, `retry_count` is incremented and `next_retry_at = now + 2^retry_count` seconds.
+4. **Dead-Letter Queue:** When `retry_count >= max_retries` (default 3), the event transitions to `DEAD_LETTER`, `last_error` is preserved, and an `AuditEvent` (`OUTBOX_DEAD_LETTER`) is emitted for security/operational alerting.
+5. **High-Priority Safety Bypass:** Events with `is_high_priority = True` (STOP acknowledgements, compliance notices, safety alerts) are ordered first in dispatcher queries (`is_high_priority.desc()`), bypassing routine message queues.
+6. **Administrative Redrive:** Administrators can inspect dead-letter queues and invoke `redrive_dead_letter_event()`, resetting state to `PENDING` and logging an `OUTBOX_REDRIVE` audit event.
+
+### 3.4 Anti-SSRF URL & Media Security (Baseline Controls 20, 21, 23)
 Inbound media (images, PDFs, voice recordings) submitted via webhooks often reference external provider CDN URLs. To prevent Server-Side Request Forgery (SSRF):
 - `validate_media_url()` inspects hostnames, resolves DNS, and blocks:
   - Loopback (`127.0.0.0/8`, `::1`)
@@ -100,7 +124,7 @@ Inbound media (images, PDFs, voice recordings) submitted via webhooks often refe
 
 ---
 
-## 4. DETAILED IMPLEMENTATION & NEW SOURCE ARTIFACTS
+## 4. DETAILED IMPLEMENTATION & SOURCE ARTIFACTS
 
 ### 4.1 Schema Migration & ORM Entities
 - `src/backend/migrations/002_omnichannel_schema.sql`:
@@ -110,9 +134,11 @@ Inbound media (images, PDFs, voice recordings) submitted via webhooks often refe
   - `inbound_raw_events`: Pre-debounce durable buffer with unique constraint `(tenant_id, channel_type, provider_event_id)`.
   - `conversation_messages`: Normalized message stream (`sender_type`, `content`, `content_redacted`, `event_type`, `conversation_version`).
   - `message_attachments`: File attachments with MIME type and safety flags.
-- `src/backend/models/entities.py`: Added SQLAlchemy declarative models for all 6 tables.
-- `infra/init-db.sql`: Updated canonical SQL initialization with all 6 omnichannel tables and permissive RLS policies.
+  - `outbox_events`: Transactional outbox with retry count, backoff timestamp, DLQ status, and high-priority flag.
+- `src/backend/models/entities.py`: Added SQLAlchemy declarative models for all 7 tables.
+- `infra/init-db.sql`: Updated canonical SQL initialization with all 7 omnichannel tables, indexes, and permissive RLS policies.
 - `scripts/apply_omnichannel_migration.py`: Executed live migration on PostgreSQL 16 container.
+- `scripts/verify_init_db_parity.py`: Validated 100% schema, RLS, and policy parity between `infra/init-db.sql` and live PostgreSQL.
 
 ### 4.2 Integrations & Channel Adapters
 - `src/backend/integrations/base.py`: Defined `BaseChannelAdapter` and `NormalizedInboundEvent`.
@@ -121,9 +147,10 @@ Inbound media (images, PDFs, voice recordings) submitted via webhooks often refe
 - `src/backend/integrations/webchat.py`: `WebChatAdapter` for embedded website widgets.
 - `src/backend/integrations/voice_sip.py`: `VoiceSIPAdapter` for call signaling, duration tracking, and legal recording disclosure consent.
 
-### 4.3 Domain Logic & Media Security
+### 4.3 Domain Logic, Outbox & Media Security
+- `src/backend/domains/conversations/outbox.py`: `OutboxService` managing event enqueue, exponential backoff, DLQ exhaustion, high-priority safety bypass, and manual redrives.
 - `src/backend/core/media_security.py`: Anti-SSRF URL validator, MIME type verification, file size limits.
-- `src/backend/domains/conversations/service.py`: `ConversationService` implementing durable ingestion, contact matching without auto-merge, deterministic multilingual STOP regex detection, PII redaction, atomic handoff, and optimistic version checks.
+- `src/backend/domains/conversations/service.py`: `ConversationService` implementing durable ingestion, contact matching without auto-merge, deterministic multilingual STOP regex detection, PII redaction, atomic handoff, out-of-order timeline preservation, and optimistic version checks.
 
 ### 4.4 API Routers & Frontend Workspace
 - `src/backend/api/channels.py`:
@@ -150,11 +177,14 @@ Inbound media (images, PDFs, voice recordings) submitted via webhooks often refe
 |---|---|---|---|
 | **Commercial Channels** | Zero channel ingestion | WhatsApp, Email, WebChat, Voice/SIP | Omnichannel normalization into single conversation model |
 | **Inbound Event Persistence** | None | Durable raw buffer (`inbound_raw_events`) | Zero message loss before routing; duplicate protection |
+| **Transactional Outbox & DLQ** | None | `outbox_events` + `OutboxService` | Reliable outbound dispatch, exponential backoff, DLQ audit |
 | **Contact Identity** | User accounts only | `contacts` + `channel_identities` | Multi-channel linkage without unverified auto-merge |
 | **Conversation State Machine** | None | Monotonically versioned state machine | Atomic human takeover; stale AI turn rejection |
+| **Out-of-Order Messages** | None | Chronological sorting + version fence | Prevents timestamp regression; cancels stale AI turns |
 | **Regulatory Consent & STOP** | Conceptual | Deterministic multilingual STOP engine | English, French, Darija/Arabic STOP outranks AI |
 | **Media & SSRF Defense** | None | Anti-SSRF URL validator & MIME filter | Blocks internal network reconnaissance and malware |
-| **PostgreSQL RLS Tables** | 6 tenant tables | 12 tenant tables (all `PERMISSIVE` + forced) | Comprehensive tenant isolation across omnichannel entities |
+| **PostgreSQL RLS Tables** | 6 tenant tables | 13 tenant tables (all `PERMISSIVE` + forced) | Comprehensive tenant isolation across omnichannel entities |
+| **Canonical SQL Parity** | Advisory condition | 100% verified parity on fresh DB | Clean initialization matches active schema exactly |
 | **Unified Sales Inbox** | Console overview only | Interactive Sales Workspace Inbox UI | Multi-channel queue management and human takeover |
 
 ---
@@ -177,7 +207,7 @@ The following controls from `references/70-security.xlsx` and `security/SAI_EXTE
 | **33** | IDOR / BOLA | In `inbox.py`, timeline queries require `tenant_id == context.tenant_id`. | `tests/contract/test_inbox_and_channel_apis.py` |
 | **34** | APIs trusting user-controlled roles or IDs | SecurityContext derives tenant and user from verified JWT signature. | Preserved from Step 02 |
 | **35** | Sensitive data in logs | `redact_pii()` scrubs credit cards, passwords, and PINs in `content_redacted`. | `tests/security/test_channel_security.py` |
-| **42** | Missing audit logs | `AuditEvent` emitted on consent opt-out (STOP) and human operator handoff. | `tests/unit/test_deterministic_stop.py` |
+| **42** | Missing audit logs | `AuditEvent` emitted on consent opt-out (STOP), DLQ exhaustion, and handoff. | `tests/contract/test_outbox_and_dlq.py` |
 | **57** | Business-logic abuse | AI replies blocked when conversation is opted-out or owned by a human. | `tests/concurrency/test_conversation_races.py` |
 | **58** | Race conditions | Monotonic conversation `version` prevents stale AI turns from overwriting turns. | `tests/concurrency/test_conversation_races.py` |
 | **59** | Webhook replay / duplicate processing | Unique constraint on `(tenant_id, channel, provider_event_id)` marks duplicates. | `tests/security/test_channel_security.py` |
@@ -195,25 +225,27 @@ python -m pytest tests/ -v
 ```
 
 ### 7.1 Measured Execution Summary
-- **Total Test Cases Executed:** 128
-- **Passed:** 128 (100%)
+- **Total Test Cases Executed:** 136
+- **Passed:** 136 (100%)
 - **Failed:** 0
 - **Errors:** 0
 - **Skipped:** 0
-- **Measured Duration:** 40.90 seconds (Full Suite) / 1.12 seconds (Step 03 targeted)
+- **Measured Duration:** 47.45 seconds (Full Regression Suite)
 - **Evidence Log Path:** [evidence/step-03/test_run.log](file:///c:/Users/omar/Documents/Sales%20agent/evidence/step-03/test_run.log)
 
 ### 7.2 Breakdown by Test Module
 1. `tests/contract/test_channel_adapters.py`: **8 passed** (WhatsApp HMAC signature verification, text and media payload parsing, Email SPF/DKIM verification, HTML XSS stripping, WebChat normalization, Voice/SIP recording consent).
 2. `tests/contract/test_inbox_and_channel_apis.py`: **4 passed** (WhatsApp challenge verification, webhook duplicate replay rejection, WebChat send endpoint, Unified Inbox conversation listing, timeline, and agent reply).
-3. `tests/unit/test_deterministic_stop.py`: **18 passed** (Multilingual STOP regex matrix across English, French, Standard Arabic, and Moroccan Darija/Arabizi; channel opt-out and AI silencing).
-4. `tests/concurrency/test_conversation_races.py`: **4 passed** (Monotonic version incrementation, stale AI turn cancellation on customer message race, human takeover cancelling in-flight AI turn, burst handling).
-5. `tests/security/test_channel_security.py`: **13 passed** (Durable raw event deduplication, anti-SSRF IP blocking across private/loopback/metadata ranges, MIME whitelist validation, file size limits, PII credit card redaction).
-6. `tests/integration/test_omnichannel_rls.py`: **2 passed** (Real PostgreSQL 16 RLS tests connecting as `sales_app_user` on port 5432 verifying zero cross-tenant leakage on all 6 omnichannel tables).
-7. `tests/integration/test_postgres_rls.py`: **10 passed** (Live PostgreSQL Step 02 RLS regression).
-8. `tests/step01/`: **27 passed** (Architecture, repo hygiene, requirements traceability, security controls, hardware lifecycle).
-9. `tests/security/test_auth_and_rbac.py` & `test_backup_restore.py` & `test_ai_model_governance.py`: **28 passed** (Step 02 regression).
-10. `tests/unit/`: **14 passed** (Local AI constraints, telemetry, multilingual language matrix).
+3. `tests/contract/test_outbox_and_dlq.py`: **5 passed** (Transactional outbox enqueue, successful dispatch, exponential backoff retries, dead-letter queue exhaustion with AuditEvent emission, high-priority safety bypass, manual redrive).
+4. `tests/contract/test_out_of_order_messages.py`: **3 passed** (Out-of-order timeline sorting, non-regressing `last_message_at`, monotonic version incrementation, stale AI turn rejection on version mismatch, out-of-order STOP immediate AI silencing).
+5. `tests/unit/test_deterministic_stop.py`: **18 passed** (Multilingual STOP regex matrix across English, French, Standard Arabic, and Moroccan Darija/Arabizi; channel opt-out and AI silencing).
+6. `tests/concurrency/test_conversation_races.py`: **4 passed** (Monotonic version incrementation, stale AI turn cancellation on customer message race, human takeover cancelling in-flight AI turn, burst handling).
+7. `tests/security/test_channel_security.py`: **13 passed** (Durable raw event deduplication, anti-SSRF IP blocking across private/loopback/metadata ranges, MIME whitelist validation, file size limits, PII credit card redaction).
+8. `tests/integration/test_omnichannel_rls.py`: **2 passed** (Real PostgreSQL 16 RLS tests connecting as `sales_app_user` on port 5432 verifying zero cross-tenant leakage on all 7 omnichannel tables including `outbox_events`).
+9. `tests/integration/test_postgres_rls.py`: **10 passed** (Live PostgreSQL Step 02 RLS regression covering all 13 policies).
+10. `tests/step01/`: **27 passed** (Architecture, repo hygiene, requirements traceability, security controls, hardware lifecycle).
+11. `tests/security/test_auth_and_rbac.py` & `test_backup_restore.py` & `test_ai_model_governance.py`: **28 passed** (Step 02 regression).
+12. `tests/unit/`: **14 passed** (Local AI constraints, telemetry, multilingual language matrix).
 
 ---
 
@@ -248,7 +280,7 @@ Our `validate_media_url()` guard defends against this by parsing the scheme (onl
 ### Q5: How is deterministic multilingual STOP/opt-out handling architected to outrank LLM interpretations and guarantee regulatory compliance under Moroccan Law 09-08 and GDPR?
 **Answer:**  
 Article 10 of Moroccan Law 09-08 and Article 21 of GDPR grant data subjects the absolute right to object to commercial processing and opt-out of marketing communications at any time. Relying on an LLM to interpret whether a customer wants to opt out is unsafe: models can hallucinate, misunderstand dialectal slang, or misclassify intent due to system prompt drift.  
-Our architecture implements deterministic regex matching before any event is handed to routing or LLM agents. The regex matrix covers English (`STOP`, `UNSUBSCRIBE`, `QUIT`), French (`ARRET`, `DESABONNER`), Standard Arabic (`حبس`, `وقف`, `إلغاء`), and Moroccan Darija/Arabizi (`baraka`, `safii baraka`, `stoppi`, `7bes`). When detected, `ChannelIdentity.is_opted_out` is immediately set to `True`, a permanent legal `AuditEvent` is written, and the conversation is marked `is_ai_silenced = True`. Any subsequent attempt by an automated agent to send outbound messages through that channel is blocked deterministically at the domain layer.
+Our architecture implements deterministic regex matching before any event is handed to routing or LLM agents. The regex matrix covers English (`STOP`, `UNSUBSCRIBE`, `QUIT`), French (`ARRET`, `DESABONNER`), Standard Arabic (`حبس`, `وقف`, `إلغاء`), and Moroccan Darija/Arabizi (`baraka`, `safii baraka`, `stoppi`, `7bes`). When detected, `ChannelIdentity.is_opted_out` is immediately set to `True`, a permanent legal `AuditEvent` is written, and the conversation is marked `is_ai_silenced = True`. In addition, a high-priority opt-out acknowledgement is enqueued directly to the transactional outbox with `is_high_priority = True`. Any subsequent attempt by an automated agent to send outbound messages through that channel is blocked deterministically at the domain layer.
 
 ---
 
@@ -258,8 +290,8 @@ Our architecture implements deterministic regex matching before any event is han
    In compliance with Master Prompt Rule 5 (*"Never push, release, provision billable infrastructure, call customers, connect production accounts or expose environments without explicit user authorization"*), tests use cryptographic webhook simulation (valid HMAC-SHA256 signatures, real Meta JSON schemas, RFC 822 email payloads) rather than live production Meta WhatsApp Cloud API credentials. Live provider verification will occur in staging during Step 12.
 2. **Audio Streaming Intelligence Deferred to Step 10:**
    The `VoiceSIPAdapter` correctly captures SIP signaling, duration, and consent disclosures. In accordance with the prompt (*"Do not prematurely implement STEP 10 speech-recognition or voice-generation intelligence"*), speech-to-text (ASR) transcription and text-to-speech (TTS) streaming are not executed in Step 03.
-3. **Transactional Outbox for External Channel Dispatch:**
-   In Step 03, incoming events are persisted before processing. Outbound channel dispatch currently sends directly via the adapter; full transactional outbox polling backed by Temporal sagas will be expanded in Step 07.
+3. **Temporal Saga Orchestration for Distributed Commerce:**
+   `OutboxService` provides database-level transactional durability, retries, and DLQ. Multi-step distributed transactions spanning payment gateways, ERPs, and warehouse logistics will be orchestrated by Temporal sagas starting in Step 07.
 
 ---
 
@@ -270,9 +302,12 @@ In accordance with the STEP 03 acceptance gate specification (*"PASS only if eve
 - **Every configured channel ingests safely:** Verified across WhatsApp, Email, WebChat, and Voice/SIP.
 - **Persists before routing:** Proven by `InboundRawEvent` table persistence before normalizer dispatch.
 - **Deduplicates correctly:** Proven by duplicate provider event replay returning `duplicate_ignored` with 0 side-effects.
+- **Transactional Outbox & DLQ:** Proven by `OutboxService` retry backoff, DLQ exhaustion audit, and high-priority bypass.
+- **Out-of-order message handling:** Proven by chronological timeline ordering and stale AI turn rejection.
 - **Human ownership & consent unbypassable:** Proven by `StaleTurnError` on AI submission, atomic handoff, and multilingual STOP opt-out.
-- **PostgreSQL 16 RLS:** Proven on all 12 tables with live tests.
-- **Test Suite:** 128 passing assertions in 40.90s.
+- **PostgreSQL 16 RLS:** Proven on all 13 tables with live tests under unprivileged `sales_app_user`.
+- **Canonical DB Parity:** Proven 100% identical between `infra/init-db.sql` and live active database.
+- **Test Suite:** 136 passing assertions in 47.45s.
 
 ### **FINAL VERDICT: PASS**
 

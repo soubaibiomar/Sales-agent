@@ -253,3 +253,23 @@ class MessageAttachment(Base):
 
     message = relationship("ConversationMessage", back_populates="attachments")
 
+class OutboxEvent(Base):
+    __tablename__ = "outbox_events"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    conversation_id = Column(String(36), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=True, index=True)
+    event_type = Column(String(50), nullable=False)  # DISPATCH_MESSAGE, NOTIFICATION, SAFETY_ALERT
+    channel_type = Column(String(30), nullable=False)  # WHATSAPP, EMAIL, WEB_CHAT, VOICE_SIP
+    recipient_identifier = Column(String(255), nullable=False)
+    payload_json = Column(Text, nullable=False)
+    status = Column(String(30), nullable=False, default="PENDING")  # PENDING, PROCESSING, DELIVERED, FAILED, DEAD_LETTER
+    retry_count = Column(Integer, nullable=False, default=0)
+    max_retries = Column(Integer, nullable=False, default=3)
+    next_retry_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    last_error = Column(Text, nullable=True)
+    is_high_priority = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    processed_at = Column(DateTime(timezone=True), nullable=True)
+
+

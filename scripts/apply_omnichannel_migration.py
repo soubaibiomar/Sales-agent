@@ -23,6 +23,7 @@ def apply_omnichannel_migration():
             ("inbound_raw_events", "tenant_isolation_inbound_raw_events"),
             ("conversation_messages", "tenant_isolation_conversation_messages"),
             ("message_attachments", "tenant_isolation_message_attachments"),
+            ("outbox_events", "tenant_isolation_outbox_events"),
         ]
         for tbl, pname in omnichannel_tables:
             cur.execute(f"ALTER TABLE {tbl} ENABLE ROW LEVEL SECURITY;")

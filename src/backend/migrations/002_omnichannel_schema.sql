@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS contacts (
     primary_phone VARCHAR(50),
     is_verified BOOLEAN NOT NULL DEFAULT FALSE,
     metadata_json TEXT DEFAULT '{}',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 2. Channel Identities Table (Maps channels to contacts, tracks consent and STOP)
@@ -26,9 +26,9 @@ CREATE TABLE IF NOT EXISTS channel_identities (
     is_opted_out BOOLEAN NOT NULL DEFAULT FALSE,
     opt_out_at TIMESTAMP WITH TIME ZONE,
     opt_out_reason VARCHAR(255),
-    consent_given_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    consent_given_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     metadata_json TEXT DEFAULT '{}',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_tenant_channel_identifier UNIQUE (tenant_id, channel_type, identifier)
 );
 
@@ -44,10 +44,10 @@ CREATE TABLE IF NOT EXISTS conversations (
     version INTEGER NOT NULL DEFAULT 1,
     is_ai_silenced BOOLEAN NOT NULL DEFAULT FALSE,
     unread_count INTEGER NOT NULL DEFAULT 0,
-    last_message_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    last_message_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     metadata_json TEXT DEFAULT '{}',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 4. Inbound Raw Events (Durable Ingest buffer before debounce/routing, replay protection)
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS inbound_raw_events (
     payload_json TEXT NOT NULL,
     signature_verified BOOLEAN NOT NULL DEFAULT TRUE,
     processing_status VARCHAR(30) NOT NULL DEFAULT 'PENDING', -- PENDING, PROCESSED, FAILED, DUPLICATE
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     processed_at TIMESTAMP WITH TIME ZONE,
     CONSTRAINT uq_tenant_channel_provider_event UNIQUE (tenant_id, channel_type, provider_event_id)
 );
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS conversation_messages (
     conversation_version INTEGER NOT NULL DEFAULT 1,
     attachments_json TEXT DEFAULT '[]',
     metadata_json TEXT DEFAULT '{}',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 6. Message Attachments (Validated media, anti-SSRF & MIME protection)
@@ -90,10 +90,29 @@ CREATE TABLE IF NOT EXISTS message_attachments (
     file_size_bytes INTEGER NOT NULL,
     storage_path VARCHAR(500) NOT NULL,
     is_safe BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- 7. Indexes for Query Performance & Tenant Filtering
+-- 7. Transactional Outbox Events (Reliable dispatch, retry/backoff, DLQ, safety priority)
+CREATE TABLE IF NOT EXISTS outbox_events (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    conversation_id VARCHAR(36) REFERENCES conversations(id) ON DELETE CASCADE,
+    event_type VARCHAR(50) NOT NULL, -- DISPATCH_MESSAGE, NOTIFICATION, SAFETY_ALERT
+    channel_type VARCHAR(30) NOT NULL, -- WHATSAPP, EMAIL, WEB_CHAT, VOICE_SIP
+    recipient_identifier VARCHAR(255) NOT NULL,
+    payload_json TEXT NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING', -- PENDING, PROCESSING, DELIVERED, FAILED, DEAD_LETTER
+    retry_count INTEGER NOT NULL DEFAULT 0,
+    max_retries INTEGER NOT NULL DEFAULT 3,
+    next_retry_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_error TEXT,
+    is_high_priority BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    processed_at TIMESTAMP WITH TIME ZONE
+);
+
+-- 8. Indexes for Query Performance & Tenant Filtering
 CREATE INDEX IF NOT EXISTS idx_contacts_tenant ON contacts(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_channel_identities_tenant ON channel_identities(tenant_id, channel_type, identifier);
 CREATE INDEX IF NOT EXISTS idx_conversations_tenant_status ON conversations(tenant_id, status);
@@ -101,3 +120,4 @@ CREATE INDEX IF NOT EXISTS idx_conversations_tenant_contact ON conversations(ten
 CREATE INDEX IF NOT EXISTS idx_raw_events_tenant_status ON inbound_raw_events(tenant_id, processing_status);
 CREATE INDEX IF NOT EXISTS idx_messages_conv_created ON conversation_messages(conversation_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_attachments_msg ON message_attachments(message_id);
+CREATE INDEX IF NOT EXISTS idx_outbox_tenant_status ON outbox_events(tenant_id, status, next_retry_at);

@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS contacts (
     primary_email VARCHAR(255),
     primary_phone VARCHAR(50),
     is_verified BOOLEAN NOT NULL DEFAULT false,
-    metadata JSONB DEFAULT '{}'::jsonb,
+    metadata_json TEXT DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
 );
@@ -162,7 +162,7 @@ CREATE TABLE IF NOT EXISTS channel_identities (
     opt_out_at TIMESTAMPTZ,
     opt_out_reason VARCHAR(255),
     consent_given_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
-    metadata JSONB DEFAULT '{}'::jsonb,
+    metadata_json TEXT DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
     CONSTRAINT uq_tenant_channel_identifier UNIQUE (tenant_id, channel_type, identifier)
 );
@@ -180,7 +180,7 @@ CREATE TABLE IF NOT EXISTS conversations (
     is_ai_silenced BOOLEAN NOT NULL DEFAULT false,
     unread_count INT NOT NULL DEFAULT 0,
     last_message_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
-    metadata JSONB DEFAULT '{}'::jsonb,
+    metadata_json TEXT DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
 );
@@ -210,8 +210,8 @@ CREATE TABLE IF NOT EXISTS conversation_messages (
     content_redacted TEXT,
     event_type VARCHAR(30) NOT NULL DEFAULT 'MESSAGE',
     conversation_version INT NOT NULL DEFAULT 1,
-    attachments JSONB DEFAULT '[]'::jsonb,
-    metadata JSONB DEFAULT '{}'::jsonb,
+    attachments_json TEXT DEFAULT '[]',
+    metadata_json TEXT DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
 );
 
@@ -227,6 +227,35 @@ CREATE TABLE IF NOT EXISTS message_attachments (
     is_safe BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
 );
+
+-- Transactional Outbox Events Table
+CREATE TABLE IF NOT EXISTS outbox_events (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    conversation_id VARCHAR(36) REFERENCES conversations(id) ON DELETE CASCADE,
+    event_type VARCHAR(50) NOT NULL,
+    channel_type VARCHAR(30) NOT NULL,
+    recipient_identifier VARCHAR(255) NOT NULL,
+    payload_json TEXT NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+    retry_count INT NOT NULL DEFAULT 0,
+    max_retries INT NOT NULL DEFAULT 3,
+    next_retry_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    last_error TEXT,
+    is_high_priority BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    processed_at TIMESTAMPTZ
+);
+
+-- Indexes for Omnichannel Performance
+CREATE INDEX IF NOT EXISTS idx_contacts_tenant ON contacts(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_channel_identities_tenant ON channel_identities(tenant_id, channel_type, identifier);
+CREATE INDEX IF NOT EXISTS idx_conversations_tenant_status ON conversations(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_conversations_tenant_contact ON conversations(tenant_id, contact_id);
+CREATE INDEX IF NOT EXISTS idx_raw_events_tenant_status ON inbound_raw_events(tenant_id, processing_status);
+CREATE INDEX IF NOT EXISTS idx_messages_conv_created ON conversation_messages(conversation_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_attachments_msg ON message_attachments(message_id);
+CREATE INDEX IF NOT EXISTS idx_outbox_tenant_status ON outbox_events(tenant_id, status, next_retry_at);
 
 -- 4. Enable Row-Level Security (RLS) on all tenant-partitioned tables
 ALTER TABLE organization_sites ENABLE ROW LEVEL SECURITY;
@@ -264,6 +293,9 @@ ALTER TABLE conversation_messages FORCE ROW LEVEL SECURITY;
 
 ALTER TABLE message_attachments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE message_attachments FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE outbox_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE outbox_events FORCE ROW LEVEL SECURITY;
 
 -- 5. Define RLS Isolation Policies
 CREATE POLICY tenant_isolation_sites ON organization_sites
@@ -344,6 +376,13 @@ CREATE POLICY tenant_isolation_conversation_messages ON conversation_messages
     WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
 
 CREATE POLICY tenant_isolation_message_attachments ON message_attachments
+    AS PERMISSIVE
+    FOR ALL
+    TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_outbox_events ON outbox_events
     AS PERMISSIVE
     FOR ALL
     TO PUBLIC
