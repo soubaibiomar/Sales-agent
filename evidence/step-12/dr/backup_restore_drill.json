@@ -1,0 +1,25 @@
+{
+  "timestamp": "2026-11-19T18:47:47.452517+00:00",
+  "status": "PASSED",
+  "drill_type": "FULL_DATABASE_BACKUP_AND_RESTORE",
+  "metrics": {
+    "rto_target_seconds": 900,
+    "rto_measured_seconds": 1.345,
+    "rpo_target_seconds": 60,
+    "rpo_measured_seconds": 0.0,
+    "backup_duration_seconds": 0.282,
+    "total_drill_duration_seconds": 2.353,
+    "backup_size_bytes": 394292,
+    "backup_sha256": "68556c3c14a377584f3abe45507b7e8644ca6785ef079d921e7d71d197219654",
+    "tables_restored": 84,
+    "rows_restored": 559,
+    "policies_verified": 79
+  },
+  "verifications": {
+    "schema_parity_84_tables": true,
+    "row_count_parity": true,
+    "canary_data_loss_check": true,
+    "rls_policy_parity": true,
+    "rls_functional_isolation_test": true
+  }
+}

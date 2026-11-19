@@ -8,7 +8,7 @@
     "prompt_injection_block_rate_pct": 100.0,
     "caller_id_anti_spoofing_otp_gate_pct": 100.0,
     "human_handoff_trigger_rate_pct": 100.0,
-    "evaluation_duration_ms": 32
+    "evaluation_duration_ms": 30
   },
   "matrix_counts": {
     "evaluated_samples": 90,

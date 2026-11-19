@@ -1,0 +1,111 @@
+[2026-11-19T18:49:24.447573+00:00] =================================================================
+[2026-11-19T18:49:24.447971+00:00] SALES AI MANAGEMENT — STEP 12 FULL PLATFORM CONCURRENCY & LOAD BENCHMARK
+[2026-11-19T18:49:24.448252+00:00] =================================================================
+[2026-11-19T18:49:24.448418+00:00] --- Benchmark 1: Direct Safe Read Load Test (500 requests, concurrency 25) ---
+[2026-11-19T18:49:24.470980+00:00]    Total Time: 0.02s | Throughput: 22431.3 req/s | Errors: 0
+[2026-11-19T18:49:24.471320+00:00]    Latency: p50=0.02ms | p95=0.03ms | p99=0.06ms
+[2026-11-19T18:49:24.472812+00:00] --- Benchmark 2: PostgreSQL Multi-Tenant RLS Pool Load (300 queries, 20 conn) ---
+[2026-11-19T18:49:25.876341+00:00]    Total Time: 1.40s | DB Throughput: 213.8 qps | Errors: 0
+[2026-11-19T18:49:25.876710+00:00]    Pool Latency: p50=95.59ms | p95=120.24ms | p99=167.12ms
+[2026-11-19T18:49:25.877227+00:00] --- Benchmark 3: AI Model Gateway Resident Inference on qwen3.5:4b (5 turns) ---
+[2026-11-19T18:49:33.052057+00:00]    Turn 1: 12 tokens in 7.06s (1.7 tok/s) | VRAM: 3257MB
+[2026-11-19T18:49:40.229492+00:00]    Turn 2: 12 tokens in 7.05s (1.7 tok/s) | VRAM: 3195MB
+[2026-11-19T18:49:47.393438+00:00]    Turn 3: 12 tokens in 7.04s (1.7 tok/s) | VRAM: 3265MB
+[2026-11-19T18:49:54.565944+00:00]    Turn 4: 12 tokens in 7.05s (1.7 tok/s) | VRAM: 3196MB
+[2026-11-19T18:50:01.746020+00:00]    Turn 5: 12 tokens in 7.04s (1.7 tok/s) | VRAM: 577MB
+[2026-11-19T18:50:01.794690+00:00] --- Benchmark 4: Concurrent Voice Telephony (25 channels x 40 chunks) ---
+[2026-11-19T18:52:03.466333+00:00] =================================================================
+[2026-11-19T18:52:03.466614+00:00] SALES AI MANAGEMENT — STEP 12 FULL PLATFORM CONCURRENCY & LOAD BENCHMARK
+[2026-11-19T18:52:03.466813+00:00] =================================================================
+[2026-11-19T18:52:03.467173+00:00] --- Benchmark 1: Direct Safe Read Load Test (500 requests, concurrency 25) ---
+[2026-11-19T18:52:03.488967+00:00]    Total Time: 0.02s | Throughput: 23201.4 req/s | Errors: 0
+[2026-11-19T18:52:03.489340+00:00]    Latency: p50=0.01ms | p95=0.03ms | p99=0.04ms
+[2026-11-19T18:52:03.489747+00:00] --- Benchmark 2: PostgreSQL Multi-Tenant RLS Pool Load (300 queries, 20 conn) ---
+[2026-11-19T18:52:03.698619+00:00]    Total Time: 0.21s | DB Throughput: 1437.9 qps | Errors: 0
+[2026-11-19T18:52:03.699556+00:00]    Pool Latency: p50=6.31ms | p95=59.90ms | p99=83.28ms
+[2026-11-19T18:52:03.700128+00:00] --- Benchmark 3: AI Model Gateway Resident Inference on qwen3.5:4b (5 turns) ---
+[2026-11-19T18:52:30.409049+00:00]    Turn 1: 0 tokens in 26.58s (0.0 tok/s) | VRAM: 4333MB
+[2026-11-19T18:52:37.627483+00:00]    Turn 2: 0 tokens in 7.11s (0.0 tok/s) | VRAM: 4094MB
+[2026-11-19T18:52:43.311561+00:00]    Turn 3: 0 tokens in 5.61s (0.0 tok/s) | VRAM: 4085MB
+[2026-11-19T18:52:48.824446+00:00]    Turn 4: 0 tokens in 5.44s (0.0 tok/s) | VRAM: 4105MB
+[2026-11-19T18:52:54.379987+00:00]    Turn 5: 0 tokens in 5.46s (0.0 tok/s) | VRAM: 4073MB
+[2026-11-19T18:52:54.430760+00:00] --- Benchmark 4: Concurrent Voice Telephony (25 channels x 40 chunks) ---
+[2026-11-19T18:54:02.473022+00:00] =================================================================
+[2026-11-19T18:54:02.473518+00:00] SALES AI MANAGEMENT — STEP 12 FULL PLATFORM CONCURRENCY & LOAD BENCHMARK
+[2026-11-19T18:54:02.473702+00:00] =================================================================
+[2026-11-19T18:54:02.473897+00:00] --- Benchmark 1: Direct Safe Read Load Test (500 requests, concurrency 25) ---
+[2026-11-19T18:54:02.499737+00:00]    Total Time: 0.03s | Throughput: 19951.6 req/s | Errors: 0
+[2026-11-19T18:54:02.500135+00:00]    Latency: p50=0.01ms | p95=0.03ms | p99=0.06ms
+[2026-11-19T18:54:02.500513+00:00] --- Benchmark 2: PostgreSQL Multi-Tenant RLS Pool Load (300 queries, 20 conn) ---
+[2026-11-19T18:54:02.665719+00:00]    Total Time: 0.16s | DB Throughput: 1818.6 qps | Errors: 0
+[2026-11-19T18:54:02.666398+00:00]    Pool Latency: p50=6.25ms | p95=46.67ms | p99=64.75ms
+[2026-11-19T18:54:02.666968+00:00] --- Benchmark 3: AI Model Gateway Resident Inference on qwen3.5:4b (5 turns) ---
+[2026-11-19T18:54:09.325198+00:00]    Turn 1: 0 tokens in 6.35s (0.0 tok/s) | VRAM: 4095MB
+[2026-11-19T18:54:16.298162+00:00]    Turn 2: 0 tokens in 6.86s (0.0 tok/s) | VRAM: 4085MB
+[2026-11-19T18:54:22.129629+00:00]    Turn 3: 0 tokens in 5.72s (0.0 tok/s) | VRAM: 4073MB
+[2026-11-19T18:54:27.927016+00:00]    Turn 4: 0 tokens in 5.71s (0.0 tok/s) | VRAM: 4073MB
+[2026-11-19T18:54:33.746252+00:00]    Turn 5: 0 tokens in 5.69s (0.0 tok/s) | VRAM: 4090MB
+[2026-11-19T18:54:33.791062+00:00] --- Benchmark 4: Concurrent Voice Telephony (25 channels x 40 chunks) ---
+[2026-11-19T18:54:33.960971+00:00]    Processed 1000 audio frames across 25 concurrent channels in 0.17s
+[2026-11-19T18:54:33.965119+00:00]    VAD p95 Latency: 0.022ms (Target: < 5.0ms)
+[2026-11-19T18:54:33.965730+00:00]    G.711 Transcode p95 Latency: 253.4us (Target: < 500us)
+[2026-11-19T18:54:34.011035+00:00] Benchmark report saved to: C:\Users\omar\Documents\Sales agent\evidence\step-12\load\load_test_report.json
+[2026-11-19T18:54:34.011523+00:00] =================================================================
+[2026-11-19T18:54:34.011910+00:00] LOAD BENCHMARK SUMMARY: DEGRADED
+[2026-11-19T18:54:34.012296+00:00] Direct Safe Read RPS: 19951.6 req/s (p95: 0.03ms)
+[2026-11-19T18:54:34.012720+00:00] DB RLS Pool QPS: 1818.6 qps (p95: 46.67ms)
+[2026-11-19T18:54:34.013076+00:00] Model Throughput: 0.0 tok/s
+[2026-11-19T18:54:34.015431+00:00] Voice VAD p95: 0.022ms
+[2026-11-19T18:54:34.015612+00:00] =================================================================
+[2026-11-19T18:58:26.897214+00:00] =================================================================
+[2026-11-19T18:58:26.900342+00:00] SALES AI MANAGEMENT — STEP 12 FULL PLATFORM CONCURRENCY & LOAD BENCHMARK
+[2026-11-19T18:58:26.900734+00:00] =================================================================
+[2026-11-19T18:58:26.901169+00:00] --- Benchmark 1: Direct Safe Read Load Test (500 requests, concurrency 25) ---
+[2026-11-19T18:58:26.934728+00:00]    Total Time: 0.03s | Throughput: 15538.8 req/s | Errors: 0
+[2026-11-19T18:58:26.935224+00:00]    Latency: p50=0.02ms | p95=0.04ms | p99=0.08ms
+[2026-11-19T18:58:26.935772+00:00] --- Benchmark 2: PostgreSQL Multi-Tenant RLS Pool Load (300 queries, 20 conn) ---
+[2026-11-19T18:58:28.026409+00:00]    Total Time: 1.09s | DB Throughput: 275.2 qps | Errors: 0
+[2026-11-19T18:58:28.027431+00:00]    Pool Latency: p50=15.93ms | p95=830.55ms | p99=844.29ms
+[2026-11-19T18:58:28.028634+00:00] --- Benchmark 3: AI Model Gateway Resident Inference on qwen3.5:4b (5 turns) ---
+[2026-11-19T18:58:45.292964+00:00]    Turn 1: 97 tokens in 16.89s (5.7 tok/s) | VRAM: 4067MB
+[2026-11-19T18:59:03.220933+00:00]    Turn 2: 106 tokens in 17.68s (6.0 tok/s) | VRAM: 4067MB
+[2026-11-19T18:59:21.050155+00:00]    Turn 3: 116 tokens in 17.67s (6.6 tok/s) | VRAM: 4067MB
+[2026-11-19T18:59:38.670827+00:00]    Turn 4: 89 tokens in 17.49s (5.1 tok/s) | VRAM: 4067MB
+[2026-11-19T18:59:56.520181+00:00]    Turn 5: 128 tokens in 17.72s (7.2 tok/s) | VRAM: 4067MB
+[2026-11-19T18:59:56.591735+00:00] --- Benchmark 4: Concurrent Voice Telephony (25 channels x 40 chunks) ---
+[2026-11-19T18:59:56.827909+00:00]    Processed 1000 audio frames across 25 concurrent channels in 0.23s
+[2026-11-19T18:59:56.828676+00:00]    VAD p95 Latency: 0.037ms (Target: < 5.0ms)
+[2026-11-19T18:59:56.829269+00:00]    G.711 Transcode p95 Latency: 320.3us (Target: < 500us)
+[2026-11-19T18:59:56.898498+00:00] Benchmark report saved to: C:\Users\omar\Documents\Sales agent\evidence\step-12\load\load_test_report.json
+[2026-11-19T18:59:56.899026+00:00] =================================================================
+[2026-11-19T18:59:56.899491+00:00] LOAD BENCHMARK SUMMARY: DEGRADED
+[2026-11-19T18:59:56.900354+00:00] Direct Safe Read RPS: 15538.8 req/s (p95: 0.04ms)
+[2026-11-19T18:59:56.901299+00:00] DB RLS Pool QPS: 275.2 qps (p95: 830.55ms)
+[2026-11-19T18:59:56.901951+00:00] Model Throughput: 6.1 tok/s
+[2026-11-19T18:59:56.903041+00:00] Voice VAD p95: 0.037ms
+[2026-11-19T18:59:56.904456+00:00] =================================================================
+[2026-11-19T19:00:23.519704+00:00] =================================================================
+[2026-11-19T19:00:23.520083+00:00] SALES AI MANAGEMENT — STEP 12 FULL PLATFORM CONCURRENCY & LOAD BENCHMARK
+[2026-11-19T19:00:23.520356+00:00] =================================================================
+[2026-11-19T19:00:23.520572+00:00] --- Benchmark 1: Direct Safe Read Load Test (500 requests, concurrency 25) ---
+[2026-11-19T19:00:23.555924+00:00]    Total Time: 0.03s | Throughput: 14398.4 req/s | Errors: 0
+[2026-11-19T19:00:23.556373+00:00]    Latency: p50=0.02ms | p95=0.04ms | p99=0.07ms
+[2026-11-19T19:00:23.556922+00:00] --- Benchmark 2: PostgreSQL Multi-Tenant RLS Pool Load (300 queries, 20 conn) ---
+[2026-11-19T19:00:23.974352+00:00]    Total Time: 0.35s | DB Throughput: 847.3 qps | Errors: 0
+[2026-11-19T19:00:23.975273+00:00]    Pool Latency: p50=13.03ms | p95=129.83ms | p99=141.82ms
+[2026-11-19T19:00:23.976450+00:00] --- Benchmark 3: AI Model Gateway Resident Inference on qwen3.5:4b (3 turns) ---
+[2026-11-19T19:00:41.453340+00:00]    Turn 1: 97 tokens in 17.33s (5.6 tok/s) | VRAM: 4067MB
+[2026-11-19T19:00:59.422615+00:00]    Turn 2: 109 tokens in 17.82s (6.1 tok/s) | VRAM: 4067MB
+[2026-11-19T19:01:18.890823+00:00]    Turn 3: 113 tokens in 19.32s (5.8 tok/s) | VRAM: 4067MB
+[2026-11-19T19:01:18.957097+00:00] --- Benchmark 4: Concurrent Voice Telephony (25 channels x 40 chunks) ---
+[2026-11-19T19:01:19.198550+00:00]    Processed 1000 audio frames across 25 concurrent channels in 0.24s
+[2026-11-19T19:01:19.199307+00:00]    VAD p95 Latency: 0.038ms (Target: < 5.0ms)
+[2026-11-19T19:01:19.199882+00:00]    G.711 Transcode p95 Latency: 316.0us (Target: < 500us)
+[2026-11-19T19:01:19.256840+00:00] Benchmark report saved to: C:\Users\omar\Documents\Sales agent\evidence\step-12\load\load_test_report.json
+[2026-11-19T19:01:19.257337+00:00] =================================================================
+[2026-11-19T19:01:19.257781+00:00] LOAD BENCHMARK SUMMARY: DEGRADED
+[2026-11-19T19:01:19.258241+00:00] Direct Safe Read RPS: 14398.4 req/s (p95: 0.04ms)
+[2026-11-19T19:01:19.258696+00:00] DB RLS Pool QPS: 847.3 qps (p95: 129.83ms)
+[2026-11-19T19:01:19.259240+00:00] Model Throughput: 5.8 tok/s
+[2026-11-19T19:01:19.259685+00:00] Voice VAD p95: 0.038ms
+[2026-11-19T19:01:19.260767+00:00] =================================================================

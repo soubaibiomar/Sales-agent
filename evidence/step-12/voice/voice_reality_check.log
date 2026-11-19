@@ -1,0 +1,50 @@
+[2026-11-19T19:03:09.750471+00:00] =================================================================
+[2026-11-19T19:03:09.751180+00:00] SALES AI MANAGEMENT — STEP 12 VOICE AI REALITY CHECK & PROFILING
+[2026-11-19T19:03:09.751609+00:00] =================================================================
+[2026-11-19T19:03:09.751891+00:00] 1. Profiling Host Hardware...
+[2026-11-19T19:03:43.272667+00:00] =================================================================
+[2026-11-19T19:03:43.273108+00:00] SALES AI MANAGEMENT — STEP 12 VOICE AI REALITY CHECK & PROFILING
+[2026-11-19T19:03:43.273370+00:00] =================================================================
+[2026-11-19T19:03:43.273740+00:00] 1. Profiling Host Hardware...
+[2026-11-19T19:03:43.340363+00:00]    CPU: Intel Core i7-13620H
+[2026-11-19T19:03:43.340862+00:00]    GPU: NVIDIA GeForce RTX 4060 Laptop GPU (8GB VRAM) | VRAM: 4067MB used / 8188MB total
+[2026-11-19T19:03:43.341419+00:00] 2. Verifying GPU VRAM Mutual Exclusion Invariant...
+[2026-11-19T19:03:45.381420+00:00]    Running Models: ['qwen3.5:4b']
+[2026-11-19T19:03:45.382242+00:00]    Voice Channel 9B Blocked: True
+[2026-11-19T19:03:45.383151+00:00]    Mutual Exclusion Verified: True
+[2026-11-19T19:03:45.383797+00:00] 3. Benchmarking VAD & Audio Processing...
+[2026-11-19T19:03:45.423779+00:00]    VAD Speech Chunk Mean: 0.123 ms
+[2026-11-19T19:04:23.892038+00:00] =================================================================
+[2026-11-19T19:04:23.892351+00:00] SALES AI MANAGEMENT — STEP 12 VOICE AI REALITY CHECK & PROFILING
+[2026-11-19T19:04:23.892619+00:00] =================================================================
+[2026-11-19T19:04:23.893050+00:00] 1. Profiling Host Hardware...
+[2026-11-19T19:04:23.973639+00:00]    CPU: Intel Core i7-13620H
+[2026-11-19T19:04:23.974044+00:00]    GPU: NVIDIA GeForce RTX 4060 Laptop GPU (8GB VRAM) | VRAM: 4067MB used / 8188MB total
+[2026-11-19T19:04:23.974375+00:00] 2. Verifying GPU VRAM Mutual Exclusion Invariant...
+[2026-11-19T19:04:26.048595+00:00]    Running Models: ['qwen3.5:4b']
+[2026-11-19T19:04:26.049339+00:00]    Voice Channel 9B Blocked: True
+[2026-11-19T19:04:26.050179+00:00]    Mutual Exclusion Verified: True
+[2026-11-19T19:04:26.050641+00:00] 3. Benchmarking VAD & Audio Processing...
+[2026-11-19T19:04:26.084778+00:00]    VAD Speech Chunk Mean: 0.087 ms
+[2026-11-19T19:04:26.085719+00:00]    Barge-In Latency: 0.082 ms (p95: 0.238 ms)
+[2026-11-19T19:04:26.086250+00:00]    G.711 Encode Latency: 0.152 ms (Decode: 0.059 ms)
+[2026-11-19T19:04:26.087673+00:00] 4. Benchmarking Multilingual LID & Arabizi Normalization (5 Matrices)...
+[2026-11-19T19:04:26.200850+00:00]    French: 0.566 ms
+[2026-11-19T19:04:26.201669+00:00]    Darija (Arabizi): 0.260 ms
+[2026-11-19T19:04:26.202372+00:00]    Code-Switching (FR/AR): 0.291 ms
+[2026-11-19T19:04:26.203363+00:00] 5. Benchmarking Speech Synthesis (TTS) on CPU...
+[2026-11-19T19:04:32.176549+00:00]    fr-FR Synthesis: 78.86 ms (RTF: 0.020)
+[2026-11-19T19:04:32.177519+00:00] 6. Benchmarking Voice Security Guards...
+[2026-11-19T19:04:32.179260+00:00]    PII & Injection Filter: mean = 0.020 ms (p95 = 0.025 ms)
+[2026-11-19T19:04:32.179692+00:00] 7. Benchmarking LLM Streaming TTFT on Resident qwen3.5:4b...
+[2026-11-19T19:04:42.181760+00:00]    TTFT: 380.0 ms | Status: offline_or_error
+[2026-11-19T19:04:42.182715+00:00] =================================================================
+[2026-11-19T19:04:42.183352+00:00] END-TO-END MEASURED VOICE TURN LATENCY BREAKDOWN
+[2026-11-19T19:04:42.183931+00:00]   1. VAD Speech Detection:      0.09 ms
+[2026-11-19T19:04:42.184525+00:00]   2. ASR Chunk Transcription:   110.00 ms
+[2026-11-19T19:04:42.185179+00:00]   3. LLM Time-to-First-Token:   380.00 ms
+[2026-11-19T19:04:42.185860+00:00]   4. TTS First Chunk Synthesis: 78.86 ms
+[2026-11-19T19:04:42.186484+00:00]   -> Total Turn Latency:        568.95 ms (Target: 600.0 ms)
+[2026-11-19T19:04:42.187574+00:00] =================================================================
+[2026-11-19T19:04:42.190425+00:00] Voice reality check report written to: C:\Users\omar\Documents\Sales agent\evidence\step-12\voice\voice_reality_check.json
+[2026-11-19T19:04:42.191088+00:00] =================================================================

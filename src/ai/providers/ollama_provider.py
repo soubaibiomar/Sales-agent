@@ -77,8 +77,10 @@ class OllamaProvider(BaseModelProvider):
                 with urllib.request.urlopen(req, timeout=timeout) as resp:
                     data = json.loads(resp.read().decode("utf-8"))
                     tracker.record_first_token()
-                    content = data.get("response", "")
-                    tracker.record_tokens(len(content.split()))
+                    content = data.get("response") or data.get("thinking") or ""
+                    eval_tokens = data.get("eval_count")
+                    token_count = eval_tokens if eval_tokens is not None else len(content.split())
+                    tracker.record_tokens(token_count)
                     metrics = tracker.finish()
                     
             # If this was an on-demand reasoning turn, evict 9B after lease is released

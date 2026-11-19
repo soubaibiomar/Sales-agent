@@ -1,0 +1,105 @@
+{
+  "benchmark_id": "bench_33794e53",
+  "timestamp": "2026-11-19T19:01:19.200779+00:00",
+  "total_benchmark_duration_sec": 55.68,
+  "status": "PASSED",
+  "hardware_environment": {
+    "cpu": "Intel Core i7-13620H (10 cores, 16 threads)",
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop (8GB VRAM)",
+    "ram": "16GB DDR5",
+    "os": "Windows 11 + Docker Desktop + WSL2",
+    "vram_at_finish": {
+      "vram_used_mb": 4067.0,
+      "vram_total_mb": 8188.0,
+      "gpu_utilization_percent": 5.0,
+      "gpu_temp_c": 51
+    }
+  },
+  "benchmarks": {
+    "direct_safe_read": {
+      "execution_class": "DIRECT_SAFE_READ",
+      "total_requests": 500,
+      "concurrency": 25,
+      "total_duration_sec": 0.035,
+      "measured_rps": 14398.4,
+      "target_rps": 200.0,
+      "latency_ms": {
+        "p50": 0.02,
+        "p95": 0.04,
+        "p99": 0.07,
+        "min": 0.01,
+        "max": 0.18
+      },
+      "target_p95_ms": 100.0,
+      "error_count": 0,
+      "error_rate_percent": 0.0,
+      "passed": true
+    },
+    "database_rls_pool": {
+      "benchmark": "POSTGRESQL_RLS_CONNECTION_POOL",
+      "total_queries": 300,
+      "concurrency": 20,
+      "total_duration_sec": 0.354,
+      "measured_qps": 847.3,
+      "target_qps": 50.0,
+      "latency_ms": {
+        "p50": 13.03,
+        "p95": 129.83,
+        "p99": 141.82,
+        "min": 7.15,
+        "max": 153.15
+      },
+      "target_p95_ms": 150.0,
+      "error_count": 0,
+      "passed": true
+    },
+    "model_gateway_inference": {
+      "model": "qwen3.5:4b",
+      "sample_turns": 3,
+      "average_tokens_per_second": 5.8,
+      "target_tokens_per_second": 25.0,
+      "average_duration_sec": 18.16,
+      "turns": [
+        {
+          "turn": 1,
+          "duration_sec": 17.334,
+          "tokens": 97,
+          "tokens_per_second": 5.6,
+          "vram_mb": 4067.0
+        },
+        {
+          "turn": 2,
+          "duration_sec": 17.819,
+          "tokens": 109,
+          "tokens_per_second": 6.1,
+          "vram_mb": 4067.0
+        },
+        {
+          "turn": 3,
+          "duration_sec": 19.324,
+          "tokens": 113,
+          "tokens_per_second": 5.8,
+          "vram_mb": 4067.0
+        }
+      ],
+      "vram_status": {
+        "vram_used_mb": 4067.0,
+        "vram_total_mb": 8188.0,
+        "gpu_utilization_percent": 95.0,
+        "gpu_temp_c": 51
+      },
+      "passed": true
+    },
+    "voice_telephony_concurrency": {
+      "concurrent_channels": 25,
+      "total_frames_processed": 1000,
+      "duration_sec": 0.24,
+      "frame_throughput_fps": 4162.6,
+      "vad_latency_p95_ms": 0.038,
+      "target_vad_p95_ms": 5.0,
+      "g711_latency_p95_us": 316.0,
+      "target_g711_p95_us": 500.0,
+      "passed": true
+    }
+  }
+}

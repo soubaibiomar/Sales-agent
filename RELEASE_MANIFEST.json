@@ -1,0 +1,111 @@
+{
+  "release_version": "1.0.0-rc1",
+  "release_name": "Sales AI Management Platform \u2014 Unified Enterprise Release",
+  "timestamp": "2026-11-19T19:15:36.791918+00:00",
+  "git": {
+    "commit": "8c7d352d572c29d99f4cbd447e8fac096bf6a483",
+    "branch": "master"
+  },
+  "verification_summary": {
+    "total_tests": 381,
+    "tests_passed": 381,
+    "tests_failed": 0,
+    "pass_rate_percent": 100.0,
+    "database_tables": 84,
+    "rls_policies": 79,
+    "canonical_parity": "100%",
+    "security_controls_verified": "82/82 (70 Baseline + 12 SAI)",
+    "p0_launch_blockers_unresolved": 0
+  },
+  "disaster_recovery_metrics": {
+    "rto_target_seconds": 900,
+    "rto_measured_seconds": 1.345,
+    "rpo_target_seconds": 60,
+    "rpo_measured_seconds": 0.0,
+    "backup_size_bytes": 394292
+  },
+  "performance_and_load_metrics": {
+    "direct_safe_read_rps": 14398.4,
+    "direct_safe_read_p95_ms": 0.04,
+    "db_rls_pool_qps": 847.3,
+    "db_rls_pool_p50_ms": 13.03,
+    "voice_vad_p95_ms": 0.038,
+    "voice_g711_p95_us": 316.0
+  },
+  "voice_ai_hardware_metrics": {
+    "resident_model": "qwen3.5:4b",
+    "vram_mutual_exclusion_verified": true,
+    "e2e_turn_latency_ms": 568.95,
+    "target_turn_latency_ms": 600.0
+  },
+  "artifacts_checksums": {
+    "AGENTS.md": {
+      "sha256": "bf00bf2df13e0dc82f823fbe60b44298d0b21df306ea7c3ff84aff6a53976b8d",
+      "size_bytes": 12563
+    },
+    "infra/init-db.sql": {
+      "sha256": "06b037a44b7bd5edbe8eece7adcdbef8867f6176023c1e6baa487301147610f9",
+      "size_bytes": 116973
+    },
+    "src/frontend/release_console.html": {
+      "sha256": "1106c168cd8686d153e22259fcebd94001250055459c1e1936287a06eeb216d2",
+      "size_bytes": 19455
+    },
+    "security/CONTROL_INDEX.md": {
+      "sha256": "0faf4a043a237c1fbfb78a339d83fd66131f1fbc4b96ae9b0b0150069bf72bb9",
+      "size_bytes": 5453
+    },
+    "security/SAI_EXTENSION.md": {
+      "sha256": "991e8a049253dcdbde78f90ab39d7c4de41bfbbcfe9edaf5caceae6d56fd90a5",
+      "size_bytes": 1793
+    },
+    "security/evidence/final-control-matrix.md": {
+      "sha256": "8339431693a61a5348c2877ecbf75c2e1b15e7ae997ee3b400ade18c9c4c8e9f",
+      "size_bytes": 16911
+    },
+    "evidence/step-12/dr/backup_restore_drill.json": {
+      "sha256": "0940c707614d1407f27b1d8f53231f4d3940d2624a3d96acf9ec04dc68cd62a0",
+      "size_bytes": 786
+    },
+    "evidence/step-12/load/load_test_report.json": {
+      "sha256": "7d6205ff8ad3465c0e1701e033bdc6a760ffd62fcc28c6dc5a3e28bd2d475cb2",
+      "size_bytes": 2818
+    },
+    "evidence/step-12/voice/voice_reality_check.json": {
+      "sha256": "07c61dbbe7b6e74869aab195ea7947d69bbd73f4b171be2580cac62e6982dbe2",
+      "size_bytes": 4809
+    },
+    "evidence/step-12/security/security_audit_report.json": {
+      "sha256": "12a42f3a76f7e7eab2f4722d53c5dddce6512baafe2500a6abfb7ee6fd60e0df",
+      "size_bytes": 30954
+    },
+    "evidence/step-12/e2e/e2e_scenarios.log": {
+      "sha256": "12ff204ab93f372131bab0f80a5e913ed6107993ce1a2e0340504d241e4a2895",
+      "size_bytes": 2718
+    },
+    "docs/runbooks/disaster-recovery.md": {
+      "sha256": "9e81fbb527d18a77edcb74cfdfe98ff42ea73b13da4a59f9cfd020181133b77c",
+      "size_bytes": 3236
+    },
+    "docs/runbooks/incident-response.md": {
+      "sha256": "e56d70c87bad8d2a0ab4c974512bf9f373f2465246d1671582b1809d1abe4ed8",
+      "size_bytes": 3011
+    },
+    "docs/runbooks/deployment-and-operations.md": {
+      "sha256": "5fcf940efaff407877a4a2a7b0065f4d7fe6adcb0373da1485d7f107f2867b2c",
+      "size_bytes": 2371
+    },
+    "docs/runbooks/backup-and-restore.md": {
+      "sha256": "36f1817ba75e0b328ab6549e8c80171061f9cd06b24bd21a827a9af62b045d8f",
+      "size_bytes": 2097
+    },
+    "docs/runbooks/rollback-procedure.md": {
+      "sha256": "87128cc9dca1e66d034c637f74cc7cda0427c59ed7a8960fda06e97eef86e387",
+      "size_bytes": 1743
+    },
+    "tests/e2e/test_step12_full_lifecycle_e2e.py": {
+      "sha256": "be5cb7ea83372dd12517d31770c11e333977e3f8be3589d6c85ea1750c528401",
+      "size_bytes": 28660
+    }
+  }
+}

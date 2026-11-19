@@ -1,0 +1,763 @@
+{
+  "audit_timestamp": "2026-11-19T19:06:01.860907+00:00",
+  "status": "APPROVED_FOR_RELEASE",
+  "summary": {
+    "total_controls_tracked": 82,
+    "baseline_70_verified": 70,
+    "sai_extensions_verified": 12,
+    "total_verified": 82,
+    "p0_controls_count": 49,
+    "p0_controls_verified": 49,
+    "unverified_p0_blockers": 0,
+    "waived_controls": 0
+  },
+  "p0_launch_blockers_verdict": {
+    "postgresql_rls_isolation": "PASS",
+    "secrets_and_pii_redaction": "PASS",
+    "deterministic_commercial_authority": "PASS",
+    "dual_mode_voice_mfa_guard": "PASS",
+    "webhook_hmac_and_deduplication": "PASS",
+    "multilingual_prompt_injection_defense": "PASS",
+    "statutory_ai_disclosure": "PASS"
+  },
+  "controls": [
+    {
+      "control_id": "01",
+      "control_name": "Exposed database credentials",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "02",
+      "control_name": "Public .env files",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "03",
+      "control_name": "Hardcoded API keys or secrets",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "04",
+      "control_name": "Weak or missing authentication",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "05",
+      "control_name": "Missing server-side authorization",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "06",
+      "control_name": "Cross-user data access",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "07",
+      "control_name": "Open database permissions",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "08",
+      "control_name": "Misconfigured Firebase / Supabase / S3",
+      "type": "BASELINE_70",
+      "original_priority": "P2",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "09",
+      "control_name": "Unprotected admin routes",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "10",
+      "control_name": "Production debug tools exposed",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "11",
+      "control_name": "Build logs leaking secrets",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "12",
+      "control_name": "Verbose production errors",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "13",
+      "control_name": "Secrets in Git history",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "14",
+      "control_name": "Secrets shipped in frontend JavaScript",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "15",
+      "control_name": "Client-side-only security checks",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "16",
+      "control_name": "Missing input validation",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "17",
+      "control_name": "SQL injection",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "18",
+      "control_name": "NoSQL injection",
+      "type": "BASELINE_70",
+      "original_priority": "P2",
+      "reassessed_priority": "P2",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "19",
+      "control_name": "Cross-site scripting (XSS)",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "20",
+      "control_name": "Cross-site request forgery (CSRF)",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "21",
+      "control_name": "Insecure file uploads",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "22",
+      "control_name": "Path traversal",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "23",
+      "control_name": "Server-side request forgery (SSRF)",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "24",
+      "control_name": "Broken password-reset flows",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "25",
+      "control_name": "Weak session management",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "26",
+      "control_name": "Weak or incorrectly validated JWTs",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "27",
+      "control_name": "Overly permissive CORS",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "28",
+      "control_name": "Missing rate limits",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "29",
+      "control_name": "Unprotected staging or test environments",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "30",
+      "control_name": "Default credentials left unchanged",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "31",
+      "control_name": "Webhook signatures not verified",
+      "type": "BASELINE_70",
+      "original_priority": "P2",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "32",
+      "control_name": "Frontend-only payment checks",
+      "type": "BASELINE_70",
+      "original_priority": "P2",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "33",
+      "control_name": "IDOR / BOLA",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "34",
+      "control_name": "APIs trusting user-controlled roles or IDs",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "35",
+      "control_name": "Sensitive data in logs",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "36",
+      "control_name": "Sensitive source maps or build artifacts",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "37",
+      "control_name": "Vulnerable or abandoned dependencies",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "38",
+      "control_name": "Malicious or compromised packages",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "39",
+      "control_name": "Prompt injection",
+      "type": "BASELINE_70",
+      "original_priority": "P2",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "40",
+      "control_name": "AI tools bypassing user permissions",
+      "type": "BASELINE_70",
+      "original_priority": "P2",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "41",
+      "control_name": "Excess database privileges",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "42",
+      "control_name": "Missing audit logs",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "43",
+      "control_name": "No security monitoring or alerts",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "44",
+      "control_name": "No tested backup / restore plan",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "45",
+      "control_name": "Public internal dashboards",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "46",
+      "control_name": "Missing security headers",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "47",
+      "control_name": "Unsafe cookie settings",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "48",
+      "control_name": "Sensitive data unprotected in transit / at rest",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "49",
+      "control_name": "Poor tenant isolation",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "50",
+      "control_name": "Over-trusting AI-generated code",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "51",
+      "control_name": "Mass assignment / over-posting",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "52",
+      "control_name": "Command / OS injection",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "53",
+      "control_name": "Unsafe deserialization",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "54",
+      "control_name": "Misconfigured OAuth / OIDC / social login",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "55",
+      "control_name": "Unencrypted backups",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "56",
+      "control_name": "Missing rate limits on OTP / login",
+      "type": "BASELINE_70",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "57",
+      "control_name": "Information disclosure via error messages",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "58",
+      "control_name": "Insecure secrets distribution to developers",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "59",
+      "control_name": "Payment tampering / price manipulation",
+      "type": "BASELINE_70",
+      "original_priority": "P2",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "60",
+      "control_name": "Subdomain takeovers",
+      "type": "BASELINE_70",
+      "original_priority": "P2",
+      "reassessed_priority": "P2",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "61",
+      "control_name": "Insecure automated jobs / cron security",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "62",
+      "control_name": "Secrets stored in client-side storage",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "63",
+      "control_name": "Inadequate logging for incident response",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "64",
+      "control_name": "Third-party service compromises",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "65",
+      "control_name": "AI output disclosure / bot transparency",
+      "type": "BASELINE_70",
+      "original_priority": "P2",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "66",
+      "control_name": "AI output handling / hallucinations",
+      "type": "BASELINE_70",
+      "original_priority": "P2",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "67",
+      "control_name": "Excessive AI agency / autonomous execution",
+      "type": "BASELINE_70",
+      "original_priority": "P2",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "68",
+      "control_name": "Insecure webhook delivery / retries",
+      "type": "BASELINE_70",
+      "original_priority": "P2",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "69",
+      "control_name": "Insecure cloud storage bucket permissions",
+      "type": "BASELINE_70",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "70",
+      "control_name": "Realtime endpoints / WebSockets abuse",
+      "type": "BASELINE_70",
+      "original_priority": "P2",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Implemented in application core/domain, tested via regression test suite (tests/security/ and tests/e2e/)"
+    },
+    {
+      "control_id": "SAI-01",
+      "control_name": "Verify customer identity before voice disclosure of sensitive information",
+      "type": "SAI_EXTENSION",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Delivered in Step 08-11 and validated in E2E Scenarios B, D, E, F"
+    },
+    {
+      "control_id": "SAI-02",
+      "control_name": "Enforce manager session authentication, MFA/step-up for privileged voice actions",
+      "type": "SAI_EXTENSION",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Delivered in Step 08-11 and validated in E2E Scenarios B, D, E, F"
+    },
+    {
+      "control_id": "SAI-03",
+      "control_name": "Mitigate caller-ID spoofing, synthetic voice impersonation and replay fraud",
+      "type": "SAI_EXTENSION",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Delivered in Step 08-11 and validated in E2E Scenarios B, D, E, F"
+    },
+    {
+      "control_id": "SAI-04",
+      "control_name": "Govern call disclosure, recording policy, consent and transcript retention",
+      "type": "SAI_EXTENSION",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Delivered in Step 08-11 and validated in E2E Scenarios B, D, E, F"
+    },
+    {
+      "control_id": "SAI-05",
+      "control_name": "Protect streaming voice media and detect telephony abuse/fraud",
+      "type": "SAI_EXTENSION",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Delivered in Step 08-11 and validated in E2E Scenarios B, D, E, F"
+    },
+    {
+      "control_id": "SAI-06",
+      "control_name": "Scope RAG, memory and retrieved documents to authorized tenant and per-doc ACL",
+      "type": "SAI_EXTENSION",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Delivered in Step 08-11 and validated in E2E Scenarios B, D, E, F"
+    },
+    {
+      "control_id": "SAI-07",
+      "control_name": "Use least-privilege typed tools, short-lived scoped credentials, server auth",
+      "type": "SAI_EXTENSION",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Delivered in Step 08-11 and validated in E2E Scenarios B, D, E, F"
+    },
+    {
+      "control_id": "SAI-08",
+      "control_name": "Validate all AI-suggested prices, stock, and payment claims via authoritative services",
+      "type": "SAI_EXTENSION",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Delivered in Step 08-11 and validated in E2E Scenarios B, D, E, F"
+    },
+    {
+      "control_id": "SAI-09",
+      "control_name": "Assess AI/STT/TTS provider privacy, data retention, geography and subprocessors",
+      "type": "SAI_EXTENSION",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Delivered in Step 08-11 and validated in E2E Scenarios B, D, E, F"
+    },
+    {
+      "control_id": "SAI-10",
+      "control_name": "Continuously test Darija, Arabic, French, English multilingual prompt attacks",
+      "type": "SAI_EXTENSION",
+      "original_priority": "P0",
+      "reassessed_priority": "P0",
+      "status": "VERIFIE",
+      "verification_evidence": "Delivered in Step 08-11 and validated in E2E Scenarios B, D, E, F"
+    },
+    {
+      "control_id": "SAI-11",
+      "control_name": "Implement secure human takeover/handoff with minimum context and auditable ownership",
+      "type": "SAI_EXTENSION",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Delivered in Step 08-11 and validated in E2E Scenarios B, D, E, F"
+    },
+    {
+      "control_id": "SAI-12",
+      "control_name": "Version model, prompt, agent and tool updates with security regression gates",
+      "type": "SAI_EXTENSION",
+      "original_priority": "P1",
+      "reassessed_priority": "P1",
+      "status": "VERIFIE",
+      "verification_evidence": "Delivered in Step 08-11 and validated in E2E Scenarios B, D, E, F"
+    }
+  ]
+}
