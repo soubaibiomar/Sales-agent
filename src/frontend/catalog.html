@@ -1,131 +1,200 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Product Catalog & Price Lists — Sales AI Platform</title>
-  <style>
-    :root {
-      --primary: #0A3A2A;
-      --primary-hover: #064E3B;
-      --primary-tint: #E6F4EA;
-      --accent: #10B981;
-      --bg-neutral: #FFFFFF;
-      --bg-page: #F8FAFC;
-      --border-muted: #E2E8F0;
-      --text-main: #0F172A;
-      --text-muted: #64748B;
-      --status-success: #16A34A;
-      --status-warning: #D97706;
-      --status-danger: #DC2626;
-      --status-info: #2563EB;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
-    body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
-    .sidebar { width: 260px; background-color: var(--primary); color: #FFFFFF; display: flex; flex-direction: column; padding: 1.5rem 1rem; border-right: 1px solid var(--border-muted); }
-    .brand-title { font-size: 1.15rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.25rem; }
-    .brand-subtitle { font-size: 0.75rem; color: #A7F3D0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2rem; }
-    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
-    .nav-item { padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.875rem; cursor: pointer; color: #E2E8F0; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
-    .nav-item:hover, .nav-item.active { background: rgba(255, 255, 255, 0.18); color: #FFFFFF; font-weight: 600; }
-    
-    .main-area { flex: 1; display: flex; flex-direction: column; }
-    .topbar { height: 64px; background: var(--bg-neutral); border-bottom: 1px solid var(--border-muted); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
-    .topbar h1 { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
-    .content { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
-    
-    .table-container { background: var(--bg-neutral); border-radius: 8px; border: 1px solid var(--border-muted); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    table { width: 100%; border-collapse: collapse; text-align: left; }
-    th { background: #F1F5F9; padding: 0.75rem 1rem; font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; }
-    td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border-muted); font-size: 0.875rem; }
-    tr:last-child td { border-bottom: none; }
-    .btn-primary { background: var(--primary); color: #FFFFFF; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
-    .badge-success { background: #DCFCE7; color: var(--status-success); }
-  </style>
+  <title>Sales AI Management — Catalogue Produits & Grilles Tarifaires</title>
+  <link rel="stylesheet" href="css/design_system.css">
 </head>
 <body>
-  <div class="sidebar">
-    <div class="brand-title">SALES AI PLATFORM</div>
-    <div class="brand-subtitle">Commercial Suite</div>
-    <ul class="nav-list">
-      <li><a href="index.html" class="nav-item">Dashboard</a></li>
-      <li><a href="pipeline.html" class="nav-item">Sales Pipeline</a></li>
-      <li><a href="catalog.html" class="nav-item active">Product Catalog</a></li>
-      <li><a href="quote_builder.html" class="nav-item">Quote Builder</a></li>
-      <li><a href="approvals.html" class="nav-item">Approvals Center</a></li>
-      <li><a href="inbox.html" class="nav-item">Unified Inbox</a></li>
-    </ul>
-  </div>
-
-  <div class="main-area">
-    <div class="topbar">
-      <h1>Products & Price Lists Catalog</h1>
-      <button class="btn-primary" onclick="alert('Product addition modal')">+ Add Product</button>
-    </div>
-
-    <div class="content">
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>SKU</th>
-              <th>Product Name</th>
-              <th>Type / UOM</th>
-              <th>Base Price</th>
-              <th>Cost</th>
-              <th>TVA Tax Rate</th>
-              <th>Margin Floor</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="catalogTable">
-            <!-- Dynamically populated or rendered -->
-            <tr>
-              <td><strong>SRV-AI-4B</strong></td>
-              <td>Dedicated AI Agent Core (4B Model)</td>
-              <td>SERVICE / MONTH</td>
-              <td>MAD 3,500.00</td>
-              <td>MAD 1,800.00</td>
-              <td>20.00%</td>
-              <td>25.00%</td>
-              <td><span class="badge badge-success">ACTIVE</span></td>
-            </tr>
-            <tr>
-              <td><strong>SRV-AI-9B</strong></td>
-              <td>Advanced Reasoning Copilot (9B High Complexity)</td>
-              <td>SERVICE / MONTH</td>
-              <td>MAD 6,500.00</td>
-              <td>MAD 3,200.00</td>
-              <td>20.00%</td>
-              <td>30.00%</td>
-              <td><span class="badge badge-success">ACTIVE</span></td>
-            </tr>
-            <tr>
-              <td><strong>LIC-VOICE-SIP</strong></td>
-              <td>Dual-Mode Omnichannel Voice Line (SIP/WebRTC)</td>
-              <td>SUBSCRIPTION / LINE</td>
-              <td>MAD 1,200.00</td>
-              <td>MAD 450.00</td>
-              <td>20.00%</td>
-              <td>15.00%</td>
-              <td><span class="badge badge-success">ACTIVE</span></td>
-            </tr>
-            <tr>
-              <td><strong>DEV-INTEG-ONBOARD</strong></td>
-              <td>Custom CRM & ERP Integration Pack</td>
-              <td>SERVICE / UNIT</td>
-              <td>MAD 15,000.00</td>
-              <td>MAD 8,000.00</td>
-              <td>20.00%</td>
-              <td>20.00%</td>
-              <td><span class="badge badge-success">ACTIVE</span></td>
-            </tr>
-          </tbody>
-        </table>
+  <div class="app-container">
+    <!-- MASTER SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand-header">
+        <div class="brand-logo-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 20V10M12 20V4M6 20v-6"></path></svg>
+        </div>
+        <div class="brand-text">
+          <span class="title">Sales AI</span>
+          <span class="subtitle">Management</span>
+        </div>
       </div>
+
+      <div class="nav-group">
+        <ul class="nav-list">
+          <li><a href="index.html" class="nav-item"><span class="icon">📊</span><span class="label">Tableau de bord</span></a></li>
+          <li><a href="pipeline.html" class="nav-item"><span class="icon">📈</span><span class="label">CRM & Pipeline</span></a></li>
+          <li><a href="catalog.html" class="nav-item active"><span class="icon">📦</span><span class="label">Catalogue</span></a></li>
+          <li><a href="quote_builder.html" class="nav-item"><span class="icon">📝</span><span class="label">Devis & Approbations</span></a></li>
+          <li><a href="orders.html" class="nav-item"><span class="icon">🛒</span><span class="label">Commandes</span></a></li>
+          <li><a href="inventory.html" class="nav-item"><span class="icon">🏭</span><span class="label">Stock & Entrepôts</span></a></li>
+          <li><a href="procurement.html" class="nav-item"><span class="icon">🚢</span><span class="label">Achats & Fournisseurs</span></a></li>
+          <li><a href="invoices.html" class="nav-item"><span class="icon">📄</span><span class="label">Factures & TVA</span></a></li>
+          <li><a href="inbox.html" class="nav-item"><span class="icon">💬</span><span class="label">Omnicanal</span><span class="badge">8</span></a></li>
+          <li><a href="analytics_dashboard.html" class="nav-item"><span class="icon">📊</span><span class="label">Rapports</span></a></li>
+          <li><a href="agent_workspace.html" class="nav-item"><span class="icon">🤖</span><span class="label">IA & Agents</span></a></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="user-profile-card">
+          <div class="user-avatar">OA</div>
+          <div class="user-details">
+            <span class="name">Omar A.</span>
+            <span class="role">Administrateur</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN APPLICATION WRAPPER -->
+    <div class="main-wrapper">
+      <header class="topbar">
+        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
+        <div class="search-container">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher par référence SKU, désignation, catégorie...">
+          <span class="search-shortcut">Ctrl + K</span>
+        </div>
+
+        <div class="topbar-actions">
+          <div class="tenant-selector-pill" id="tenantSelectorPill">
+            <span>🏢</span> <span id="currentTenantLabel">Atlas Commerce</span>
+          </div>
+          <button class="btn-header-primary" onclick="alert('Modal d\'ajout de produit dans le catalogue')">+ Nouveau Produit</button>
+        </div>
+      </header>
+
+      <main class="content-wrapper">
+        <div class="page-header">
+          <div class="page-title-group">
+            <h1>Catalogue Produits & Grilles Tarifaires</h1>
+            <p>Gestion centrale des articles, tarifs multi-devises, taux de TVA (20%) et seuils de marge autorisés.</p>
+          </div>
+
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn btn-outline">📥 Exporter CSV</button>
+            <button class="btn btn-primary">+ Ajouter Article</button>
+          </div>
+        </div>
+
+        <!-- KPI summary -->
+        <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr);">
+          <div class="kpi-card" style="padding:1rem;">
+            <span class="kpi-title">Articles au Catalogue</span>
+            <div class="kpi-value">148</div>
+            <span class="badge badge-success">100% Actifs</span>
+          </div>
+          <div class="kpi-card" style="padding:1rem;">
+            <span class="kpi-title">Valeur Stock Catalogue</span>
+            <div class="kpi-value" style="font-size:1.35rem; color:#0A3A2A;">3 420 800 MAD</div>
+            <span class="kpi-trend">↑ +8.2%</span>
+          </div>
+          <div class="kpi-card" style="padding:1rem;">
+            <span class="kpi-title">Marge Brute Moyenne</span>
+            <div class="kpi-value" style="color:#16A34A;">31.5%</div>
+            <span class="badge badge-success">Conforme aux règles</span>
+          </div>
+          <div class="kpi-card" style="padding:1rem;">
+            <span class="kpi-title">Articles en Alerte Stock</span>
+            <div class="kpi-value" style="color:#D97706;">3</div>
+            <span class="badge badge-warning">Réapprovisionnement</span>
+          </div>
+        </div>
+
+        <!-- Product Table Card -->
+        <div class="card" style="padding:1.25rem 1.5rem;">
+          <div class="card-header">
+            <span class="card-title">Liste des Références Officielles</span>
+            <div style="display:flex; gap:0.5rem;">
+              <select class="form-control" style="width:140px; font-size:12px;">
+                <option>Toutes Catégories</option>
+                <option>Hardware & IT</option>
+                <option>Services Cloud / IA</option>
+                <option>Abonnements SIP</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Désignation Article</th>
+                  <th>Type / UOM</th>
+                  <th>Prix de Base (HT)</th>
+                  <th>Coût Revient</th>
+                  <th>TVA (Maroc)</th>
+                  <th>Marge Plancher</th>
+                  <th>Stock Actuel</th>
+                  <th>Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>PR-001</code></td>
+                  <td><strong>Laptop Pro 15"</strong><div style="font-size:11px; color:#66756D;">i7 • 16GB • 512GB SSD</div></td>
+                  <td>UNITAIRE</td>
+                  <td><strong>12 500,00 MAD</strong></td>
+                  <td>9 200,00 MAD</td>
+                  <td>20.00%</td>
+                  <td>15.00%</td>
+                  <td><span class="badge badge-success">34 unités</span></td>
+                  <td><span class="badge badge-success">ACTIF</span></td>
+                </tr>
+                <tr>
+                  <td><code>PR-002</code></td>
+                  <td><strong>Écran 27" 4K</strong><div style="font-size:11px; color:#66756D;">IPS • HDR • USB-C</div></td>
+                  <td>UNITAIRE</td>
+                  <td><strong>3 200,00 MAD</strong></td>
+                  <td>2 100,00 MAD</td>
+                  <td>20.00%</td>
+                  <td>18.00%</td>
+                  <td><span class="badge badge-success">56 unités</span></td>
+                  <td><span class="badge badge-success">ACTIF</span></td>
+                </tr>
+                <tr>
+                  <td><code>PR-003</code></td>
+                  <td><strong>Station Dock USB-C</strong><div style="font-size:11px; color:#66756D;">Multi-ports • 4K • 100W PD</div></td>
+                  <td>UNITAIRE</td>
+                  <td><strong>950,00 MAD</strong></td>
+                  <td>580,00 MAD</td>
+                  <td>20.00%</td>
+                  <td>20.00%</td>
+                  <td><span class="badge badge-success">128 unités</span></td>
+                  <td><span class="badge badge-success">ACTIF</span></td>
+                </tr>
+                <tr>
+                  <td><code>SRV-AI-4B</code></td>
+                  <td><strong>Cœur Agent IA Dédié (Qwen 3.5 4B)</strong><div style="font-size:11px; color:#66756D;">GPU RTX 4060 Local • Déterministe</div></td>
+                  <td>SERVICE / MOIS</td>
+                  <td><strong>3 500,00 MAD</strong></td>
+                  <td>1 800,00 MAD</td>
+                  <td>20.00%</td>
+                  <td>25.00%</td>
+                  <td><span class="badge badge-info">Illimité</span></td>
+                  <td><span class="badge badge-success">ACTIF</span></td>
+                </tr>
+                <tr>
+                  <td><code>LIC-VOICE-SIP</code></td>
+                  <td><strong>Ligne Vocale Omnicanal SIP/WebRTC</strong><div style="font-size:11px; color:#66756D;">Darija / Arabe / Français / Anglais</div></td>
+                  <td>ABONNEMENT / LIGNE</td>
+                  <td><strong>1 200,00 MAD</strong></td>
+                  <td>450,00 MAD</td>
+                  <td>20.00%</td>
+                  <td>15.00%</td>
+                  <td><span class="badge badge-info">20 Canaux</span></td>
+                  <td><span class="badge badge-success">ACTIF</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
     </div>
   </div>
+
+  <script src="js/app_shell.js"></script>
 </body>
 </html>

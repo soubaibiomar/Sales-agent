@@ -1,38 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Governance, Model Gateway & RAG — Sales AI Platform</title>
+  <link rel="stylesheet" href="css/design_system.css">
   <style>
-    :root {
-      --primary: #0A3A2A;
-      --primary-hover: #064E3B;
-      --primary-tint: #E6F4EA;
-      --accent: #10B981;
-      --bg-neutral: #FFFFFF;
-      --bg-page: #F8FAFC;
-      --border-muted: #E2E8F0;
-      --text-main: #0F172A;
-      --text-muted: #64748B;
-      --status-success: #16A34A;
-      --status-warning: #D97706;
-      --status-danger: #DC2626;
-      --status-info: #2563EB;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
-    body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
-    .sidebar { width: 260px; background-color: var(--primary); color: #FFFFFF; display: flex; flex-direction: column; padding: 1.5rem 1rem; border-right: 1px solid var(--border-muted); }
-    .brand-title { font-size: 1.15rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.25rem; }
-    .brand-subtitle { font-size: 0.75rem; color: #A7F3D0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2rem; }
-    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
-    .nav-item { padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.875rem; cursor: pointer; color: #E2E8F0; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
-    .nav-item:hover, .nav-item.active { background: rgba(255, 255, 255, 0.18); color: #FFFFFF; font-weight: 600; }
-    
-    .main-area { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
-    .topbar { height: 64px; background: var(--bg-neutral); border-bottom: 1px solid var(--border-muted); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
-    .topbar h1 { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
-    .content { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+.content { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
     
     .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
     .stat-card { background: var(--bg-neutral); border: 1px solid var(--border-muted); border-radius: 8px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
@@ -74,26 +48,104 @@
   </style>
 </head>
 <body>
-  <aside class="sidebar">
-    <div class="brand-title">Sales AI Platform</div>
-    <div class="brand-subtitle">Enterprise SaaS</div>
-    <ul class="nav-list">
-      <li><a href="index.html" class="nav-item">📊 Dashboard</a></li>
-      <li><a href="workflows.html" class="nav-item">⚡ Durable Workflows</a></li>
-      <li><a href="notifications.html" class="nav-item">📢 Notifications</a></li>
-      <li><a href="integrations.html" class="nav-item">🔌 Integrations & n8n</a></li>
-      <li><a href="ai_governance.html" class="nav-item active">🧠 AI Governance & RAG</a></li>
-    </ul>
-  </aside>
+  <div class="app-container">
+    <!-- MASTER SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand-header">
+        <div class="brand-logo-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 20V10M12 20V4M6 20v-6"></path></svg>
+        </div>
+        <div class="brand-text">
+          <span class="title">Sales AI</span>
+          <span class="subtitle">Management</span>
+        </div>
+      </div>
 
-  <main class="main-area">
-    <header class="topbar">
-      <h1>AI Model Gateway, RAG & Tool Security</h1>
-      <button class="btn btn-primary" onclick="runOfflineEvaluations()">⚡ Run Offline Evals</button>
-    </header>
+      <div class="nav-group">
+        <ul class="nav-list">
+          <li><a href="index.html" class="nav-item"><span class="icon">📊</span><span class="label">Tableau de bord</span></a></li>
+          <li><a href="pipeline.html" class="nav-item"><span class="icon">📈</span><span class="label">CRM & Pipeline</span></a></li>
+          <li><a href="catalog.html" class="nav-item"><span class="icon">📦</span><span class="label">Catalogue</span></a></li>
+          <li><a href="quote_builder.html" class="nav-item"><span class="icon">📝</span><span class="label">Devis & Approbations</span></a></li>
+          <li><a href="orders.html" class="nav-item"><span class="icon">🛒</span><span class="label">Commandes</span></a></li>
+          <li><a href="inventory.html" class="nav-item"><span class="icon">🏭</span><span class="label">Stock & Entrepôts</span></a></li>
+          <li><a href="procurement.html" class="nav-item"><span class="icon">🚢</span><span class="label">Achats & Fournisseurs</span></a></li>
+          <li><a href="logistics.html" class="nav-item"><span class="icon">🚚</span><span class="label">Logistique & Expéditions</span></a></li>
+          <li><a href="invoices.html" class="nav-item"><span class="icon">📄</span><span class="label">Factures & TVA</span></a></li>
+          <li><a href="checkout.html" class="nav-item"><span class="icon">💳</span><span class="label">Caisse & Paiements</span></a></li>
+          <li><a href="support.html" class="nav-item"><span class="icon">🎧</span><span class="label">Support & SAV</span></a></li>
+          <li><a href="schedule.html" class="nav-item"><span class="icon">📅</span><span class="label">Rendez-vous</span></a></li>
+          <li><a href="inbox.html" class="nav-item"><span class="icon">💬</span><span class="label">Omnicanal</span> <span class="badge">8</span></a></li>
+          <li><a href="notifications.html" class="nav-item"><span class="icon">🔔</span><span class="label">Notifications</span></a></li>
+          <li><a href="integrations.html" class="nav-item"><span class="icon">🔌</span><span class="label">Intégrations & n8n</span></a></li>
+          <li><a href="workflows.html" class="nav-item"><span class="icon">⚡</span><span class="label">Workflows Durables</span></a></li>
+          <li><a href="workflow_reliability_dashboard.html" class="nav-item"><span class="icon">🩺</span><span class="label">Fiabilité & DLQ</span></a></li>
+          <li><a href="ai_governance.html" class="nav-item active"><span class="icon">🧠</span><span class="label">Gouvernance IA</span></a></li>
+          <li><a href="agent_workspace.html" class="nav-item"><span class="icon">🤖</span><span class="label">Écosystème 18 Agents</span></a></li>
+          <li><a href="voice_agent.html" class="nav-item"><span class="icon">🎙️</span><span class="label">Agent Vocal Client</span></a></li>
+          <li><a href="voice_copilot.html" class="nav-item"><span class="icon">🗣️</span><span class="label">Copilote Vocal Manager</span></a></li>
+          <li><a href="voice_observability.html" class="nav-item"><span class="icon">📡</span><span class="label">Télémétrie Vocale</span></a></li>
+          <li><a href="analytics_dashboard.html" class="nav-item"><span class="icon">📉</span><span class="label">Analytics Exécutif</span></a></li>
+          <li><a href="ai_operations_dashboard.html" class="nav-item"><span class="icon">💻</span><span class="label">Opérations GPU/VRAM</span></a></li>
+          <li><a href="saas_admin_dashboard.html" class="nav-item"><span class="icon">🏢</span><span class="label">Admin SaaS & Quotas</span></a></li>
+          <li><a href="release_console.html" class="nav-item"><span class="icon">🚀</span><span class="label">Console de Déploiement</span></a></li>
+        </ul>
+      </div>
 
-    <div class="content">
-      <!-- Health & Budget KPI Ribbon -->
+      <div class="sidebar-footer">
+        <div class="ai-status-pill" onclick="window.location.href='agent_workspace.html'">
+          <span class="sparkle-icon">✨</span>
+          <div class="info">
+            <span class="status-title">IA Active</span>
+            <span class="status-desc">4 agents opérationnels</span>
+          </div>
+        </div>
+
+        <div class="user-profile-card">
+          <div class="user-avatar">OA</div>
+          <div class="user-details">
+            <span class="name">Omar A.</span>
+            <span class="role">Administrateur</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-wrapper">
+      <header class="topbar">
+        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
+        <div class="search-container">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher des clients, devis, commandes, agents...">
+          <span class="search-shortcut">Ctrl + K</span>
+        </div>
+
+        <div class="topbar-actions">
+          <div class="tenant-selector-pill" id="tenantSelectorPill">
+            <span>🏢</span> <span id="currentTenantLabel">Atlas Commerce</span>
+          </div>
+
+          <div class="icon-btn-badge" id="notifBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            <span class="badge-counter">3</span>
+          </div>
+
+          <button class="btn-header-primary" id="btnQuickNew">
+            <span>+</span> Nouveau
+          </button>
+
+          <div class="user-topbar-pill">
+            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;">OA</div>
+            <div style="display:flex; flex-direction:column; line-height:1.2;">
+              <span style="font-weight:600; font-size:13px; color:#17251F;">Omar A.</span>
+              <span style="font-size:11px; color:#66756D;">Administrateur</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="content-wrapper">
+<!-- Health & Budget KPI Ribbon -->
       <div class="stat-grid">
         <div class="stat-card">
           <div class="stat-title">Active GPU Model</div>
@@ -113,154 +165,15 @@
         <div class="stat-card">
           <div class="stat-title">Claim Grounding Rate</div>
           <div class="stat-value" id="kpiClaimGrounding">100% Grounded</div>
-          <div class="stat-sub">Deterministic Commercial Authority</div>
-        </div>
-      </div>
-
-      <!-- Navigation Tabs -->
-      <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('tabModelGateway')">Model Gateway</button>
-        <button class="tab-btn" onclick="switchTab('tabRAG')">Knowledge Base & RAG</button>
-        <button class="tab-btn" onclick="switchTab('tabRouter')">Language & Risk Router</button>
-        <button class="tab-btn" onclick="switchTab('tabToolGateway')">Tool Gateway & Output Guard</button>
-      </div>
-
-      <!-- Tab 1: Model Gateway -->
-      <div id="tabModelGateway" class="tab-content">
-        <div class="grid-2">
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Bounded Inference Sandbox</span>
-            </div>
-            <div class="form-group">
-              <label>Model Selector</label>
-              <select id="genModel">
-                <option value="qwen3.5:4b">Qwen 3.5 4B (Local GPU Resident)</option>
-                <option value="qwen3.5:9b-q4_K_M">Qwen 3.5 9B (On-Demand Heavy Reasoning)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Prompt (Includes PII sanitization test: credit card, CIN, email)</label>
-              <textarea id="genPrompt" rows="4">Bonjour, mon CIN est BK654321 et ma carte 4532 0150 1234 5678. Quel est le prix du kit panneau solaire ?</textarea>
-            </div>
-            <div class="form-group">
-              <label>Latency Budget (ms)</label>
-              <input type="number" id="genBudgetMs" value="5000">
-            </div>
-            <button class="btn btn-primary" onclick="executeGeneration()">Send Bounded Turn</button>
-          </div>
-
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Telemetry & Execution Ledger</span>
-            </div>
-            <div class="result-box" id="genOutput">Awaiting generation...</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab 2: Knowledge Base & RAG -->
-      <div id="tabRAG" class="tab-content" style="display:none;">
-        <div class="grid-2">
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Ingest Approved Document</span>
-            </div>
-            <div class="form-group">
-              <label>Document Title</label>
-              <input type="text" id="docTitle" value="Politique de Garantie et Retours 2026">
-            </div>
-            <div class="form-group">
-              <label>Source Type</label>
-              <select id="docSourceType">
-                <option value="POLICY">Commercial Policy</option>
-                <option value="CATALOG">Catalog Reference</option>
-                <option value="FAQ">Customer FAQ</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Document Content</label>
-              <textarea id="docContent" rows="4">Tous nos équipements photovoltaïques bénéficient d'une garantie constructeur de 365 jours. Les retours sont acceptés sous 14 jours.</textarea>
-            </div>
-            <button class="btn btn-primary" onclick="ingestDocument()">Ingest & Index</button>
-          </div>
-
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Permission-Filtered Retrieval Test</span>
-            </div>
-            <div class="form-group">
-              <label>Query</label>
-              <input type="text" id="ragQuery" value="Quelle est la durée de la garantie ?">
-            </div>
-            <button class="btn btn-primary" onclick="searchRAG()">Query RAG Chunks</button>
-            <div class="result-box" id="ragResults" style="margin-top: 1rem;">No query results yet.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab 3: Language & Risk Router -->
-      <div id="tabRouter" class="tab-content" style="display:none;">
-        <div class="panel">
-          <div class="panel-header">
-            <span class="panel-title">Multilingual Router & Adversarial Gate</span>
-          </div>
-          <div class="form-group">
-            <label>Customer Message (French, English, Arabic, Darija or Arabizi)</label>
-            <textarea id="routerInput" rows="3">salam khoya, bghit nchouf chhal taman dyal panneau solaire 3afak</textarea>
-          </div>
-          <button class="btn btn-primary" onclick="evaluateRouter()">Route Message</button>
-          <div class="result-box" id="routerOutput" style="margin-top: 1rem;">Click 'Route Message' to classify...</div>
-        </div>
-      </div>
-
-      <!-- Tab 4: Tool Gateway & Output Guard -->
-      <div id="tabToolGateway" class="tab-content" style="display:none;">
-        <div class="grid-2">
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Role Allowlist Tool Gateway</span>
-            </div>
-            <div class="form-group">
-              <label>Calling Agent Role</label>
-              <select id="toolRole">
-                <option value="product_specialist">Product Specialist</option>
-                <option value="discovery_specialist">Discovery Specialist</option>
-                <option value="pricing_specialist">Pricing Specialist</option>
-                <option value="customer">Unprivileged Customer</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Tool Name</label>
-              <select id="toolName">
-                <option value="catalog.search">catalog.search (Safe Read)</option>
-                <option value="inventory.check_atp">inventory.check_atp (Safe Read)</option>
-                <option value="pricing.calculate_quote">pricing.calculate_quote (Deterministic Pricing)</option>
-                <option value="support.create_ticket">support.create_ticket (Mutating Action)</option>
-              </select>
-            </div>
-            <button class="btn btn-primary" onclick="executeToolCall()">Execute Tool Contract</button>
-            <div class="result-box" id="toolOutput" style="margin-top: 1rem;">Tool output...</div>
-          </div>
-
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Claim-Level Verifier Sandbox</span>
-            </div>
-            <div class="form-group">
-              <label>Model Candidate Text (Test price hallucination)</label>
-              <textarea id="claimText" rows="3">Le kit solaire coûte seulement 500 MAD avec 30% de remise !</textarea>
-            </div>
-            <button class="btn btn-primary" onclick="verifyOutputClaims()">Verify Claims</button>
-            <div class="result-box" id="claimOutput" style="margin-top: 1rem;">Verification output...</div>
-          </div>
-        </div>
-      </div>
+          <div class="stat-sub">Deterministic Commercial Authority
+      </main>
     </div>
-  </main>
+  </div>
 
+
+  <script src="js/app_shell.js"></script>
   <script>
-    function switchTab(tabId) {
+function switchTab(tabId) {
       document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.getElementById(tabId).style.display = 'block';
@@ -370,5 +283,6 @@
       }
     }
   </script>
+
 </body>
 </html>

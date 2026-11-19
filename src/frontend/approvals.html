@@ -1,127 +1,235 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manager Approval Center — Sales AI Platform</title>
+  <title>Sales AI Management — Centre d'Approbations & Gouvernance Commerciale</title>
+  <link rel="stylesheet" href="css/design_system.css">
   <style>
-    :root {
-      --primary: #0A3A2A;
-      --primary-hover: #064E3B;
-      --primary-tint: #E6F4EA;
-      --accent: #10B981;
-      --bg-neutral: #FFFFFF;
-      --bg-page: #F8FAFC;
-      --border-muted: #E2E8F0;
-      --text-main: #0F172A;
-      --text-muted: #64748B;
-      --status-success: #16A34A;
-      --status-warning: #D97706;
-      --status-danger: #DC2626;
-      --status-info: #2563EB;
+    .approval-card-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 1rem;
+      transition: all 0.15s ease;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
-    body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
-    .sidebar { width: 260px; background-color: var(--primary); color: #FFFFFF; display: flex; flex-direction: column; padding: 1.5rem 1rem; border-right: 1px solid var(--border-muted); }
-    .brand-title { font-size: 1.15rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.25rem; }
-    .brand-subtitle { font-size: 0.75rem; color: #A7F3D0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2rem; }
-    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
-    .nav-item { padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.875rem; cursor: pointer; color: #E2E8F0; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
-    .nav-item:hover, .nav-item.active { background: rgba(255, 255, 255, 0.18); color: #FFFFFF; font-weight: 600; }
-    .nav-item.mfa::after { content: "MFA"; font-size: 0.65rem; background: var(--status-warning); color: #FFFFFF; padding: 2px 6px; border-radius: 4px; margin-left: auto; }
-    
-    .main-area { flex: 1; display: flex; flex-direction: column; }
-    .topbar { height: 64px; background: var(--bg-neutral); border-bottom: 1px solid var(--border-muted); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
-    .topbar h1 { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
-    .content { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
-    
-    .card-list { display: flex; flex-direction: column; gap: 1rem; }
-    .approval-card { background: var(--bg-neutral); border-radius: 8px; border: 1px solid var(--border-muted); padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .approval-info { display: flex; flex-direction: column; gap: 0.35rem; }
-    .approval-quote-no { font-weight: 700; font-size: 1rem; color: var(--primary); }
-    .approval-reason { font-size: 0.85rem; color: var(--status-danger); font-weight: 600; }
-    .approval-meta { font-size: 0.75rem; color: var(--text-muted); font-family: monospace; }
-    
-    .approval-actions { display: flex; gap: 0.75rem; align-items: center; }
-    .btn-approve { background: var(--status-success); color: #FFFFFF; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
-    .btn-reject { background: var(--status-danger); color: #FFFFFF; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
-    
-    /* MFA Step-up Modal */
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
-    .modal { background: var(--bg-neutral); padding: 2rem; border-radius: 8px; width: 420px; display: flex; flex-direction: column; gap: 1rem; }
-    .mfa-input { text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem; font-weight: 700; padding: 0.5rem; border: 2px solid var(--primary); border-radius: 6px; }
+    .approval-card-item:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--accent-emerald);
+    }
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 58, 42, 0.4);
+      backdrop-filter: blur(2px);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      width: 440px;
+      max-width: 90%;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .mfa-input-code {
+      text-align: center;
+      font-size: 1.6rem;
+      letter-spacing: 0.5rem;
+      font-weight: 700;
+      padding: 0.5rem;
+      border: 2px solid var(--brand-primary);
+      border-radius: var(--radius-md);
+      color: var(--brand-primary);
+      outline: none;
+    }
   </style>
 </head>
 <body>
-  <div class="sidebar">
-    <div class="brand-title">SALES AI PLATFORM</div>
-    <div class="brand-subtitle">Commercial Suite</div>
-    <ul class="nav-list">
-      <li><a href="index.html" class="nav-item">Dashboard</a></li>
-      <li><a href="pipeline.html" class="nav-item">Sales Pipeline</a></li>
-      <li><a href="catalog.html" class="nav-item">Product Catalog</a></li>
-      <li><a href="quote_builder.html" class="nav-item">Quote Builder</a></li>
-      <li><a href="approvals.html" class="nav-item active mfa">Approvals Center</a></li>
-      <li><a href="inbox.html" class="nav-item">Unified Inbox</a></li>
-    </ul>
-  </div>
-
-  <div class="main-area">
-    <div class="topbar">
-      <h1>Manager Quotation Approval Center</h1>
-      <span style="font-size:0.8rem; background:var(--primary-tint); color:var(--primary); padding:4px 10px; border-radius:12px; font-weight:600;">Role: Sales Manager (MFA Required)</span>
-    </div>
-
-    <div class="content">
-      <div style="font-size:0.9rem; color:var(--text-muted);">
-        Pending commercial quotation approval requests. Approvals are one-use, bound to exact terms hashes, and require step-up MFA verification.
+  <div class="app-container">
+    <!-- MASTER SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand-header">
+        <div class="brand-logo-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 20V10M12 20V4M6 20v-6"></path></svg>
+        </div>
+        <div class="brand-text">
+          <span class="title">Sales AI</span>
+          <span class="subtitle">Management</span>
+        </div>
       </div>
 
-      <div class="card-list" id="approvalList">
-        <div class="approval-card">
-          <div class="approval-info">
-            <div class="approval-quote-no">QT-202611-B89E21 — Atlas Logistics Cloud Expansion</div>
-            <div class="approval-reason">&#9888; Discount 25.00% exceeds standard rep ceiling (20.00%)</div>
-            <div class="approval-meta">Grand Total: MAD 87,500.00 | Version: 2 | Terms Hash: a9b4c2...f71e</div>
-            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">Requested by: Karim Tazi (Sales Rep) | Anti-Self-Approval Enforced</div>
-          </div>
-          <div class="approval-actions">
-            <button class="btn-reject" onclick="rejectApproval('app_1')">Reject</button>
-            <button class="btn-approve" onclick="openMfaModal('app_1')">Approve with MFA</button>
-          </div>
-        </div>
+      <div class="nav-group">
+        <ul class="nav-list">
+          <li><a href="index.html" class="nav-item"><span class="icon">📊</span><span class="label">Tableau de bord</span></a></li>
+          <li><a href="pipeline.html" class="nav-item"><span class="icon">📈</span><span class="label">CRM & Pipeline</span></a></li>
+          <li><a href="catalog.html" class="nav-item"><span class="icon">📦</span><span class="label">Catalogue</span></a></li>
+          <li><a href="quote_builder.html" class="nav-item"><span class="icon">📝</span><span class="label">Devis & Chiffrage</span></a></li>
+          <li><a href="approvals.html" class="nav-item active"><span class="icon">👑</span><span class="label">Approbations Manager</span></a></li>
+          <li><a href="orders.html" class="nav-item"><span class="icon">🛒</span><span class="label">Commandes</span></a></li>
+          <li><a href="invoices.html" class="nav-item"><span class="icon">📄</span><span class="label">Factures & TVA</span></a></li>
+          <li><a href="inbox.html" class="nav-item"><span class="icon">💬</span><span class="label">Omnicanal</span><span class="badge">8</span></a></li>
+          <li><a href="analytics_dashboard.html" class="nav-item"><span class="icon">📊</span><span class="label">Rapports</span></a></li>
+        </ul>
+      </div>
 
-        <div class="approval-card">
-          <div class="approval-info">
-            <div class="approval-quote-no">QT-202611-C10A92 — Maroc Mining Enterprise AI Core</div>
-            <div class="approval-reason">&#9888; Profit margin 12.50% breaches product margin floor (15.00%)</div>
-            <div class="approval-meta">Grand Total: MAD 142,000.00 | Version: 1 | Terms Hash: 3e8a1d...c490</div>
-            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">Requested by: Sara Alami (Sales Rep) | Anti-Self-Approval Enforced</div>
-          </div>
-          <div class="approval-actions">
-            <button class="btn-reject" onclick="rejectApproval('app_2')">Reject</button>
-            <button class="btn-approve" onclick="openMfaModal('app_2')">Approve with MFA</button>
+      <div class="sidebar-footer">
+        <div class="user-profile-card">
+          <div class="user-avatar">OA</div>
+          <div class="user-details">
+            <span class="name">Omar A.</span>
+            <span class="role">Directeur Commercial</span>
           </div>
         </div>
       </div>
+    </aside>
+
+    <!-- MAIN APPLICATION WRAPPER -->
+    <div class="main-wrapper">
+      <header class="topbar">
+        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
+        <div class="search-container">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher une demande de validation...">
+          <span class="search-shortcut">Ctrl + K</span>
+        </div>
+
+        <div class="topbar-actions">
+          <div class="tenant-selector-pill" id="tenantSelectorPill">
+            <span>🏢</span> <span id="currentTenantLabel">Atlas Commerce</span>
+          </div>
+          <span class="badge badge-warning" style="padding:0.4rem 0.8rem; font-size:12px;">MFA Obligatoire</span>
+        </div>
+      </header>
+
+      <main class="content-wrapper">
+        <div class="page-header">
+          <div class="page-title-group">
+            <h1>Centre d'Approbation des Ventes & Dérogations</h1>
+            <p>Contrôle déterministe des remises hors barème (>15%) et engagements financiers (≥ 150 000 MAD) avec validation MFA.</p>
+          </div>
+
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn btn-outline">Historique d'Audit</button>
+            <button class="btn btn-primary" onclick="alert('Délégation d\'autorité temporaire')">Déléguer Approbation</button>
+          </div>
+        </div>
+
+        <!-- KPI summary -->
+        <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr);">
+          <div class="kpi-card" style="padding:1rem;">
+            <span class="kpi-title">En Attente de Décision</span>
+            <div class="kpi-value" style="color:#D97706;">2</div>
+            <span class="badge badge-warning">Action requise</span>
+          </div>
+          <div class="kpi-card" style="padding:1rem;">
+            <span class="kpi-title">Approuvés ce mois</span>
+            <div class="kpi-value" style="color:#16A34A;">48</div>
+            <span class="kpi-trend">↑ 100% avec MFA</span>
+          </div>
+          <div class="kpi-card" style="padding:1rem;">
+            <span class="kpi-title">Rejetés / Négociés</span>
+            <div class="kpi-value" style="color:#DC2626;">6</div>
+            <span class="badge badge-danger">Dépassement seuil marge</span>
+          </div>
+          <div class="kpi-card" style="padding:1rem;">
+            <span class="kpi-title">Délai Moyen d'Approbation</span>
+            <div class="kpi-value">14 min</div>
+            <span class="badge badge-success">SLA < 1h respecté</span>
+          </div>
+        </div>
+
+        <!-- Pending Approvals List -->
+        <div class="card" style="padding:1.5rem;">
+          <div class="card-header">
+            <span class="card-title">Demandes d'Approbation en Instance</span>
+            <span class="badge badge-warning">2 dérogations actives</span>
+          </div>
+
+          <!-- Item 1 -->
+          <div class="approval-card-item">
+            <div style="display:flex; flex-direction:column; gap:0.4rem;">
+              <div style="font-size:1.05rem; font-weight:700; color:#0A3A2A;">
+                QT-202611-B89E21 — Atlas Logistics Cloud Expansion
+              </div>
+              <div style="font-size:0.85rem; color:#D97706; font-weight:600;">
+                ⚠️ Remise commerciale de 25.00% dépassant le plafond commercial standard (20.00%)
+              </div>
+              <div style="font-size:0.78rem; color:#66756D;">
+                Montant Total : <strong>87 500,00 MAD</strong> | Version : 2 | Empreinte Contrat : <code>#a9b4c2...f71e</code>
+              </div>
+              <div style="font-size:0.75rem; color:#17251F; margin-top:2px;">
+                Demandé par : <strong>Karim Tazi</strong> (Commercial Grands Comptes) • Règle Anti-Auto-Approbation Enforcée
+              </div>
+            </div>
+
+            <div style="display:flex; gap:0.6rem;">
+              <button class="btn btn-outline" style="color:#DC2626; border-color:#FEE2E2;" onclick="rejectApproval('QT-B89E21')">Rejeter</button>
+              <button class="btn btn-primary" onclick="openMfaModal('QT-B89E21')">Valider avec MFA</button>
+            </div>
+          </div>
+
+          <!-- Item 2 -->
+          <div class="approval-card-item">
+            <div style="display:flex; flex-direction:column; gap:0.4rem;">
+              <div style="font-size:1.05rem; font-weight:700; color:#0A3A2A;">
+                QT-202611-C10A92 — Maroc Mining Enterprise AI Core
+              </div>
+              <div style="font-size:0.85rem; color:#DC2626; font-weight:600;">
+                ⛔ Marge bénéficiaire de 12.50% inférieure au plancher de rentabilité produit (15.00%)
+              </div>
+              <div style="font-size:0.78rem; color:#66756D;">
+                Montant Total : <strong>169 680,00 MAD</strong> (Seuil Directeur ≥ 150k MAD) | Empreinte : <code>#3e8a1d...c490</code>
+              </div>
+              <div style="font-size:0.75rem; color:#17251F; margin-top:2px;">
+                Demandé par : <strong>Sara Alami</strong> (Ingénieure d'Affaires) • Double Autorisation Requise
+              </div>
+            </div>
+
+            <div style="display:flex; gap:0.6rem;">
+              <button class="btn btn-outline" style="color:#DC2626; border-color:#FEE2E2;" onclick="rejectApproval('QT-C10A92')">Rejeter</button>
+              <button class="btn btn-primary" onclick="openMfaModal('QT-C10A92')">Valider avec MFA</button>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   </div>
 
   <!-- Step-up MFA Modal -->
   <div class="modal-overlay" id="mfaModal">
-    <div class="modal">
-      <h3 style="color:var(--primary);">Step-up MFA Approval Verification</h3>
-      <p style="font-size:0.85rem; color:var(--text-muted);">
-        Approving non-standard pricing requires second-factor authorization. Enter your 6-digit TOTP authenticator code.
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="font-size:1.1rem; font-weight:700; color:#0A3A2A;">Authentification Forte (MFA Step-up)</h3>
+        <button onclick="closeMfaModal()" style="background:none; border:none; font-size:18px; cursor:pointer;">✕</button>
+      </div>
+
+      <p style="font-size:0.85rem; color:#66756D;">
+        L'approbation d'une offre commerciale dérogatoire nécessite une validation cryptographique à deux facteurs. Saisissez votre code TOTP authenticator à 6 chiffres.
       </p>
-      <input type="text" id="mfaCode" class="mfa-input" maxlength="6" placeholder="000000" />
-      <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
-        <button class="btn-reject" style="background:#64748B;" onclick="closeMfaModal()">Cancel</button>
-        <button class="btn-approve" onclick="submitMfaApproval()">Verify & Authorize</button>
+
+      <input type="text" id="mfaCode" class="mfa-input-code" maxlength="6" placeholder="000000" />
+
+      <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.75rem;">
+        <button class="btn btn-outline" onclick="closeMfaModal()">Annuler</button>
+        <button class="btn btn-primary" onclick="submitMfaApproval()">Vérifier & Autoriser</button>
       </div>
     </div>
   </div>
 
+  <script src="js/app_shell.js"></script>
   <script>
     let activeApprovalId = null;
     function openMfaModal(appId) {
@@ -134,19 +242,19 @@
       document.getElementById("mfaModal").style.display = "none";
       activeApprovalId = null;
     }
-    async function submitMfaApproval() {
+    function submitMfaApproval() {
       const code = document.getElementById("mfaCode").value;
       if (code.length !== 6) {
-        alert("Please enter a valid 6-digit MFA code.");
+        alert("Veuillez saisir un code TOTP à 6 chiffres.");
         return;
       }
-      alert(`Approval ${activeApprovalId} verified with MFA and committed. Quote is now APPROVED for issuance.`);
       closeMfaModal();
+      if (window.SalesAI) window.SalesAI.showToast(`Approbation ${activeApprovalId} validée par MFA et enregistrée.`);
     }
     function rejectApproval(appId) {
-      const reason = prompt("Enter rejection reason:");
-      if (reason) {
-        alert(`Approval ${appId} rejected. Quote transitioned to REJECTED.`);
+      const reason = prompt("Veuillez préciser le motif du rejet commercial :");
+      if (reason && window.SalesAI) {
+        window.SalesAI.showToast(`Offre ${appId} rejetée avec motif enregistré.`);
       }
     }
   </script>

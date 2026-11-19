@@ -9,9 +9,11 @@ Configures:
 """
 import logging
 import uuid
+import os
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.backend.core.config import settings
@@ -131,3 +133,9 @@ app.include_router(agent_ecosystem_router)
 app.include_router(analytics_router, prefix="/api/v1")
 app.include_router(observability_router, prefix="/api/v1")
 app.include_router(saas_router, prefix="/api/v1")
+
+# Mount Static Frontend
+frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
+if os.path.exists(frontend_dir):
+    app.mount("/app", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+

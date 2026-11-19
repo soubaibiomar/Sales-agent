@@ -1,52 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SaaS Administration & Quota Metering — Sales AI Management</title>
+  <link rel="stylesheet" href="css/design_system.css">
   <style>
-    :root {
-      --primary: #0A3A2A;
-      --primary-hover: #064E3B;
-      --primary-tint: #E6F4EA;
-      --accent: #10B981;
-      --bg-neutral: #FFFFFF;
-      --bg-page: #F8FAFC;
-      --border-muted: #E2E8F0;
-      --text-main: #0F172A;
-      --text-muted: #64748B;
-      --status-success: #16A34A;
-      --status-warning: #D97706;
-      --status-danger: #DC2626;
-      --status-info: #2563EB;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
-    body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
-    
-    .sidebar {
-      width: 260px;
-      background-color: var(--primary);
-      color: #FFFFFF;
-      padding: 1.5rem 1rem;
-      display: flex;
-      flex-direction: column;
-    }
-    .brand-title { font-size: 1.15rem; font-weight: 700; color: #FFFFFF; display: flex; align-items: center; gap: 0.5rem; }
-    .brand-subtitle { font-size: 0.75rem; color: #A7F3D0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1.5rem; }
-    
-    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 0.35rem; }
-    .nav-item a {
-      color: #E2E8F0;
-      text-decoration: none;
-      display: block;
-      padding: 0.65rem 0.85rem;
-      border-radius: 6px;
-      font-size: 0.875rem;
-      transition: background 0.15s;
-    }
-    .nav-item a:hover, .nav-item.active a { background-color: var(--primary-hover); color: #FFFFFF; font-weight: 600; }
-    
-    .main-content { flex: 1; padding: 2rem; overflow-y: auto; }
+.main-content { flex: 1; padding: 2rem; overflow-y: auto; }
     .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
     .page-title { font-size: 1.65rem; font-weight: 700; color: var(--text-main); }
     .page-desc { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem; }
@@ -197,7 +157,104 @@
   </style>
 </head>
 <body>
-  <div class="sidebar">
+  <div class="app-container">
+    <!-- MASTER SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand-header">
+        <div class="brand-logo-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 20V10M12 20V4M6 20v-6"></path></svg>
+        </div>
+        <div class="brand-text">
+          <span class="title">Sales AI</span>
+          <span class="subtitle">Management</span>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <ul class="nav-list">
+          <li><a href="index.html" class="nav-item"><span class="icon">📊</span><span class="label">Tableau de bord</span></a></li>
+          <li><a href="pipeline.html" class="nav-item"><span class="icon">📈</span><span class="label">CRM & Pipeline</span></a></li>
+          <li><a href="catalog.html" class="nav-item"><span class="icon">📦</span><span class="label">Catalogue</span></a></li>
+          <li><a href="quote_builder.html" class="nav-item"><span class="icon">📝</span><span class="label">Devis & Approbations</span></a></li>
+          <li><a href="orders.html" class="nav-item"><span class="icon">🛒</span><span class="label">Commandes</span></a></li>
+          <li><a href="inventory.html" class="nav-item"><span class="icon">🏭</span><span class="label">Stock & Entrepôts</span></a></li>
+          <li><a href="procurement.html" class="nav-item"><span class="icon">🚢</span><span class="label">Achats & Fournisseurs</span></a></li>
+          <li><a href="logistics.html" class="nav-item"><span class="icon">🚚</span><span class="label">Logistique & Expéditions</span></a></li>
+          <li><a href="invoices.html" class="nav-item"><span class="icon">📄</span><span class="label">Factures & TVA</span></a></li>
+          <li><a href="checkout.html" class="nav-item"><span class="icon">💳</span><span class="label">Caisse & Paiements</span></a></li>
+          <li><a href="support.html" class="nav-item"><span class="icon">🎧</span><span class="label">Support & SAV</span></a></li>
+          <li><a href="schedule.html" class="nav-item"><span class="icon">📅</span><span class="label">Rendez-vous</span></a></li>
+          <li><a href="inbox.html" class="nav-item"><span class="icon">💬</span><span class="label">Omnicanal</span> <span class="badge">8</span></a></li>
+          <li><a href="notifications.html" class="nav-item"><span class="icon">🔔</span><span class="label">Notifications</span></a></li>
+          <li><a href="integrations.html" class="nav-item"><span class="icon">🔌</span><span class="label">Intégrations & n8n</span></a></li>
+          <li><a href="workflows.html" class="nav-item"><span class="icon">⚡</span><span class="label">Workflows Durables</span></a></li>
+          <li><a href="workflow_reliability_dashboard.html" class="nav-item"><span class="icon">🩺</span><span class="label">Fiabilité & DLQ</span></a></li>
+          <li><a href="ai_governance.html" class="nav-item"><span class="icon">🧠</span><span class="label">Gouvernance IA</span></a></li>
+          <li><a href="agent_workspace.html" class="nav-item"><span class="icon">🤖</span><span class="label">Écosystème 18 Agents</span></a></li>
+          <li><a href="voice_agent.html" class="nav-item"><span class="icon">🎙️</span><span class="label">Agent Vocal Client</span></a></li>
+          <li><a href="voice_copilot.html" class="nav-item"><span class="icon">🗣️</span><span class="label">Copilote Vocal Manager</span></a></li>
+          <li><a href="voice_observability.html" class="nav-item"><span class="icon">📡</span><span class="label">Télémétrie Vocale</span></a></li>
+          <li><a href="analytics_dashboard.html" class="nav-item"><span class="icon">📉</span><span class="label">Analytics Exécutif</span></a></li>
+          <li><a href="ai_operations_dashboard.html" class="nav-item"><span class="icon">💻</span><span class="label">Opérations GPU/VRAM</span></a></li>
+          <li><a href="saas_admin_dashboard.html" class="nav-item active"><span class="icon">🏢</span><span class="label">Admin SaaS & Quotas</span></a></li>
+          <li><a href="release_console.html" class="nav-item"><span class="icon">🚀</span><span class="label">Console de Déploiement</span></a></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="ai-status-pill" onclick="window.location.href='agent_workspace.html'">
+          <span class="sparkle-icon">✨</span>
+          <div class="info">
+            <span class="status-title">IA Active</span>
+            <span class="status-desc">4 agents opérationnels</span>
+          </div>
+        </div>
+
+        <div class="user-profile-card">
+          <div class="user-avatar">OA</div>
+          <div class="user-details">
+            <span class="name">Omar A.</span>
+            <span class="role">Administrateur</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-wrapper">
+      <header class="topbar">
+        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
+        <div class="search-container">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher des clients, devis, commandes, agents...">
+          <span class="search-shortcut">Ctrl + K</span>
+        </div>
+
+        <div class="topbar-actions">
+          <div class="tenant-selector-pill" id="tenantSelectorPill">
+            <span>🏢</span> <span id="currentTenantLabel">Atlas Commerce</span>
+          </div>
+
+          <div class="icon-btn-badge" id="notifBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            <span class="badge-counter">3</span>
+          </div>
+
+          <button class="btn-header-primary" id="btnQuickNew">
+            <span>+</span> Nouveau
+          </button>
+
+          <div class="user-topbar-pill">
+            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;">OA</div>
+            <div style="display:flex; flex-direction:column; line-height:1.2;">
+              <span style="font-weight:600; font-size:13px; color:#17251F;">Omar A.</span>
+              <span style="font-size:11px; color:#66756D;">Administrateur</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="content-wrapper">
+<div class="sidebar">
     <div class="brand-title">🛡️ Sales AI</div>
     <div class="brand-subtitle">Enterprise SaaS Core</div>
     <ul class="nav-list">
@@ -336,8 +393,7 @@
 
     <!-- Active Quota Limits Table -->
     <div class="card">
-      <div class="card-title">Enforced Multi-Tenant Quotas & Overdraft Rules</div>
-      <table class="data-table">
+      <div class="card-title">Enforced Multi-Tenant Quotas & Overdraft Rules</div><div class="table-responsive"><table class="data-table">
         <thead>
           <tr>
             <th>Metric Name</th>
@@ -382,7 +438,7 @@
             <td><span style="color:var(--status-danger); font-weight:600;">Block User Invite</span></td>
           </tr>
         </tbody>
-      </table>
+      </table></div>
     </div>
   </div>
 
@@ -535,5 +591,126 @@
 
     document.addEventListener('DOMContentLoaded', fetchSaaSData);
   </script>
+      </main>
+    </div>
+  </div>
+
+
+  <script src="js/app_shell.js"></script>
+  <script>
+async function fetchSaaSData() {
+      try {
+        const subRes = await fetch('/api/v1/saas/subscription');
+        if (subRes.ok) {
+          const sub = await subRes.json();
+          document.getElementById('tenantBadge').textContent = `🏢 Tenant: ${sub.tenant_id}`;
+          updatePlanHighlight(sub.plan_tier);
+        }
+
+        const usageRes = await fetch('/api/v1/saas/usage');
+        if (usageRes.ok) {
+          const usage = await usageRes.json();
+          renderUsageMeters(usage);
+        }
+      } catch (err) {
+        console.warn('API fetch error, keeping default authoritative display', err);
+      }
+    }
+
+    function updatePlanHighlight(planTier) {
+      document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('current'));
+      if (planTier === 'STARTER') document.getElementById('planStarter')?.classList.add('current');
+      else if (planTier === 'ENTERPRISE') document.getElementById('planEnterprise')?.classList.add('current');
+      else document.getElementById('planPro')?.classList.add('current');
+    }
+
+    function renderUsageMeters(usage) {
+      if (!usage || !usage.meters) return;
+      
+      let hasWarning = false;
+      const meters = usage.meters;
+      
+      // Tokens
+      if (meters.tokens) {
+        const cur = meters.tokens.current || 0;
+        const lim = meters.tokens.limit || 10000000;
+        const pct = Math.min(100, (cur / lim) * 100).toFixed(1);
+        document.getElementById('tokensValues').textContent = `${cur.toLocaleString()} / ${lim.toLocaleString()}`;
+        document.getElementById('tokensPct').textContent = `${pct}% Utilized`;
+        const bar = document.getElementById('tokensProgressBar');
+        bar.style.width = `${pct}%`;
+        if (pct >= 90) bar.className = 'progress-bar danger';
+        else if (pct >= 80) { bar.className = 'progress-bar warning'; hasWarning = true; }
+        else bar.className = 'progress-bar';
+      }
+
+      // Voice
+      if (meters.voice_seconds) {
+        const curMin = Math.round((meters.voice_seconds.current || 0) / 60);
+        const limMin = Math.round((meters.voice_seconds.limit || 60000) / 60);
+        const pct = Math.min(100, (curMin / limMin) * 100).toFixed(1);
+        document.getElementById('voiceValues').textContent = `${curMin} / ${limMin} min`;
+        document.getElementById('voicePct').textContent = `${pct}% Utilized`;
+        const bar = document.getElementById('voiceProgressBar');
+        bar.style.width = `${pct}%`;
+        if (pct >= 90) bar.className = 'progress-bar danger';
+        else if (pct >= 80) { bar.className = 'progress-bar warning'; hasWarning = true; }
+        else bar.className = 'progress-bar';
+      }
+
+      // API calls
+      if (meters.api_calls) {
+        const cur = meters.api_calls.current || 0;
+        const lim = meters.api_calls.limit || 500000;
+        const pct = Math.min(100, (cur / lim) * 100).toFixed(1);
+        document.getElementById('apiValues').textContent = `${cur.toLocaleString()} / ${lim.toLocaleString()}`;
+        document.getElementById('apiPct').textContent = `${pct}% Utilized`;
+        const bar = document.getElementById('apiProgressBar');
+        bar.style.width = `${pct}%`;
+        if (pct >= 90) bar.className = 'progress-bar danger';
+        else if (pct >= 80) { bar.className = 'progress-bar warning'; hasWarning = true; }
+        else bar.className = 'progress-bar';
+      }
+
+      const warnBanner = document.getElementById('quotaWarningBanner');
+      if (hasWarning) warnBanner.classList.remove('hidden');
+      else warnBanner.classList.add('hidden');
+    }
+
+    function openQuotaModal() {
+      document.getElementById('quotaModal').classList.remove('hidden');
+    }
+
+    function closeQuotaModal() {
+      document.getElementById('quotaModal').classList.add('hidden');
+    }
+
+    async function handleQuotaSubmit(e) {
+      e.preventDefault();
+      const metric = document.getElementById('metricName').value;
+      const limit = parseInt(document.getElementById('newLimit').value, 10);
+      const reason = document.getElementById('quotaReason').value;
+
+      try {
+        const res = await fetch('/api/v1/saas/quotas/adjust', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ metric_name: metric, new_limit: limit, reason: reason })
+        });
+        if (res.ok) {
+          alert('Quota successfully adjusted.');
+          closeQuotaModal();
+          fetchSaaSData();
+        } else {
+          alert('Adjustment failed: ' + (await res.text()));
+        }
+      } catch (err) {
+        alert('Network or server error during quota adjustment');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', fetchSaaSData);
+  </script>
+
 </body>
 </html>

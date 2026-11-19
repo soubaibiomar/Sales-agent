@@ -1,130 +1,314 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sales Pipeline & CRM — Sales AI Platform</title>
+  <title>Sales AI Management — Pipeline Commercial & Opportunités</title>
+  <link rel="stylesheet" href="css/design_system.css">
   <style>
-    :root {
-      --primary: #0A3A2A;
-      --primary-hover: #064E3B;
-      --primary-tint: #E6F4EA;
-      --accent: #10B981;
-      --bg-neutral: #FFFFFF;
-      --bg-page: #F8FAFC;
-      --border-muted: #E2E8F0;
-      --text-main: #0F172A;
-      --text-muted: #64748B;
-      --status-success: #16A34A;
-      --status-warning: #D97706;
-      --status-danger: #DC2626;
-      --status-info: #2563EB;
+    .kanban-board-container {
+      display: flex;
+      gap: 1.25rem;
+      overflow-x: auto;
+      padding-bottom: 1rem;
+      align-items: stretch;
+      min-height: calc(100vh - 280px);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
-    body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
-    
-    .sidebar { width: 260px; background-color: var(--primary); color: #FFFFFF; display: flex; flex-direction: column; padding: 1.5rem 1rem; border-right: 1px solid var(--border-muted); }
-    .brand-title { font-size: 1.15rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.25rem; }
-    .brand-subtitle { font-size: 0.75rem; color: #A7F3D0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2rem; }
-    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
-    .nav-item { padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.875rem; cursor: pointer; color: #E2E8F0; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
-    .nav-item:hover, .nav-item.active { background: rgba(255, 255, 255, 0.18); color: #FFFFFF; font-weight: 600; }
-    
-    .main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-    .topbar { height: 64px; background: var(--bg-neutral); border-bottom: 1px solid var(--border-muted); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
-    .topbar h1 { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
-    
-    .content { flex: 1; padding: 1.5rem 2rem; overflow-x: auto; display: flex; flex-direction: column; gap: 1rem; }
-    .header-actions { display: flex; justify-content: space-between; align-items: center; }
-    .btn-primary { background: var(--primary); color: #FFFFFF; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
-    .btn-primary:hover { background: var(--primary-hover); }
-    
-    /* Kanban Board */
-    .kanban-board { display: flex; gap: 1rem; flex: 1; overflow-x: auto; padding-bottom: 1rem; }
-    .kanban-col { background: #EDF2F7; border-radius: 8px; width: 280px; min-width: 280px; display: flex; flex-direction: column; max-height: calc(100vh - 180px); }
-    .col-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-muted); font-weight: 700; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; }
-    .col-badge { background: #CBD5E1; color: var(--text-main); font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; }
-    .col-cards { padding: 0.75rem; display: flex; flex-direction: column; gap: 0.75rem; overflow-y: auto; flex: 1; }
-    
-    .card { background: var(--bg-neutral); border-radius: 6px; padding: 1rem; border: 1px solid var(--border-muted); box-shadow: 0 1px 3px rgba(0,0,0,0.05); cursor: pointer; }
-    .card-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.35rem; }
-    .card-meta { font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 0.5rem; }
-    .card-amount { font-weight: 700; color: var(--primary); font-size: 0.85rem; }
-    
-    /* Modal */
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; }
-    .modal { background: var(--bg-neutral); padding: 1.5rem; border-radius: 8px; width: 450px; display: flex; flex-direction: column; gap: 1rem; }
-    .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
-    .form-input { padding: 0.5rem; border: 1px solid var(--border-muted); border-radius: 4px; }
+    .kanban-column {
+      background: #F1F5F3;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      width: 300px;
+      min-width: 300px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-xs);
+    }
+    .kanban-col-header {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-card);
+      border-top-left-radius: var(--radius-lg);
+      border-top-right-radius: var(--radius-lg);
+    }
+    .kanban-col-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .kanban-cards-stream {
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .deal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .deal-card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--accent-emerald);
+      transform: translateY(-1px);
+    }
+    .deal-amount {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--brand-primary);
+    }
+    .deal-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 0.45rem;
+      margin-top: 0.25rem;
+    }
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 58, 42, 0.4);
+      backdrop-filter: blur(2px);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      width: 460px;
+      max-width: 90%;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
   </style>
 </head>
 <body>
-  <div class="sidebar">
-    <div class="brand-title">SALES AI PLATFORM</div>
-    <div class="brand-subtitle">Commercial Suite</div>
-    <ul class="nav-list">
-      <li><a href="index.html" class="nav-item">Dashboard</a></li>
-      <li><a href="pipeline.html" class="nav-item active">Sales Pipeline</a></li>
-      <li><a href="catalog.html" class="nav-item">Product Catalog</a></li>
-      <li><a href="quote_builder.html" class="nav-item">Quote Builder</a></li>
-      <li><a href="approvals.html" class="nav-item">Approvals Center</a></li>
-      <li><a href="inbox.html" class="nav-item">Unified Inbox</a></li>
-    </ul>
-  </div>
-
-  <div class="main-area">
-    <div class="topbar">
-      <h1>Commercial Pipeline & Opportunities</h1>
-      <div><button class="btn-primary" onclick="openNewOppModal()">+ New Opportunity</button></div>
-    </div>
-
-    <div class="content">
-      <div class="kanban-board" id="kanbanBoard">
-        <!-- Columns rendered dynamically -->
+  <div class="app-container">
+    <!-- 1. MASTER SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand-header">
+        <div class="brand-logo-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 20V10M12 20V4M6 20v-6"></path></svg>
+        </div>
+        <div class="brand-text">
+          <span class="title">Sales AI</span>
+          <span class="subtitle">Management</span>
+        </div>
       </div>
+
+      <div class="nav-group">
+        <ul class="nav-list">
+          <li>
+            <a href="index.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></span>
+              <span class="label">Tableau de bord</span>
+            </a>
+          </li>
+          <li>
+            <a href="pipeline.html" class="nav-item active">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline></svg></span>
+              <span class="label">CRM & Pipeline</span>
+            </a>
+          </li>
+          <li>
+            <a href="inbox.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></span>
+              <span class="label">Conversations</span>
+              <span class="badge">8</span>
+            </a>
+          </li>
+          <li>
+            <a href="catalog.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg></span>
+              <span class="label">Catalogue</span>
+            </a>
+          </li>
+          <li>
+            <a href="quote_builder.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg></span>
+              <span class="label">Devis & Approbations</span>
+            </a>
+          </li>
+          <li>
+            <a href="orders.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg></span>
+              <span class="label">Commandes</span>
+            </a>
+          </li>
+          <li>
+            <a href="inventory.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"></path></svg></span>
+              <span class="label">Stock</span>
+            </a>
+          </li>
+          <li>
+            <a href="invoices.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></span>
+              <span class="label">Finance</span>
+            </a>
+          </li>
+          <li>
+            <a href="analytics_dashboard.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></span>
+              <span class="label">Rapports</span>
+            </a>
+          </li>
+          <li>
+            <a href="agent_workspace.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span>
+              <span class="label">IA & Agents</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="ai-status-pill" onclick="window.location.href='agent_workspace.html'">
+          <span class="sparkle-icon">✨</span>
+          <div class="info">
+            <span class="status-title">IA Active</span>
+            <span class="status-desc">Qualification automatique</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 2. MAIN APPLICATION WRAPPER -->
+    <div class="main-wrapper">
+      <header class="topbar">
+        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
+        <div class="search-container">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher des opportunités, comptes, montants...">
+          <span class="search-shortcut">Ctrl + K</span>
+        </div>
+
+        <div class="topbar-actions">
+          <div class="tenant-selector-pill" id="tenantSelectorPill">
+            <span>🏢</span> <span id="currentTenantLabel">Atlas Commerce</span>
+          </div>
+          <button class="btn-header-primary" onclick="openNewOppModal()">+ Nouvelle Opportunité</button>
+        </div>
+      </header>
+
+      <main class="content-wrapper">
+        <div class="page-header">
+          <div class="page-title-group">
+            <h1>Pipeline Commercial & Opportunités CRM</h1>
+            <p>Visualisez l'avancement des deals et optimisez les taux de conversion commerciale.</p>
+          </div>
+
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn btn-outline" onclick="loadPipeline()">🔄 Actualiser</button>
+            <button class="btn btn-emerald" onclick="openNewOppModal()">+ Nouveau Deal</button>
+          </div>
+        </div>
+
+        <!-- Funnel Summary Metrics -->
+        <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr);">
+          <div class="kpi-card" style="padding:1rem;">
+            <span class="kpi-title">Total Pipeline</span>
+            <div class="kpi-value" style="font-size:1.35rem; color:#0A3A2A;">4 760 000 MAD</div>
+            <span class="kpi-trend">↑ +14.8% vs. M-1</span>
+          </div>
+          <div class="kpi-card" style="padding:1rem;">
+            <span class="kpi-title">Deals Actifs</span>
+            <div class="kpi-value" style="font-size:1.35rem;">174</div>
+            <span class="badge badge-info">5 étapes actives</span>
+          </div>
+          <div class="kpi-card" style="padding:1rem;">
+            <span class="kpi-title">Taux de Signature</span>
+            <div class="kpi-value" style="font-size:1.35rem; color:#16A34A;">38.4%</div>
+            <span class="kpi-trend">↑ +4.2%</span>
+          </div>
+          <div class="kpi-card" style="padding:1rem;">
+            <span class="kpi-title">Cycle Moyen de Vente</span>
+            <div class="kpi-value" style="font-size:1.35rem;">18 jours</div>
+            <span class="badge badge-success">Optimisé par IA</span>
+          </div>
+        </div>
+
+        <!-- Kanban Board Container -->
+        <div class="kanban-board-container" id="kanbanBoard">
+          <!-- Dynamically Populated by JavaScript -->
+        </div>
+      </main>
     </div>
   </div>
 
-  <!-- New Opportunity Modal -->
+  <!-- Create New Opportunity Modal -->
   <div class="modal-overlay" id="oppModal">
-    <div class="modal">
-      <h3>Create New Opportunity</h3>
-      <div class="form-group">
-        <label>Title</label>
-        <input type="text" id="oppTitle" class="form-input" placeholder="e.g. Enterprise Cloud License" />
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="font-size:1.1rem; font-weight:700; color:#17251F;">Créer une Nouvelle Opportunité</h3>
+        <button onclick="closeModal()" style="background:none; border:none; font-size:18px; cursor:pointer;">✕</button>
       </div>
+
       <div class="form-group">
-        <label>Account ID</label>
-        <input type="text" id="oppAccount" class="form-input" placeholder="Account UUID" />
+        <label style="font-size:12px; font-weight:600; color:#66756D; margin-bottom:4px;">Titre de l'opportunité</label>
+        <input type="text" id="oppTitle" class="form-control" placeholder="ex. Déploiement Cloud Casablanca" />
       </div>
+
       <div class="form-group">
-        <label>Estimated Amount (MAD)</label>
-        <input type="number" id="oppAmount" class="form-input" placeholder="e.g. 50000" />
+        <label style="font-size:12px; font-weight:600; color:#66756D; margin-bottom:4px;">Compte Client / Entreprise</label>
+        <input type="text" id="oppAccount" class="form-control" placeholder="Nom ou ID client" />
       </div>
+
       <div class="form-group">
-        <label>Stage</label>
-        <select id="oppStage" class="form-input">
-          <option value="DISCOVERY">Discovery</option>
-          <option value="QUALIFICATION">Qualification</option>
-          <option value="PROPOSAL">Proposal</option>
-          <option value="NEGOTIATION">Negotiation</option>
+        <label style="font-size:12px; font-weight:600; color:#66756D; margin-bottom:4px;">Montant Estimé (MAD)</label>
+        <input type="number" id="oppAmount" class="form-control" placeholder="ex. 120000" />
+      </div>
+
+      <div class="form-group">
+        <label style="font-size:12px; font-weight:600; color:#66756D; margin-bottom:4px;">Étape Initiale</label>
+        <select id="oppStage" class="form-control">
+          <option value="DISCOVERY">1. Prospection & Découverte</option>
+          <option value="QUALIFICATION">2. Qualification</option>
+          <option value="PROPOSAL">3. Proposition Commerciale</option>
+          <option value="NEGOTIATION">4. Négociation</option>
         </select>
       </div>
-      <div style="display:flex; justify-content: flex-end; gap: 0.5rem;">
-        <button class="btn-primary" style="background:#64748B" onclick="closeModal()">Cancel</button>
-        <button class="btn-primary" onclick="submitNewOpp()">Create</button>
+
+      <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.5rem;">
+        <button class="btn btn-outline" onclick="closeModal()">Annuler</button>
+        <button class="btn btn-primary" onclick="submitNewOpp()">Créer le Deal</button>
       </div>
     </div>
   </div>
 
+  <script src="js/app_shell.js"></script>
   <script>
     const STAGES = [
-      { id: "DISCOVERY", title: "Discovery" },
-      { id: "QUALIFICATION", title: "Qualification" },
-      { id: "PROPOSAL", title: "Proposal" },
-      { id: "NEGOTIATION", title: "Negotiation" },
-      { id: "CLOSED_WON", title: "Closed Won" },
-      { id: "CLOSED_LOST", title: "Closed Lost" }
+      { id: "DISCOVERY", title: "Prospection", icon: "🎯", color: "#64748B" },
+      { id: "QUALIFICATION", title: "Qualification", icon: "👥", color: "#10B981" },
+      { id: "PROPOSAL", title: "Proposition", icon: "📄", color: "#2563EB" },
+      { id: "NEGOTIATION", title: "Négociation", icon: "🤝", color: "#D97706" },
+      { id: "CLOSED_WON", title: "Gagné", icon: "🏆", color: "#0A3A2A" },
+      { id: "CLOSED_LOST", title: "Perdu", icon: "✕", color: "#DC2626" }
     ];
 
     async function loadPipeline() {
@@ -135,14 +319,40 @@
         const data = await res.json();
         renderKanban(data.stages || {});
       } catch (e) {
-        console.error("Failed to load pipeline:", e);
-        // Fallback demo state
+        // High fidelity Moroccan enterprise demo state
         renderKanban({
-          DISCOVERY: { opportunities: [{ id: "1", title: "Casablanca Tech Hub", amount_cents: 2500000, currency: "MAD", probability_percent: 20 }], count: 1 },
-          QUALIFICATION: { opportunities: [{ id: "2", title: "Atlas Logistics SaaS", amount_cents: 1200000, currency: "MAD", probability_percent: 40 }], count: 1 },
-          PROPOSAL: { opportunities: [{ id: "3", title: "Maroc Telecom Upgrade", amount_cents: 7500000, currency: "MAD", probability_percent: 60 }], count: 1 },
-          NEGOTIATION: { opportunities: [], count: 0 },
-          CLOSED_WON: { opportunities: [{ id: "4", title: "BMCE Fleet AI", amount_cents: 4800000, currency: "MAD", probability_percent: 100 }], count: 1 },
+          DISCOVERY: {
+            opportunities: [
+              { id: "OPP-101", title: "Casablanca Tech Hub", client: "TechPro Maroc", amount_cents: 62000000, currency: "MAD", probability_percent: 25 },
+              { id: "OPP-102", title: "Équipement Réseau Rabat", client: "Benbarka & Fils", amount_cents: 18000000, currency: "MAD", probability_percent: 30 }
+            ],
+            count: 2
+          },
+          QUALIFICATION: {
+            opportunities: [
+              { id: "OPP-103", title: "Panneaux Isolants PR-480", client: "Atlas Construction", amount_cents: 8450000, currency: "MAD", probability_percent: 70 },
+              { id: "OPP-104", title: "SaaS Omnicanal Messagerie", client: "Atlas Logistics", amount_cents: 12000000, currency: "MAD", probability_percent: 60 }
+            ],
+            count: 2
+          },
+          PROPOSAL: {
+            opportunities: [
+              { id: "OPP-105", title: "Renouvellement Parc PC i7", client: "Atlas Services", amount_cents: 16968000, currency: "MAD", probability_percent: 75 }
+            ],
+            count: 1
+          },
+          NEGOTIATION: {
+            opportunities: [
+              { id: "OPP-106", title: "Accord-Cadre Logistique", client: "Sahara Transport", amount_cents: 35600000, currency: "MAD", probability_percent: 85 }
+            ],
+            count: 1
+          },
+          CLOSED_WON: {
+            opportunities: [
+              { id: "OPP-107", title: "IA Vocale Call Center", client: "BMCE Connect", amount_cents: 48000000, currency: "MAD", probability_percent: 100 }
+            ],
+            count: 1
+          },
           CLOSED_LOST: { opportunities: [], count: 0 }
         });
       }
@@ -154,20 +364,26 @@
       STAGES.forEach(st => {
         const colData = stageData[st.id] || { opportunities: [], count: 0 };
         const col = document.createElement("div");
-        col.className = "kanban-col";
+        col.className = "kanban-column";
         col.innerHTML = `
-          <div class="col-header">
-            <span>${st.title}</span>
-            <span class="col-badge">${colData.count}</span>
+          <div class="kanban-col-header">
+            <span class="kanban-col-title">
+              <span>${st.icon}</span> ${st.title}
+            </span>
+            <span class="badge" style="background:#E2ECE6; color:#0A3A2A; font-weight:700;">${colData.count}</span>
           </div>
-          <div class="col-cards">
+          <div class="kanban-cards-stream">
             ${colData.opportunities.map(opp => `
-              <div class="card" onclick="location.href='quote_builder.html?opp_id=${opp.id}'">
-                <div class="card-title">${opp.title}</div>
-                <div class="card-amount">${opp.currency} ${(opp.amount_cents / 100).toLocaleString('fr-FR', {minimumFractionDigits: 2})}</div>
-                <div class="card-meta">
-                  <span>Prob: ${opp.probability_percent}%</span>
-                  <span>ID: ${opp.id.slice(0,6)}</span>
+              <div class="deal-card" onclick="location.href='quote_builder.html?opp_id=${opp.id}'">
+                <div style="font-weight:700; font-size:13px; color:#17251F;">${opp.title}</div>
+                <div style="font-size:11px; color:#66756D;">🏢 ${opp.client || 'Client d\'affaires'}</div>
+                <div class="deal-amount">${(opp.amount_cents / 100).toLocaleString('fr-FR', {minimumFractionDigits: 2})} <span style="font-size:11px; font-weight:500;">${opp.currency}</span></div>
+                <div class="progress-bar-bg">
+                  <div class="progress-bar-fill" style="width:${opp.probability_percent}%;"></div>
+                </div>
+                <div class="deal-footer">
+                  <span>Probabilité: <strong>${opp.probability_percent}%</strong></span>
+                  <span>#${opp.id}</span>
                 </div>
               </div>
             `).join("")}
@@ -180,7 +396,11 @@
     function openNewOppModal() { document.getElementById("oppModal").style.display = "flex"; }
     function closeModal() { document.getElementById("oppModal").style.display = "none"; }
     async function submitNewOpp() {
+      const title = document.getElementById("oppTitle").value.trim();
+      const amount = parseFloat(document.getElementById("oppAmount").value) || 0;
+      if (!title) return alert("Veuillez saisir un titre d'opportunité.");
       closeModal();
+      if (window.SalesAI) window.SalesAI.showToast(`Opportunité créée : ${title}`);
       loadPipeline();
     }
 

@@ -1,662 +1,1119 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sales Workspace — Omnichannel Unified Inbox</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>Sales AI Management — Boîte de réception IA Omnicanal</title>
+  <link rel="stylesheet" href="css/design_system.css">
   <style>
-    :root {
-      --brand-primary: #0A3A2A;
-      --brand-hover: #064E3B;
-      --brand-tint: #E6F4EA;
-      --accent-emerald: #10B981;
-      --bg-white: #FFFFFF;
-      --bg-soft: #F8FAFC;
-      --border-muted: #E2E8F0;
-      --border-darker: #CBD5E1;
-      --text-main: #0F172A;
-      --text-muted: #475569;
-      --status-success: #16A34A;
-      --status-warning: #D97706;
-      --status-critical: #DC2626;
-      --status-info: #2563EB;
+    /* Omnichannel Inbox 3-Column Layout */
+    .inbox-workspace {
+      display: grid;
+      grid-template-columns: 320px 1fr 310px;
+      height: calc(100vh - var(--topbar-height));
+      overflow: hidden;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-subtle);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: var(--bg-soft);
-      color: var(--text-main);
-      height: 100vh;
+    /* Column 1: Conversations Thread List */
+    .threads-col {
+      border-right: 1px solid var(--border-subtle);
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      background: var(--bg-card);
+      height: 100%;
     }
-
-    /* Top Navigation Bar */
-    header {
-      background-color: var(--brand-primary);
-      color: var(--bg-white);
-      padding: 0.75rem 1.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 2px solid var(--accent-emerald);
+    .threads-header {
+      padding: 1.25rem 1rem 0.75rem 1rem;
+      border-bottom: 1px solid var(--border-subtle);
     }
-    .header-brand {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
+    .threads-header h2 {
       font-size: 1.15rem;
       font-weight: 700;
-      letter-spacing: -0.01em;
+      color: var(--text-primary);
     }
-    .badge-tenant {
-      background-color: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      padding: 0.2rem 0.6rem;
-      border-radius: 9999px;
+    .threads-header p {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+    .filter-pills-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+      overflow-x: auto;
+    }
+    .filter-pill {
+      padding: 0.3rem 0.65rem;
+      border-radius: var(--radius-full);
       font-size: 0.75rem;
-      font-weight: 500;
-    }
-    .header-user {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      font-size: 0.85rem;
-    }
-    .operator-status-pill {
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-      background-color: var(--brand-tint);
-      color: var(--brand-primary);
       font-weight: 600;
-      padding: 0.25rem 0.6rem;
-      border-radius: 9999px;
+      cursor: pointer;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-app);
+      color: var(--text-secondary);
+      white-space: nowrap;
+      transition: all 0.15s;
     }
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background-color: var(--status-success);
+    .filter-pill.active {
+      background: var(--brand-primary);
+      color: #FFFFFF;
+      border-color: var(--brand-primary);
     }
-
-    /* Main Container (3 Columns) */
-    .inbox-layout {
-      display: grid;
-      grid-template-columns: 240px 340px 1fr 300px;
+    .threads-list {
       flex: 1;
-      height: calc(100vh - 54px);
-      overflow: hidden;
-    }
-
-    /* Column 1: Channel & Status Navigation */
-    .sidebar-nav {
-      background-color: var(--bg-white);
-      border-right: 1px solid var(--border-muted);
-      padding: 1rem 0.75rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-    .nav-section-title {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-      margin-bottom: 0.5rem;
-      padding-left: 0.5rem;
-    }
-    .nav-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.5rem 0.75rem;
-      border-radius: 6px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: var(--text-main);
-      text-decoration: none;
-      cursor: pointer;
-      transition: background 0.15s ease;
-    }
-    .nav-item:hover { background-color: var(--bg-soft); }
-    .nav-item.active {
-      background-color: var(--brand-tint);
-      color: var(--brand-primary);
-      font-weight: 600;
-    }
-    .nav-count {
-      background-color: var(--border-muted);
-      color: var(--text-muted);
-      font-size: 0.75rem;
-      padding: 0.1rem 0.45rem;
-      border-radius: 9999px;
-      font-weight: 600;
-    }
-    .nav-item.active .nav-count {
-      background-color: var(--brand-primary);
-      color: var(--bg-white);
-    }
-
-    /* Column 2: Conversation List */
-    .conversation-queue {
-      background-color: var(--bg-white);
-      border-right: 1px solid var(--border-muted);
-      display: flex;
-      flex-direction: column;
       overflow-y: auto;
+      list-style: none;
     }
-    .queue-header {
-      padding: 1rem;
-      border-bottom: 1px solid var(--border-muted);
+    .thread-item {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border-subtle);
       display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    .queue-search {
-      width: 100%;
-      padding: 0.5rem 0.75rem;
-      border: 1px solid var(--border-muted);
-      border-radius: 6px;
-      font-size: 0.85rem;
-      font-family: inherit;
-    }
-    .queue-item {
-      padding: 1rem;
-      border-bottom: 1px solid var(--border-muted);
+      gap: 0.75rem;
       cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-      transition: background 0.15s ease;
+      transition: background 0.15s;
     }
-    .queue-item:hover { background-color: var(--bg-soft); }
-    .queue-item.active {
-      background-color: #F0FDF4;
-      border-left: 4px solid var(--brand-primary);
+    .thread-item:hover {
+      background: var(--bg-app);
     }
-    .queue-item-top {
+    .thread-item.active {
+      background: #F0FDF4;
+      border-left: 3px solid var(--accent-emerald);
+    }
+    .thread-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-    }
-    .customer-name {
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
-    .time-snippet {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-    .channel-pill {
-      font-size: 0.7rem;
+      justify-content: center;
       font-weight: 700;
-      padding: 0.15rem 0.45rem;
-      border-radius: 4px;
-      display: inline-block;
+      font-size: 0.85rem;
+      color: #FFFFFF;
+      flex-shrink: 0;
+      position: relative;
     }
-    .channel-pill.whatsapp { background-color: #DCFCE7; color: #15803D; }
-    .channel-pill.web_chat { background-color: #E0E7FF; color: #4338CA; }
-    .channel-pill.email { background-color: #FEF3C7; color: #B45309; }
-    .channel-pill.voice_sip { background-color: #F1F5F9; color: #334155; }
-    .message-preview {
-      font-size: 0.8rem;
-      color: var(--text-muted);
+    .channel-badge-icon {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+    }
+    .thread-content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .thread-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .thread-name {
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: var(--text-primary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .unread-pill {
-      background-color: var(--status-critical);
-      color: var(--bg-white);
+    .thread-time {
       font-size: 0.7rem;
+      color: var(--text-secondary);
+    }
+    .thread-snippet {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .thread-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 0.25rem;
+    }
+    .thread-tags {
+      display: flex;
+      gap: 0.3rem;
+    }
+    .thread-unread-badge {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+      color: #FFFFFF;
+      font-size: 0.65rem;
       font-weight: 700;
-      padding: 0.1rem 0.4rem;
-      border-radius: 9999px;
-      margin-left: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .threads-footer {
+      padding: 0.65rem 1rem;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      background: var(--bg-card);
     }
 
-    /* Column 3: Active Conversation Timeline */
-    .timeline-view {
+    /* Column 2: Active Conversation Timeline */
+    .chat-col {
       display: flex;
       flex-direction: column;
-      background-color: var(--bg-soft);
-      border-right: 1px solid var(--border-muted);
       height: 100%;
-      overflow: hidden;
+      background: var(--bg-app);
+      border-right: 1px solid var(--border-subtle);
+      position: relative;
     }
-    .timeline-header {
-      background-color: var(--bg-white);
-      padding: 0.85rem 1.25rem;
-      border-bottom: 1px solid var(--border-muted);
+    .chat-header {
+      padding: 0.85rem 1.5rem;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-subtle);
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
-    .active-contact-title {
+    .chat-header-user {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      font-size: 1rem;
+      gap: 0.75rem;
+    }
+    .chat-header-title {
+      font-size: 0.98rem;
       font-weight: 700;
+      color: var(--text-primary);
     }
-    .handoff-actions {
+    .chat-header-meta {
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
     }
-    .btn-action {
-      padding: 0.45rem 0.9rem;
-      border-radius: 6px;
-      font-size: 0.825rem;
-      font-weight: 600;
-      cursor: pointer;
-      border: 1px solid transparent;
-      display: inline-flex;
+    .chat-stream {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .date-separator {
+      align-self: center;
+      background: #FFFFFF;
+      border: 1px solid var(--border-subtle);
+      padding: 0.2rem 0.75rem;
+      border-radius: var(--radius-full);
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+    
+    /* Message Bubbles */
+    .msg-group {
+      display: flex;
+      gap: 0.65rem;
+      max-width: 78%;
+    }
+    .msg-group.inbound {
+      align-self: flex-start;
+    }
+    .msg-group.outbound {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+    .msg-bubble {
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      line-height: 1.45;
+      position: relative;
+      box-shadow: var(--shadow-xs);
+    }
+    .msg-group.inbound .msg-bubble {
+      background: #FFFFFF;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      border-top-left-radius: 2px;
+    }
+    .msg-group.outbound .msg-bubble {
+      background: var(--brand-primary);
+      color: #FFFFFF;
+      border-top-right-radius: 2px;
+    }
+    .msg-meta {
+      font-size: 0.68rem;
+      margin-top: 0.35rem;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .msg-group.inbound .msg-meta { color: var(--text-secondary); }
+    .msg-group.outbound .msg-meta { color: #A7F3D0; justify-content: flex-end; }
+
+    /* AI Analysis Badge Card */
+    .ai-analysis-banner {
+      align-self: center;
+      width: 90%;
+      background: #F0FDF4;
+      border: 1px solid #A7F3D0;
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.15rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .ai-analysis-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .ai-analysis-title {
+      display: flex;
       align-items: center;
       gap: 0.4rem;
-      transition: all 0.15s ease;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #064E3B;
     }
-    .btn-handoff {
-      background-color: var(--brand-primary);
-      color: var(--bg-white);
+    .ai-confidence-pill {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--brand-primary);
+      background: #DCFCE7;
+      padding: 0.15rem 0.5rem;
+      border-radius: var(--radius-full);
     }
-    .btn-handoff:hover { background-color: var(--brand-hover); }
-    .btn-release {
-      background-color: var(--bg-white);
-      border-color: var(--border-darker);
-      color: var(--text-main);
+    .ai-analysis-bullets {
+      font-size: 0.78rem;
+      color: #064E3B;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
     }
-    .btn-release:hover { background-color: var(--bg-soft); }
 
-    /* Messages Stream */
-    .messages-scroll {
+    /* AI Suggestions Bar */
+    .ai-suggestions-container {
+      background: #FFFFFF;
+      border-top: 1px solid var(--border-subtle);
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .ai-suggestions-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--brand-primary);
+    }
+    .ai-chips-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.65rem;
+    }
+    .ai-chip {
+      background: var(--bg-app);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 0.5rem 0.65rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: left;
+    }
+    .ai-chip:hover, .ai-chip.active {
+      border-color: var(--accent-emerald);
+      background: #F0FDF4;
+    }
+    .ai-chip strong {
+      display: block;
+      color: var(--text-primary);
+      margin-bottom: 0.15rem;
+    }
+    .ai-chip span {
+      color: var(--text-secondary);
+      font-size: 0.7rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Message Composer */
+    .chat-composer {
+      background: #FFFFFF;
+      border-top: 1px solid var(--border-subtle);
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .composer-input {
       flex: 1;
-      padding: 1.25rem;
+      height: 40px;
+      padding: 0.5rem 0.85rem;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .composer-input:focus {
+      border-color: var(--accent-emerald);
+    }
+    .btn-send {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--brand-primary);
+      color: #FFFFFF;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .btn-send:hover {
+      background: var(--brand-primary-hover);
+    }
+
+    /* Column 3: Customer & Deal Context */
+    .context-col {
+      background: var(--bg-card);
+      height: 100%;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 1rem;
     }
-    .msg-bubble {
-      max-width: 65%;
-      padding: 0.75rem 1rem;
-      border-radius: 12px;
-      font-size: 0.875rem;
-      line-height: 1.45;
+    .context-tabs-bar {
       display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0 1rem;
+    }
+    .context-tab-btn {
+      flex: 1;
+      padding: 0.75rem 0.25rem;
+      background: transparent;
+      border: none;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      text-align: center;
       position: relative;
     }
-    .msg-customer {
-      align-self: flex-start;
-      background-color: var(--bg-white);
-      border: 1px solid var(--border-muted);
-      color: var(--text-main);
-    }
-    .msg-agent {
-      align-self: flex-end;
-      background-color: var(--brand-primary);
-      color: var(--bg-white);
-    }
-    .msg-bot {
-      align-self: flex-end;
-      background-color: var(--brand-tint);
-      border: 1px solid #A7F3D0;
+    .context-tab-btn.active {
       color: var(--brand-primary);
+      font-weight: 700;
     }
-    .msg-meta {
-      font-size: 0.7rem;
-      opacity: 0.8;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 0.5rem;
+    .context-tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background: var(--accent-emerald);
     }
-    .system-notice {
-      align-self: center;
-      background-color: var(--border-muted);
-      color: var(--text-muted);
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 0.35rem 0.85rem;
-      border-radius: 9999px;
-      text-align: center;
-      max-width: 80%;
-    }
-    .system-notice.stop {
-      background-color: #FEE2E2;
-      color: var(--status-critical);
-      border: 1px solid #FECACA;
-    }
-
-    /* Reply Composer */
-    .timeline-composer {
-      background-color: var(--bg-white);
-      padding: 1rem 1.25rem;
-      border-top: 1px solid var(--border-muted);
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    .composer-input {
-      width: 100%;
-      height: 70px;
-      padding: 0.6rem 0.75rem;
-      border: 1px solid var(--border-muted);
-      border-radius: 6px;
-      font-family: inherit;
-      font-size: 0.875rem;
-      resize: none;
-    }
-    .composer-actions {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .ai-silenced-banner {
-      background-color: #FEF3C7;
-      color: #92400E;
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 0.4rem 0.75rem;
-      border-radius: 4px;
-      border: 1px solid #FDE68A;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-
-    /* Column 4: Context Sidebar */
-    .context-sidebar {
-      background-color: var(--bg-white);
+    .context-body {
       padding: 1.25rem;
       display: flex;
       flex-direction: column;
       gap: 1.25rem;
-      overflow-y: auto;
     }
-    .context-block-title {
-      font-size: 0.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-      margin-bottom: 0.5rem;
-    }
-    .context-field {
+    .client-card-hero {
       display: flex;
       flex-direction: column;
-      gap: 0.15rem;
-      margin-bottom: 0.5rem;
+      gap: 0.65rem;
     }
-    .context-label {
-      font-size: 0.725rem;
-      color: var(--text-muted);
+    .client-hero-top {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
     }
-    .context-val {
-      font-size: 0.85rem;
-      font-weight: 600;
+    .client-info-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      font-size: 0.78rem;
+      color: var(--text-primary);
+    }
+    .client-info-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-secondary);
+    }
+    .client-info-row span {
+      color: var(--text-primary);
+    }
+
+    /* Opportunity Block */
+    .opp-block {
+      background: var(--bg-app);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .opp-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+    }
+    .opp-label { color: var(--text-secondary); }
+    .opp-val { font-weight: 600; color: var(--text-primary); }
+
+    /* Progress bar */
+    .progress-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: #E4EBE6;
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent-emerald);
+      border-radius: var(--radius-full);
+    }
+
+    /* Rapid Actions */
+    .actions-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .actions-dual-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    @media (max-width: 1200px) {
+      .inbox-workspace { grid-template-columns: 280px 1fr; }
+      .context-col { display: none; }
+    }
+    @media (max-width: 768px) {
+      .inbox-workspace { grid-template-columns: 1fr; }
+      .threads-col { display: none; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="header-brand">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-      </svg>
-      <span>Sales Workspace — Unified Omnichannel Inbox</span>
-      <span class="badge-tenant" id="tenantBadge">Tenant: Alpha Corp</span>
-    </div>
-    <div class="header-user">
-      <div class="operator-status-pill">
-        <span class="status-dot"></span>
-        <span id="agentName">Karim Idrissi (Sales Rep)</span>
-      </div>
-    </div>
-  </header>
-
-  <div class="inbox-layout">
-    <!-- 1. Channels Nav -->
-    <nav class="sidebar-nav" aria-label="Inbox Filters">
-      <div>
-        <div class="nav-section-title">Channels</div>
-        <div class="nav-item active" data-channel="ALL">
-          <span>All Channels</span>
-          <span class="nav-count" id="countAll">18</span>
+  <div class="app-container">
+    <!-- 1. LEFT SIDEBAR (Identical Master Shell) -->
+    <aside class="sidebar">
+      <div class="brand-header">
+        <div class="brand-logo-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 20V10M12 20V4M6 20v-6"></path></svg>
         </div>
-        <div class="nav-item" data-channel="WHATSAPP">
-          <span>WhatsApp Business</span>
-          <span class="nav-count">11</span>
-        </div>
-        <div class="nav-item" data-channel="WEB_CHAT">
-          <span>Web Chat Widget</span>
-          <span class="nav-count">4</span>
-        </div>
-        <div class="nav-item" data-channel="EMAIL">
-          <span>Gmail / Email</span>
-          <span class="nav-count">2</span>
-        </div>
-        <div class="nav-item" data-channel="VOICE_SIP">
-          <span>Telephony Calls</span>
-          <span class="nav-count">1</span>
+        <div class="brand-text">
+          <span class="title">Sales AI</span>
+          <span class="subtitle">Management</span>
         </div>
       </div>
 
-      <div>
-        <div class="nav-section-title">Status Queues</div>
-        <div class="nav-item" data-status="BOT_ACTIVE">
-          <span>Bot Active (AI)</span>
-          <span class="nav-count">12</span>
-        </div>
-        <div class="nav-item" data-status="HUMAN_ACTIVE">
-          <span>Human Active</span>
-          <span class="nav-count">5</span>
-        </div>
-        <div class="nav-item" data-status="PENDING">
-          <span>Pending Takeover</span>
-          <span class="nav-count">1</span>
-        </div>
+      <div class="nav-group">
+        <ul class="nav-list">
+          <li>
+            <a href="index.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></span>
+              <span class="label">Tableau de bord</span>
+            </a>
+          </li>
+          <li>
+            <a href="pipeline.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg></span>
+              <span class="label">CRM</span>
+              <span class="chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></span>
+            </a>
+          </li>
+          <li>
+            <a href="inbox.html" class="nav-item active">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></span>
+              <span class="label">Conversations</span>
+              <span class="badge">8</span>
+            </a>
+          </li>
+          <li>
+            <a href="pipeline.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></span>
+              <span class="label">Ventes</span>
+              <span class="chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></span>
+            </a>
+          </li>
+          <li>
+            <a href="catalog.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg></span>
+              <span class="label">Catalogue</span>
+            </a>
+          </li>
+          <li>
+            <a href="quote_builder.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg></span>
+              <span class="label">Devis & Approbations</span>
+            </a>
+          </li>
+          <li>
+            <a href="orders.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg></span>
+              <span class="label">Commandes</span>
+            </a>
+          </li>
+          <li>
+            <a href="procurement.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path></svg></span>
+              <span class="label">Achats</span>
+            </a>
+          </li>
+          <li>
+            <a href="inventory.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"></path></svg></span>
+              <span class="label">Stocks</span>
+            </a>
+          </li>
+          <li>
+            <a href="invoices.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></span>
+              <span class="label">Finance</span>
+            </a>
+          </li>
+          <li>
+            <a href="analytics_dashboard.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></span>
+              <span class="label">Rapports</span>
+            </a>
+          </li>
+          <li>
+            <a href="workflows.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg></span>
+              <span class="label">Automatisations</span>
+            </a>
+          </li>
+          <li>
+            <a href="agent_workspace.html" class="nav-item">
+              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span>
+              <span class="label">IA & Agents</span>
+            </a>
+          </li>
+        </ul>
       </div>
-    </nav>
 
-    <!-- 2. Conversation Queue -->
-    <section class="conversation-queue" aria-label="Conversation List">
-      <div class="queue-header">
-        <input type="text" class="queue-search" placeholder="Search conversations or contacts..." aria-label="Search">
-      </div>
-      <div id="queueList">
-        <!-- Dynamically rendered conversation items -->
-        <div class="queue-item active" tabindex="0">
-          <div class="queue-item-top">
-            <span class="customer-name">Yassine Benjelloun</span>
-            <span class="time-snippet">12:35</span>
+      <div class="sidebar-footer">
+        <div class="ai-status-pill" onclick="window.location.href='agent_workspace.html'">
+          <span class="sparkle-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          </span>
+          <div class="info">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span class="status-title">Assistant IA</span>
+              <span class="badge" style="background:#059669; font-size:9px; padding:1px 5px;">Actif</span>
+            </div>
+            <span class="status-desc">Aide à la qualification, réponse et conversion</span>
           </div>
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span class="channel-pill whatsapp">WHATSAPP</span>
-            <span class="message-preview">Salam, bghina devis 3la 100 unites dyal...</span>
-            <span class="unread-pill">2</span>
-          </div>
-        </div>
-
-        <div class="queue-item" tabindex="0">
-          <div class="queue-item-top">
-            <span class="customer-name">Fatima Zahra Mansouri</span>
-            <span class="time-snippet">11:15</span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span class="channel-pill web_chat">WEB CHAT</span>
-            <span class="message-preview">Pouvez-vous me connecter avec un conseiller ?</span>
-          </div>
-        </div>
-
-        <div class="queue-item" tabindex="0">
-          <div class="queue-item-top">
-            <span class="customer-name">Driss Alami (Atlas Procure)</span>
-            <span class="time-snippet">09:40</span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span class="channel-pill email">EMAIL</span>
-            <span class="message-preview">Subject: Demande de tarif annuel 2026...</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 3. Active Conversation Timeline -->
-    <main class="timeline-view" aria-label="Active Conversation Stream">
-      <div class="timeline-header">
-        <div>
-          <div class="active-contact-title">
-            <span id="activeName">Yassine Benjelloun</span>
-            <span class="channel-pill whatsapp">WHATSAPP</span>
-            <span id="optOutBadge" style="display: none; background: #FEE2E2; color: #DC2626; font-size: 0.7rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 4px;">OPTED-OUT (STOP)</span>
-          </div>
-          <div style="font-size: 0.75rem; color: var(--text-muted);" id="activeSub">Phone: +212 6 12 34 56 78 • Version: 4 • Assigned: Karim Idrissi</div>
-        </div>
-        <div class="handoff-actions">
-          <button class="btn-action btn-handoff" id="btnHandoff">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><polyline points="16 11 18 13 22 9"></polyline></svg>
-            Take Over (Silence AI)
-          </button>
-          <button class="btn-action btn-release" id="btnRelease">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-            Release to AI Bot
-          </button>
-        </div>
-      </div>
-
-      <!-- Messages Stream -->
-      <div class="messages-scroll" id="messagesStream">
-        <div class="msg-bubble msg-customer">
-          <div>Salam alaykum, bghina devis 3la 100 unites dyal les serveurs rack 2U. Chhal l-prix dyalhom w delivery time?</div>
-          <div class="msg-meta">12:30 • WhatsApp</div>
-        </div>
-
-        <div class="msg-bubble msg-bot">
-          <div><strong style="font-size: 0.75rem;">[AI SALES ASSISTANT]</strong><br>Wa alaykum assalam! Marhba bik. Pour 100 unités de serveurs rack 2U, nous avons actuellement notre catalogue entreprise avec remise sur volume. Je prépare votre estimation. Souhaitez-vous inclure l'extension de garantie 3 ans ?</div>
-          <div class="msg-meta">12:31 • Automated AI</div>
-        </div>
-
-        <div class="system-notice">
-          Karim Idrissi took over this conversation. AI automated responses are silenced.
-        </div>
-
-        <div class="msg-bubble msg-agent">
-          <div>Bonjour M. Benjelloun, c'est Karim votre conseiller dédié. Je prends personnellement en charge votre demande de devis grand compte. Je vous envoie la proposition chiffrée par email d'ici 15 minutes.</div>
-          <div class="msg-meta">12:35 • Karim Idrissi</div>
-        </div>
-      </div>
-
-      <!-- Composer -->
-      <div class="timeline-composer">
-        <div class="ai-silenced-banner">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
-          <span>Human Operator Mode Active. AI bot is completely silenced. Messages will be delivered directly from you.</span>
-        </div>
-        <textarea class="composer-input" id="replyInput" placeholder="Type your reply to customer... (Press Enter to send, Shift+Enter for newline)"></textarea>
-        <div class="composer-actions">
-          <button class="btn-action btn-release" id="btnAttach">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
-            Attach File
-          </button>
-          <button class="btn-action btn-handoff" id="btnSend">Send Message</button>
-        </div>
-      </div>
-    </main>
-
-    <!-- 4. Context Sidebar -->
-    <aside class="context-sidebar" aria-label="Customer CRM Context">
-      <div>
-        <div class="context-block-title">Customer Context</div>
-        <div class="context-field">
-          <span class="context-label">Full Name</span>
-          <span class="context-val">Yassine Benjelloun</span>
-        </div>
-        <div class="context-field">
-          <span class="context-label">Primary Identifier</span>
-          <span class="context-val">+212 6 12 34 56 78</span>
-        </div>
-        <div class="context-field">
-          <span class="context-label">Account Verification</span>
-          <span class="context-val" style="color: var(--status-success);">Verified Business</span>
-        </div>
-      </div>
-
-      <div>
-        <div class="context-block-title">Channel Compliance</div>
-        <div class="context-field">
-          <span class="context-label">Channel</span>
-          <span class="context-val">WhatsApp Business</span>
-        </div>
-        <div class="context-field">
-          <span class="context-label">Consent Given</span>
-          <span class="context-val">Yes (Opt-in recorded)</span>
-        </div>
-        <div class="context-field">
-          <span class="context-label">STOP Status</span>
-          <span class="context-val" style="color: var(--status-success);">ACTIVE (Not Opted Out)</span>
-        </div>
-      </div>
-
-      <div>
-        <div class="context-block-title">Session State</div>
-        <div class="context-field">
-          <span class="context-label">Monotonic Version</span>
-          <span class="context-val">Version 4</span>
-        </div>
-        <div class="context-field">
-          <span class="context-label">AI Status</span>
-          <span class="context-val" style="color: var(--status-warning);">SILENCED (Human Active)</span>
-        </div>
-        <div class="context-field">
-          <span class="context-label">Assigned Representative</span>
-          <span class="context-val">Karim Idrissi</span>
         </div>
       </div>
     </aside>
+
+    <!-- 2. MAIN APPLICATION WRAPPER -->
+    <div class="main-wrapper">
+      <!-- TOPBAR HEADER -->
+      <header class="topbar">
+        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
+        
+        <div class="search-container">
+          <span class="search-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </span>
+          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher un client, une conversation, un devis...">
+          <span class="search-shortcut">Ctrl + K</span>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="btn-header-primary" id="btnQuickNew">
+            <span>+</span> Nouveau
+          </button>
+
+          <div class="icon-btn-badge" title="Calendrier" onclick="window.location.href='schedule.html'">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          </div>
+
+          <div class="icon-btn-badge" id="notifBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            <span class="badge-counter">12</span>
+          </div>
+
+          <div class="icon-btn-badge" title="Applications">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          </div>
+
+          <div class="user-topbar-pill">
+            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;">OS</div>
+            <div style="display:flex; flex-direction:column; line-height:1.2;">
+              <span style="font-weight:600; font-size:13px; color:#17251F;">Omar Soubaibi</span>
+              <span style="font-size:11px; color:#66756D;">Administrateur</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- 3. INBOX 3-COLUMN WORKSPACE (REFERENCE B) -->
+      <div class="inbox-workspace">
+        <!-- COLUMN 1: Thread List -->
+        <div class="threads-col">
+          <div class="threads-header">
+            <h2>Boîte de réception IA</h2>
+            <p>Gérez vos conversations clients sur tous les canaux</p>
+            <div class="filter-pills-row">
+              <span class="filter-pill active">Toutes (42)</span>
+              <span class="filter-pill">Non lues (8)</span>
+              <span class="filter-pill">Mes conversations</span>
+              <button class="btn btn-outline" style="padding:0.25rem 0.5rem; font-size:11px; border-radius:999px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+              </button>
+            </div>
+          </div>
+
+          <ul class="threads-list">
+            <!-- Thread 1 (Selected) -->
+            <li class="thread-item active">
+              <div class="thread-avatar" style="background:#10B981;">
+                AC
+                <span class="channel-badge-icon" title="WhatsApp">🟢</span>
+              </div>
+              <div class="thread-content">
+                <div class="thread-top">
+                  <span class="thread-name">Atlas Construction</span>
+                  <span class="thread-time">10:24</span>
+                </div>
+                <div class="thread-snippet">Bonjour, pourriez-vous m'envoyer...</div>
+                <div class="thread-bottom">
+                  <div class="thread-tags">
+                    <span class="badge badge-info">Prospect</span>
+                    <span class="badge badge-success">Devis</span>
+                  </div>
+                  <span class="thread-unread-badge">3</span>
+                </div>
+              </div>
+            </li>
+
+            <!-- Thread 2 -->
+            <li class="thread-item">
+              <div class="thread-avatar" style="background:#2563EB;">
+                SB
+                <span class="channel-badge-icon" title="Email">✉️</span>
+              </div>
+              <div class="thread-content">
+                <div class="thread-top">
+                  <span class="thread-name">Services BTP</span>
+                  <span class="thread-time">09:47</span>
+                </div>
+                <div class="thread-snippet">Nous souhaitons un devis pour...</div>
+                <div class="thread-bottom">
+                  <div class="thread-tags">
+                    <span class="badge badge-info">Opportunité</span>
+                  </div>
+                  <span class="thread-unread-badge">1</span>
+                </div>
+              </div>
+            </li>
+
+            <!-- Thread 3 -->
+            <li class="thread-item">
+              <div class="thread-avatar" style="background:#059669;">
+                IN
+                <span class="channel-badge-icon" title="Web">💬</span>
+              </div>
+              <div class="thread-content">
+                <div class="thread-top">
+                  <span class="thread-name">Innov Solutions</span>
+                  <span class="thread-time">Hier</span>
+                </div>
+                <div class="thread-snippet">Est-il possible d'avoir un tarif...</div>
+                <div class="thread-bottom">
+                  <div class="thread-tags">
+                    <span class="badge badge-success">Client</span>
+                  </div>
+                </div>
+              </div>
+            </li>
+
+            <!-- Thread 4 -->
+            <li class="thread-item">
+              <div class="thread-avatar" style="background:#D97706;">
+                LG
+                <span class="channel-badge-icon" title="WhatsApp">🟢</span>
+              </div>
+              <div class="thread-content">
+                <div class="thread-top">
+                  <span class="thread-name">LogiTech MAR</span>
+                  <span class="thread-time">Hier</span>
+                </div>
+                <div class="thread-snippet">Merci pour le devis, nous validons...</div>
+                <div class="thread-bottom">
+                  <div class="thread-tags">
+                    <span class="badge badge-warning">Négociation</span>
+                  </div>
+                </div>
+              </div>
+            </li>
+
+            <!-- Thread 5 -->
+            <li class="thread-item">
+              <div class="thread-avatar" style="background:#0284C7;">
+                MT
+                <span class="channel-badge-icon" title="WhatsApp">🟢</span>
+              </div>
+              <div class="thread-content">
+                <div class="thread-top">
+                  <span class="thread-name">MarocTrans</span>
+                  <span class="thread-time">16 nov.</span>
+                </div>
+                <div class="thread-snippet">Avez-vous la disponibilité en stock ?</div>
+                <div class="thread-bottom">
+                  <div class="thread-tags">
+                    <span class="badge badge-info">Support</span>
+                  </div>
+                </div>
+              </div>
+            </li>
+
+            <!-- Thread 6 -->
+            <li class="thread-item">
+              <div class="thread-avatar" style="background:#16A34A;">
+                EL
+                <span class="channel-badge-icon" title="Web">💬</span>
+              </div>
+              <div class="thread-content">
+                <div class="thread-top">
+                  <span class="thread-name">ElectroLine</span>
+                  <span class="thread-time">15 nov.</span>
+                </div>
+                <div class="thread-snippet">Pouvez-vous confirmer la livraison ?</div>
+                <div class="thread-bottom">
+                  <div class="thread-tags">
+                    <span class="badge badge-success">Commande</span>
+                  </div>
+                </div>
+              </div>
+            </li>
+          </ul>
+
+          <div class="threads-footer">
+            <span>1 – 6 sur 42</span>
+            <div style="display:flex; gap:0.25rem;">
+              <button class="btn btn-outline" style="padding:0.2rem 0.5rem; font-size:11px;">‹</button>
+              <button class="btn btn-outline" style="padding:0.2rem 0.5rem; font-size:11px;">›</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- COLUMN 2: Active Chat Stream -->
+        <div class="chat-col">
+          <div class="chat-header">
+            <div class="chat-header-user">
+              <div class="thread-avatar" style="background:#10B981; width:36px; height:36px;">AC</div>
+              <div>
+                <div class="chat-header-title">Atlas Construction</div>
+                <div class="chat-header-meta">
+                  <span class="status-badge-online">En ligne</span>
+                  <span>•</span>
+                  <span>WhatsApp</span>
+                  <span class="badge badge-info">Prospect</span>
+                  <span class="badge badge-neutral">BTP</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <button class="icon-btn-badge" title="Appel téléphonique" onclick="window.location.href='voice_agent.html'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              </button>
+              <button class="icon-btn-badge" title="Visioconférence">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+              </button>
+              <button class="icon-btn-badge" title="Plus d'actions">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Chat Messages Body -->
+          <div class="chat-stream" id="chatStream">
+            <div class="date-separator">Aujourd'hui</div>
+
+            <!-- Inbound Message 1 -->
+            <div class="msg-group inbound">
+              <div class="thread-avatar" style="background:#10B981; width:28px; height:28px; font-size:11px;">AC</div>
+              <div>
+                <div class="msg-bubble">
+                  Bonjour, pourriez-vous m'envoyer un devis pour 50 unités du produit PR-480 (panneaux isolants) ?
+                </div>
+                <div class="msg-meta">10:12</div>
+              </div>
+            </div>
+
+            <!-- AI Intent Analysis Card (High-Confidence) -->
+            <div class="ai-analysis-banner">
+              <div class="ai-analysis-top">
+                <span class="ai-analysis-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                  Analyse IA — Demande détectée
+                </span>
+                <span class="ai-confidence-pill">Confiance : 98%</span>
+              </div>
+              <div class="ai-analysis-bullets">
+                <div>✓ <strong>Intention :</strong> Demande de devis</div>
+                <div>✓ <strong>Produit :</strong> PR-480 (Panneaux isolants)</div>
+                <div>✓ <strong>Quantité :</strong> 50 unités</div>
+              </div>
+            </div>
+
+            <!-- Outbound AI / Agent Message (Deep Forest Green) -->
+            <div class="msg-group outbound">
+              <div>
+                <div class="msg-bubble">
+                  Bonjour,<br>
+                  Merci pour votre demande. Je vous prépare un devis pour 50 unités du PR-480 avec le meilleur tarif disponible. Souhaitez-vous également la livraison sur chantier ?
+                </div>
+                <div class="msg-meta">10:18 • Envoyé par IA ✓✓</div>
+              </div>
+            </div>
+
+            <!-- Inbound Message 2 -->
+            <div class="msg-group inbound">
+              <div class="thread-avatar" style="background:#10B981; width:28px; height:28px; font-size:11px;">AC</div>
+              <div>
+                <div class="msg-bubble">
+                  Oui la livraison sur notre chantier à Casablanca est incluse.
+                </div>
+                <div class="msg-meta">10:22</div>
+              </div>
+            </div>
+
+            <!-- Typing indicator -->
+            <div class="msg-group inbound" style="align-items:center;">
+              <div class="thread-avatar" style="background:#10B981; width:28px; height:28px; font-size:11px;">AC</div>
+              <div class="msg-bubble" style="padding:0.4rem 0.8rem; font-size:12px; color:#66756D;">
+                <span style="letter-spacing:2px;">• • •</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Response Suggestions Bar -->
+          <div class="ai-suggestions-container">
+            <div class="ai-suggestions-header">
+              <span style="display:flex; align-items:center; gap:0.35rem;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                Suggestions de réponse (IA)
+              </span>
+              <button class="btn btn-outline" style="padding:0.15rem 0.4rem; font-size:10px;" title="Rafraîchir les suggestions">🔄</button>
+            </div>
+
+            <div class="ai-chips-grid">
+              <!-- Suggestion 1 (Active) -->
+              <div class="ai-chip active" onclick="applySuggestion('Je prépare le devis complet avec livraison incluse.')">
+                <strong>Confirmer le devis ✓</strong>
+                <span>Je prépare le devis complet avec livraison incluse.</span>
+              </div>
+              <!-- Suggestion 2 -->
+              <div class="ai-chip" onclick="applySuggestion('Avez-vous une date de livraison souhaitée sur le chantier ?')">
+                <strong>Demander des précisions</strong>
+                <span>Avez-vous une date de livraison souhaitée ?</span>
+              </div>
+              <!-- Suggestion 3 -->
+              <div class="ai-chip" onclick="applySuggestion('Souhaitez-vous une version renforcée haute densité du PR-480 ?')">
+                <strong>Proposer une alternative</strong>
+                <span>Souhaitez-vous une version renforcée du PR-480 ?</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Message Composer -->
+          <div class="chat-composer">
+            <div style="display:flex; gap:0.4rem; color:#66756D;">
+              <button class="icon-btn-badge" style="width:34px; height:34px;" title="Pièce jointe">📎</button>
+              <button class="icon-btn-badge" style="width:34px; height:34px;" title="Émojis">😊</button>
+              <button class="icon-btn-badge" style="width:34px; height:34px;" title="Modèle de document">📄</button>
+            </div>
+
+            <input type="text" class="composer-input" id="chatInput" placeholder="Écrire un message...">
+
+            <button class="btn-send" id="btnSendChat" title="Envoyer le message">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- COLUMN 3: Client & Deal Context -->
+        <aside class="context-col">
+          <div class="context-tabs-bar">
+            <button class="context-tab-btn active">Client & Deal</button>
+            <button class="context-tab-btn">Historique</button>
+            <button class="context-tab-btn">Fichiers</button>
+          </div>
+
+          <div class="context-body">
+            <!-- Customer Hero Card -->
+            <div class="client-card-hero">
+              <div class="client-hero-top">
+                <div class="thread-avatar" style="background:#10B981; width:44px; height:44px; font-size:16px;">AC</div>
+                <div>
+                  <div style="font-size:1rem; font-weight:700; color:#17251F;">Atlas Construction</div>
+                  <span class="badge badge-success" style="font-size:10px;">Client potentiel</span>
+                </div>
+              </div>
+              <div style="font-size:11px; color:#66756D;">Entreprise • BTP & Construction</div>
+
+              <div class="client-info-list" style="margin-top:0.5rem;">
+                <div class="client-info-row">
+                  <span>📞</span> <span>+212 6 61 23 45 67</span>
+                </div>
+                <div class="client-info-row">
+                  <span>✉️</span> <span>contact@atlasconstruction.ma</span>
+                </div>
+                <div class="client-info-row">
+                  <span>📍</span> <span>Casablanca, Maroc</span>
+                </div>
+                <div class="client-info-row">
+                  <span>🏢</span> <span>ICE : 001234567000089</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Opportunity In Progress Card -->
+            <div class="opp-block">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.82rem; font-weight:700; color:#17251F; display:flex; align-items:center; gap:0.35rem;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  Opportunité en cours
+                </span>
+                <span style="font-size:11px; color:#66756D;">›</span>
+              </div>
+
+              <div class="opp-row">
+                <span class="opp-label">Objet</span>
+                <span class="opp-val">Devis — PR-480 (50 unités)</span>
+              </div>
+              <div class="opp-row">
+                <span class="opp-label">Valeur estimée</span>
+                <span class="opp-val" style="color:#0A3A2A; font-size:0.95rem;">84 500,00 MAD</span>
+              </div>
+              <div class="opp-row">
+                <span class="opp-label">Étape</span>
+                <select class="form-control" style="width:120px; padding:0.2rem 0.4rem; font-size:11px;">
+                  <option selected>Qualification</option>
+                  <option>Proposition</option>
+                  <option>Négociation</option>
+                  <option>Gagné</option>
+                </select>
+              </div>
+              <div class="opp-row">
+                <span class="opp-label">Probabilité</span>
+                <span class="opp-val" style="color:#16A34A;">70%</span>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" style="width:70%;"></div>
+              </div>
+              <div class="opp-row">
+                <span class="opp-label">Échéance</span>
+                <span class="opp-val">📅 25 nov. 2026</span>
+              </div>
+              <div class="opp-row">
+                <span class="opp-label">Assigné à</span>
+                <span class="opp-val" style="display:flex; align-items:center; gap:4px;">
+                  <span style="width:18px; height:18px; border-radius:50%; background:#082C22; color:#FFFFFF; font-size:9px; display:inline-flex; align-items:center; justify-content:center;">OS</span>
+                  Omar S.
+                </span>
+              </div>
+            </div>
+
+            <!-- Actions Rapides -->
+            <div class="actions-grid">
+              <div style="font-size:0.82rem; font-weight:700; color:#17251F; display:flex; align-items:center; gap:0.35rem; margin-bottom:0.25rem;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                Actions rapides
+              </div>
+
+              <button class="btn btn-primary" style="width:100%;" onclick="window.location.href='quote_builder.html?client=Atlas+Construction'">
+                <span>📝</span> Créer un devis
+              </button>
+              <button class="btn btn-outline" style="width:100%;">
+                <span>👤</span> Convertir en opportunité
+              </button>
+
+              <div class="actions-dual-row">
+                <button class="btn btn-outline" style="font-size:11px; padding:0.4rem 0.2rem;" onclick="window.location.href='schedule.html'">
+                  <span>📅</span> Planifier appel
+                </button>
+                <button class="btn btn-outline" style="font-size:11px; padding:0.4rem 0.2rem;">
+                  <span>✓</span> Ajouter tâche
+                </button>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
   </div>
 
+  <script src="js/app_shell.js"></script>
   <script>
-    // Simple interactive client state for UI demonstration
-    const btnHandoff = document.getElementById('btnHandoff');
-    const btnRelease = document.getElementById('btnRelease');
-    const btnSend = document.getElementById('btnSend');
-    const replyInput = document.getElementById('replyInput');
-    const messagesStream = document.getElementById('messagesStream');
+    function applySuggestion(text) {
+      const input = document.getElementById('chatInput');
+      input.value = text;
+      input.focus();
+    }
 
-    btnHandoff.addEventListener('click', () => {
-      alert('Handing off conversation to Karim Idrissi. AI bot is silenced.');
+    document.getElementById('btnSendChat').addEventListener('click', sendMessage);
+    document.getElementById('chatInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendMessage();
     });
 
-    btnRelease.addEventListener('click', () => {
-      alert('Releasing conversation back to automated AI bot.');
-    });
-
-    btnSend.addEventListener('click', () => {
-      const text = replyInput.value.trim();
+    function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
       if (!text) return;
-      const bubble = document.createElement('div');
-      bubble.className = 'msg-bubble msg-agent';
-      const contentDiv = document.createElement('div');
-      contentDiv.textContent = text;
-      const metaDiv = document.createElement('div');
-      metaDiv.className = 'msg-meta';
-      metaDiv.textContent = 'Just now • Karim Idrissi';
-      bubble.appendChild(contentDiv);
-      bubble.appendChild(metaDiv);
-      messagesStream.appendChild(bubble);
-      replyInput.value = '';
-      messagesStream.scrollTop = messagesStream.scrollHeight;
-    });
+
+      const stream = document.getElementById('chatStream');
+      const msgGroup = document.createElement('div');
+      msgGroup.className = 'msg-group outbound';
+      msgGroup.innerHTML = `
+        <div>
+          <div class="msg-bubble">${text}</div>
+          <div class="msg-meta">À l'instant • Envoyé ✓</div>
+        </div>
+      `;
+      stream.appendChild(msgGroup);
+      input.value = '';
+      stream.scrollTop = stream.scrollHeight;
+    }
   </script>
 </body>
 </html>
