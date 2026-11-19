@@ -47,6 +47,10 @@ class OutputGuardResult(BaseModel):
     pii_redacted_count: int = 0
     ai_disclosure_added: bool = False
 
+    @property
+    def status(self) -> str:
+        return "SAFE" if self.is_safe else "UNVERIFIED_CLAIMS_FALLBACK"
+
 
 class ClaimVerifier:
     """
@@ -60,9 +64,9 @@ class ClaimVerifier:
         re.IGNORECASE
     )
 
-    # Discount pattern: e.g. "20% de remise", "discount of 15%", "remise de 30%"
+    # Discount pattern: e.g. "20% de remise", "remise de 20%", "discount of 15%", "15% discount", "25% de réduction"
     DISCOUNT_PATTERN = re.compile(
-        r'(?:remise|discount|réduction|solde|تخفيض)\s*(?:de\s*)?(?P<pct>\d{1,2})\s*%',
+        r'(?:(?:remise|discount|réduction|solde|تخفيض)\s*(?:de\s*)?(?P<pct1>\d{1,2})\s*%|(?P<pct2>\d{1,2})\s*%\s*(?:de\s*)?(?:remise|discount|réduction|solde|تخفيض))',
         re.IGNORECASE
     )
 
@@ -105,7 +109,7 @@ class ClaimVerifier:
                     grounded = True
                     break
 
-            if not grounded and evidence.verified_prices:
+            if not grounded:
                 violations.append(
                     VerificationViolation(
                         violation_type="UNGROUNDED_PRICE",
@@ -116,7 +120,9 @@ class ClaimVerifier:
 
         # 2. Discount claim verification
         for match in cls.DISCOUNT_PATTERN.finditer(text):
-            pct_str = match.group("pct")
+            pct_str = match.group("pct1") or match.group("pct2")
+            if not pct_str:
+                continue
             try:
                 claimed_pct = float(pct_str)
             except ValueError:

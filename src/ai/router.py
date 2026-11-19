@@ -56,8 +56,9 @@ class ConversationRouter:
 
     # English markers
     ENGLISH_KEYWORDS = {
-        "hello", "hi", "price", "quote", "catalog", "order", "shipping",
-        "how", "much", "discount", "invoice", "warranty", "available", "support"
+        "hello", "hi", "price", "pricing", "quote", "catalog", "order", "shipping",
+        "how", "much", "discount", "invoice", "warranty", "available", "support",
+        "could", "would", "please", "energy", "storage", "solar", "need", "want"
     }
 
     @classmethod
@@ -87,7 +88,7 @@ class ConversationRouter:
             return "ar-MA"
 
         # Check for Arabizi (Latin script Darija)
-        lower_tokens = set(text.lower().split())
+        lower_tokens = set(re.findall(r'\b[a-zA-Z0-9_-]+\b', text.lower()))
         has_arabizi_words = bool(lower_tokens & cls.ARABIZI_KEYWORDS)
         has_arabizi_numerals = bool(cls.ARABIZI_NUMERALS.search(text))
         if has_arabizi_words or has_arabizi_numerals:

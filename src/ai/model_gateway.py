@@ -132,6 +132,10 @@ class ModelGatewayResponse(BaseModel):
     status: str  # SUCCESS, FALLBACK, BLOCKED, ERROR
     error_message: Optional[str] = None
 
+    @property
+    def text(self) -> str:
+        return self.content
+
 
 class ModelGateway:
     """

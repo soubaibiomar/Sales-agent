@@ -1562,3 +1562,83 @@ class ModelExecutionLog(Base):
     metadata_json = Column("metadata", JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
+
+class AgentDefinition(Base):
+    __tablename__ = "agent_definitions"
+
+    id = Column(String(64), primary_key=True)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    role_id = Column(String(32), nullable=False)
+    role_code = Column(String(16), nullable=False)
+    role_group = Column(String(32), nullable=False)  # SUPERVISOR, INTERACTIVE_SPECIALIST, BACKGROUND_AGENT, COPILOT
+    display_name = Column(String(128), nullable=False)
+    description = Column(Text, nullable=False)
+    model_tier = Column(String(32), default="PRIMARY_4B", nullable=False)
+    context_token_cap = Column(Integer, default=4096, nullable=False)
+    allowed_tools = Column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
+    retrieval_roles = Column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
+    prompt_version = Column(String(32), default="v1.0", nullable=False)
+    is_enabled = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    __table_args__ = (UniqueConstraint("tenant_id", "role_id", name="uq_agent_definitions_tenant_role"),)
+
+
+class AgentExecutionLog(Base):
+    __tablename__ = "agent_execution_logs"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    conversation_id = Column(String(36), ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True)
+    agent_role = Column(String(64), nullable=False)
+    execution_class = Column(String(32), default="BOUNDED_REASONING_TURN", nullable=False)
+    turn_id = Column(String(64), nullable=True)
+    trace_id = Column(String(64), nullable=False)
+    input_summary = Column(Text, nullable=True)
+    output_summary = Column(Text, nullable=True)
+    tools_called = Column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
+    model_name = Column(String(64), nullable=False)
+    prompt_tokens = Column(Integer, default=0, nullable=False)
+    completion_tokens = Column(Integer, default=0, nullable=False)
+    total_tokens = Column(Integer, default=0, nullable=False)
+    latency_ms = Column(Integer, default=0, nullable=False)
+    status = Column(String(32), default="SUCCESS", nullable=False)
+    error_details = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class CopilotBrief(Base):
+    __tablename__ = "copilot_briefs"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    conversation_id = Column(String(36), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False)
+    representative_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    brief_type = Column(String(32), nullable=False)  # DEAL_BRIEF, OBJECTION_TIPS, QUOTE_PROPOSAL, NEXT_BEST_ACTION
+    customer_summary = Column(Text, nullable=False)
+    suggested_replies = Column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
+    proposed_actions = Column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
+    evidence_sources = Column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
+    requires_human_approval = Column(Boolean, default=False, nullable=False)
+    is_approved = Column(Boolean, nullable=True)
+    approved_by = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class AgentEvaluation(Base):
+    __tablename__ = "agent_evaluations"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    suite_name = Column(String(64), nullable=False)
+    total_cases = Column(Integer, nullable=False)
+    passed_cases = Column(Integer, nullable=False)
+    failed_cases = Column(Integer, nullable=False)
+    accuracy_score = Column(Numeric(5, 2), nullable=False)
+    category_scores = Column(JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=False)
+    details = Column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+

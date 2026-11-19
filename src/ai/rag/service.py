@@ -66,6 +66,30 @@ def cosine_similarity(v1: List[float], v2: List[float]) -> float:
     return max(0.0, min(1.0, dot))
 
 
+async def compute_embedding(text: str, dim: int = 768) -> List[float]:
+    """
+    Computes embedding using local Ollama neural model (embeddinggemma:latest) if available;
+    falls back cleanly to deterministic_embedding.
+    """
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=1.5) as client:
+            resp = await client.post(
+                "http://127.0.0.1:11434/api/embeddings",
+                json={"model": "embeddinggemma:latest", "prompt": text}
+            )
+            if resp.status_code == 200:
+                emb = resp.json().get("embedding")
+                if emb and len(emb) == dim:
+                    norm = math.sqrt(sum(x * x for x in emb))
+                    if norm > 0.0:
+                        return [round(x / norm, 6) for x in emb]
+                    return emb
+    except Exception:
+        pass
+    return deterministic_embedding(text, dim=dim)
+
+
 class KnowledgeService:
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -125,7 +149,7 @@ class KnowledgeService:
                 chunks = [sanitized_full]
 
             for idx, chunk_text in enumerate(chunks):
-                emb = deterministic_embedding(chunk_text)
+                emb = await compute_embedding(chunk_text)
                 chunk_entity = KnowledgeChunk(
                     id=str(uuid.uuid4()),
                     tenant_id=tenant_id,
@@ -176,7 +200,7 @@ class KnowledgeService:
         and filtered by user_roles against document acl_roles.
         """
         # Step 1: Compute query embedding
-        q_emb = deterministic_embedding(req.query)
+        q_emb = await compute_embedding(req.query)
 
         # Step 2: Query candidate documents and chunks for this tenant
         stmt = (

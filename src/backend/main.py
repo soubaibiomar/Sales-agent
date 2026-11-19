@@ -39,6 +39,7 @@ from src.backend.api.workflows import router as workflows_router
 from src.backend.api.notifications import router as notifications_router
 from src.backend.api.integrations import router as integrations_router
 from src.backend.api.ai_governance import router as ai_governance_router
+from src.backend.api.agent_ecosystem import router as agent_ecosystem_router
 
 logger = logging.getLogger("SalesAI.API")
 
@@ -123,3 +124,4 @@ app.include_router(workflows_router)
 app.include_router(notifications_router)
 app.include_router(integrations_router)
 app.include_router(ai_governance_router)
+app.include_router(agent_ecosystem_router)
