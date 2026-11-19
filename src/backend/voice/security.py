@@ -71,17 +71,34 @@ class VoicePIIRedactor:
 
 
 class VoicePromptInjectionGuard:
-    """Detects adversarial jailbreaks and prompt injections within spoken transcripts."""
+    """
+    Detects adversarial jailbreaks and prompt injections within spoken transcripts.
+    Covers English, French, Modern Standard Arabic, Moroccan Darija, and Arabizi.
+    (Controls 39, 40; SAI-10)
+    """
 
     SUSPICIOUS_PATTERNS = [
-        re.compile(r"ignore\s+(all\s+)?(previous|prior)\s+instructions", re.IGNORECASE),
+        # English patterns
+        re.compile(r"ignore\s+(all\s+)?(previous\s+|prior\s+)?instructions", re.IGNORECASE),
         re.compile(r"system\s+prompt", re.IGNORECASE),
         re.compile(r"developer\s+mode", re.IGNORECASE),
         re.compile(r"you\s+are\s+now\s+dan", re.IGNORECASE),
         re.compile(r"grant\s+(me\s+)?(admin|superuser|role)", re.IGNORECASE),
         re.compile(r"bypass\s+(rls|security|permission)", re.IGNORECASE),
         re.compile(r"drop\s+table", re.IGNORECASE),
-        re.compile(r"reveal\s+(system|secret|token)", re.IGNORECASE)
+        re.compile(r"reveal\s+(system|secret|token)", re.IGNORECASE),
+        # French patterns
+        re.compile(r"ignore[rz]?\s+(toutes?\s+)?(les\s+)?(instructions|consignes)", re.IGNORECASE),
+        re.compile(r"invite\s+syst[eè]me", re.IGNORECASE),
+        re.compile(r"mode\s+d[eé]veloppeur", re.IGNORECASE),
+        re.compile(r"donne[rz]?\s+(moi\s+)?(le\s+)?r[oô]le\s+admin", re.IGNORECASE),
+        re.compile(r"contourne[rz]?\s+(la\s+)?s[eé]curit[eé]", re.IGNORECASE),
+        # Arabic & Darija patterns
+        re.compile(r"تجاهل\s+(كل\s+)?(التعليمات|الأوامر)", re.IGNORECASE),
+        re.compile(r"تجاوز\s+(الأمان|الحماية|الصلاحيات)", re.IGNORECASE),
+        re.compile(r"اعرض\s+(الكود|النظام|البرمجي|السر)", re.IGNORECASE),
+        re.compile(r"سمح\s+ف\s+التعليمات", re.IGNORECASE),
+        re.compile(r"عطيني\s+(لي\s+)?مودباس", re.IGNORECASE)
     ]
 
     @classmethod

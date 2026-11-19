@@ -198,6 +198,16 @@ class BargeInManager:
         self._cancellation_token.set()
         self._is_ai_speaking = False
 
+    def abort(self):
+        """Alias for abort_turn."""
+        self.abort_turn()
+
+    def process_chunk(self, chunk: AudioChunk) -> Tuple[bool, str]:
+        """Convenience method that checks barge-in and returns (interrupted, token)."""
+        interrupted = self.check_barge_in(chunk)
+        token = f"CANCEL_{id(self)}" if interrupted else ""
+        return interrupted, token
+
 
 class SyntheticAudioGenerator:
     """Generates synthetic test tones / speech waveforms for automated audio benchmarking."""

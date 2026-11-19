@@ -52,11 +52,21 @@ class MultilingualVoiceEngine:
 
         # Detect Code-Switching (e.g. Darija + French loan words)
         is_code_switching = False
-        darija_markers = ["bghit", "dyal", "wach", "kifach", "daba", "3afak", "bzaf", "ديال", "بغيت", "واش", "عفاك"]
-        french_markers = ["devis", "prix", "commande", "livraison", "facture", "catalogue", "merci", "bonjour"]
+        darija_markers = [
+            "bghit", "dyal", "wach", "kifach", "daba", "3afak", "bzaf", "choukrane", "salam",
+            "ch7al", "m3a", "kayn", "kaynin", "ndiro", "n9dro", "tri9", "khdma",
+            "ديال", "بغيت", "واش", "عفاك", "بزاف", "كيفاش", "دابا"
+        ]
+        french_markers = [
+            "devis", "prix", "commande", "livraison", "facture", "catalogue", "merci", "bonjour",
+            "urgent", "matériel", "informatique", "livreur", "problème", "technique", "serveur",
+            "messagerie", "réunion", "opérateur", "humain", "remise", "spéciale", "laptops", "pc",
+            "portables", "confirmation", "bonne", "journée"
+        ]
 
-        has_darija = any(m in text_lower for m in darija_markers)
-        has_french = any(m in text_lower for m in french_markers)
+        has_arabizi_digits = bool(re.search(r"\b[a-zA-Z]*[379528][a-zA-Z]*\b", text_lower))
+        has_darija = has_arabizi_digits or any(re.search(r"\b" + re.escape(m) + r"\b", text_lower) for m in darija_markers)
+        has_french = any(re.search(r"\b" + re.escape(m) + r"\b", text_lower) for m in french_markers)
 
         if has_darija and has_french:
             is_code_switching = True

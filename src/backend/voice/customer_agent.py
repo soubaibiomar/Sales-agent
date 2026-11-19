@@ -2,10 +2,11 @@
 Customer Voice Agent Orchestrator.
 Inbound voice calls, public catalog & scheduling, verified order inquiries,
 mandatory recording disclosure, and secure human operator escalation.
-Step 07: Dual-Mode Customer & Manager Voice AI
+Step 10: Complete Customer Voice AI & Step 09 Agent Ecosystem Integration
 (Controls 04, 05, 06, 16, 33, 34, 40, 57, 65, 66, 67; SAI-01, SAI-03, SAI-04, SAI-11)
 """
 import re
+import logging
 from typing import Dict, Any, List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,12 +22,18 @@ from src.backend.domains.orders.service import OrderService
 from src.backend.domains.logistics.service import LogisticsService
 from src.backend.domains.scheduling.service import SchedulingService
 from src.backend.domains.support.service import SupportService
+from src.ai.agents.supervisors.conversation_supervisor import ConversationSupervisorAgent
+from src.ai.agents.base import AgentInput
+from src.ai.tool_gateway import ServerSecurityContext
+
+logger = logging.getLogger("SalesAI.CustomerVoiceAgent")
 
 
 class CustomerVoiceAgent:
     """
     Handles conversational interactions for customer voice calls.
-    Enforces deterministic commercial authority and zero-trust identity verification.
+    Enforces deterministic commercial authority, zero-trust caller verification,
+    and delegates to the 18-role agent ecosystem (ConversationSupervisorAgent).
     """
     MANDATORY_DISCLOSURE_TEXT = {
         "fr-FR": "Cet appel est enregistré à des fins de qualité et utilise un assistant d'intelligence artificielle. Vous pouvez vous exprimer en français, arabe ou darija.",
@@ -39,6 +46,7 @@ class CustomerVoiceAgent:
     def __init__(self, db: AsyncSession, tenant_id: str):
         self.db = db
         self.tenant_id = tenant_id
+        self.supervisor = ConversationSupervisorAgent()
         self.inventory_service = InventoryService(db)
         self.order_service = OrderService(db)
         self.logistics_service = LogisticsService(db)
@@ -75,7 +83,10 @@ class CustomerVoiceAgent:
         handoff_details = None
 
         # 3. Check for human escalation intent (SAI-11)
-        escalation_markers = ["humain", "human", "agent", "opérateur", "responsable", "conseiller", "transfer", "bghit nhder m3a chi wa7ed"]
+        escalation_markers = [
+            "humain", "human", "agent", "opérateur", "responsable", "conseiller",
+            "transfer", "bghit nhder m3a chi wa7ed", "agent humain", "بشري", "موظف", "خدمة العملاء", "بنادم"
+        ]
         if any(m in utterance_lower for m in escalation_markers):
             handoff_triggered = True
             handoff_details = {
@@ -83,6 +94,8 @@ class CustomerVoiceAgent:
                 "department": "CUSTOMER_SUPPORT",
                 "priority": "HIGH"
             }
+            # Suppress further autonomous turns in supervisor
+            self.supervisor.set_human_takeover(session_id, "human_operator_queue")
             agent_response = (
                 "Je vous transfère immédiatement à un conseiller de notre équipe. "
                 "Veuillez patienter un instant pendant la mise en relation."
@@ -95,11 +108,23 @@ class CustomerVoiceAgent:
                 "handoff_details": handoff_details
             }
 
+        # Check if conversation is currently owned by human takeover
+        if self.supervisor.is_human_owned(session_id):
+            return {
+                "agent_response": "[Appel en cours avec un conseiller humain / Managed by human representative]",
+                "redacted_transcript": redacted_user_utterance,
+                "executed_tools": [],
+                "handoff_triggered": True,
+                "handoff_details": {"reason": "Human takeover active"}
+            }
+
         # 4. Check for Order Status or Tracking Inquiries (Requires Customer Identity Verification)
         order_match = re.search(r"\bORD-[0-9A-Z-]+\b", user_utterance, re.IGNORECASE)
         track_match = re.search(r"\b(TRK-[0-9A-Z-]+|AMN-[0-9A-Z-]+)\b", user_utterance, re.IGNORECASE)
 
-        is_sensitive_order_query = bool(order_match or track_match or "commande" in utterance_lower or "order" in utterance_lower)
+        is_sensitive_order_query = bool(
+            order_match or track_match or "commande" in utterance_lower or "order" in utterance_lower or "colis" in utterance_lower
+        )
 
         if is_sensitive_order_query:
             if not is_caller_verified:
@@ -118,7 +143,13 @@ class CustomerVoiceAgent:
 
             # If verified, look up order
             order_number = order_match.group(0).upper() if order_match else "ORD-20261118-0001"
-            order = await self.order_service.get_order_by_number(self.tenant_id, order_number)
+            from src.backend.models.entities import SalesOrder
+            from sqlalchemy import select, and_
+            stmt = select(SalesOrder).where(
+                and_(SalesOrder.tenant_id == self.tenant_id, SalesOrder.order_number == order_number)
+            )
+            order_res = await self.db.execute(stmt)
+            order = order_res.scalar_one_or_none()
             if order:
                 executed_tools.append({
                     "tool_name": "get_order_status",
@@ -187,7 +218,37 @@ class CustomerVoiceAgent:
                 "handoff_triggered": False
             }
 
-        # Default conversational response
+        # 8. Dispatch to 18-Role Ecosystem via ConversationSupervisorAgent
+        try:
+            agent_inp = AgentInput(
+                agent_role="conversation_supervisor",
+                user_prompt=user_utterance,
+                conversation_id=session_id,
+                channel="VOICE",
+                language=language
+            )
+            sec_ctx = ServerSecurityContext(
+                tenant_id=self.tenant_id,
+                user_id=caller_id or "anonymous-voice-caller",
+                role="CUSTOMER"
+            )
+            supervisor_out = await self.supervisor.handle_turn(
+                input_data=agent_inp,
+                security_context=sec_ctx,
+                expected_turn_version=self.supervisor._turn_versions.get(session_id, 0),
+                db_session=self.db
+            )
+            if supervisor_out and supervisor_out.response_text:
+                return {
+                    "agent_response": supervisor_out.response_text,
+                    "redacted_transcript": redacted_user_utterance,
+                    "executed_tools": supervisor_out.tools_called or [],
+                    "handoff_triggered": False
+                }
+        except Exception as e:
+            logger.warning(f"Supervisor dispatch fallback: {e}")
+
+        # Default conversational greeting
         agent_response = (
             "Bonjour ! Je suis l'assistant vocal de Sales AI. "
             "Comment puis-je vous aider aujourd'hui concernant nos produits, vos commandes ou un devis ?"

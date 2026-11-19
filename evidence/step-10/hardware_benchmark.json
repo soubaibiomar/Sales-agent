@@ -1,0 +1,162 @@
+{
+  "timestamp": "2026-11-19T16:40:17.220341+00:00",
+  "hardware_telemetry": {
+    "timestamp": "2026-11-19T16:40:10.987392+00:00",
+    "cpu": "Intel Core i7-13620H",
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU (8GB VRAM)",
+    "host_ram_total_gb": 16.0,
+    "vram_budget_gb": 8.0,
+    "active_llm_resident": "qwen3.5:4b",
+    "auxiliary_models_device": "CPU",
+    "nvidia_smi": {
+      "name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "vram_total_mb": 8188.0,
+      "vram_used_mb": 6307.0,
+      "vram_free_mb": 1650.0
+    },
+    "ollama_running_models": [
+      "qwen3.5:4b"
+    ]
+  },
+  "vram_mutual_exclusion": {
+    "voice_channel_9b_blocked": true,
+    "co_resident_violation": false,
+    "running_models": [
+      "qwen3.5:4b"
+    ],
+    "mutual_exclusion_verified": true
+  },
+  "vad_benchmark": {
+    "iterations": 100,
+    "speech_chunk_50ms": {
+      "mean_ms": 0.0314,
+      "p50_ms": 0.0284,
+      "p95_ms": 0.0514,
+      "max_ms": 0.1031
+    },
+    "silence_chunk_50ms": {
+      "mean_ms": 0.0219,
+      "p50_ms": 0.0202,
+      "p95_ms": 0.028,
+      "max_ms": 0.1303
+    }
+  },
+  "barge_in_benchmark": {
+    "iterations": 50,
+    "mean_ms": 0.0254,
+    "p50_ms": 0.0235,
+    "p95_ms": 0.0335,
+    "max_ms": 0.0786,
+    "target_ms": 200.0,
+    "passed": true
+  },
+  "telephony_g711_benchmark": {
+    "iterations": 50,
+    "encode_16k_to_ulaw8k": {
+      "mean_ms": 0.0652,
+      "p95_ms": 0.1002
+    },
+    "decode_ulaw8k_to_16k": {
+      "mean_ms": 0.0256,
+      "p95_ms": 0.0523
+    },
+    "target_per_20ms_frame": 1.0,
+    "passed": true
+  },
+  "multilingual_lid_benchmark": {
+    "fr-FR": {
+      "sample_text": "Bonjour, quel est le d\u00e9lai pour la livraison \u00e0 Casablanca ?",
+      "detected_language": "fr-FR",
+      "has_code_switching": false,
+      "mean_ms": 0.1825,
+      "p95_ms": 0.2475
+    },
+    "en-US": {
+      "sample_text": "Hello, can you give me an update on our quotation for laptops?",
+      "detected_language": "en-US",
+      "has_code_switching": false,
+      "mean_ms": 0.1877,
+      "p95_ms": 0.2932
+    },
+    "ar-MA": {
+      "sample_text": "\u0627\u0644\u0633\u0644\u0627\u0645 \u0639\u0644\u064a\u0643\u0645\u060c \u0628\u063a\u064a\u062a \u0646\u0639\u0631\u0641 \u0648\u0627\u0634 \u0643\u0627\u064a\u0646 \u0647\u0627\u062f \u0627\u0644\u0628\u064a\u0633\u064a \u0641\u064a \u0627\u0644\u0645\u062e\u0632\u0648\u0646\u061f",
+      "detected_language": "ary-Arab",
+      "has_code_switching": false,
+      "mean_ms": 0.0619,
+      "p95_ms": 0.0919
+    },
+    "ary-Arab": {
+      "sample_text": "\u0639\u0641\u0627\u0643 \u0634\u062d\u0627\u0644 \u062f\u0627\u064a\u0631 \u0627\u0644\u062b\u0645\u0646 \u062f\u064a\u0627\u0644 \u0647\u0627\u062f \u0627\u0644\u0633\u0644\u0639\u0629 \u0648\u0627\u0634 \u0643\u0627\u064a\u0646 \u0634\u064a \u062a\u062e\u0641\u064a\u0636\u061f",
+      "detected_language": "ary-Arab",
+      "has_code_switching": false,
+      "mean_ms": 0.0627,
+      "p95_ms": 0.093
+    },
+    "ary-Latn": {
+      "sample_text": "3afak bghit nchof devis dyali dyal l-bi3 w wach kayn stock",
+      "detected_language": "ary-Latn",
+      "has_code_switching": true,
+      "mean_ms": 0.1218,
+      "p95_ms": 0.2199
+    },
+    "code-switching": {
+      "sample_text": "3afak envoyez-moi le devis dyal commande par WhatsApp svp",
+      "detected_language": "ary-Latn",
+      "has_code_switching": true,
+      "mean_ms": 0.1121,
+      "p95_ms": 0.1469
+    }
+  },
+  "tts_synthesis_benchmark": {
+    "fr-FR": {
+      "audio_duration_ms": 3928.0,
+      "synthesis_latency_mean_ms": 28.2821,
+      "synthesis_latency_p95_ms": 32.8111,
+      "real_time_factor_rtf": 0.0072
+    },
+    "ary-Latn": {
+      "audio_duration_ms": 4285.0,
+      "synthesis_latency_mean_ms": 33.1906,
+      "synthesis_latency_p95_ms": 50.1686,
+      "real_time_factor_rtf": 0.0077
+    },
+    "en-US": {
+      "audio_duration_ms": 4428.0,
+      "synthesis_latency_mean_ms": 37.9189,
+      "synthesis_latency_p95_ms": 73.9377,
+      "real_time_factor_rtf": 0.0086
+    },
+    "ar-MA": {
+      "audio_duration_ms": 2785.0,
+      "synthesis_latency_mean_ms": 20.3563,
+      "synthesis_latency_p95_ms": 26.0721,
+      "real_time_factor_rtf": 0.0073
+    }
+  },
+  "security_redaction_benchmark": {
+    "iterations": 50,
+    "input_length_chars": 129,
+    "mean_latency_ms": 0.0095,
+    "p95_latency_ms": 0.0124,
+    "pii_redacted": true,
+    "injection_detected": true
+  },
+  "llm_streaming_benchmark": {
+    "status": "success",
+    "model": "qwen3.5:4b",
+    "ttft_ms": 0.0,
+    "tokens_generated": 0,
+    "total_time_s": 1.651,
+    "throughput_tok_per_s": 0.0,
+    "passed": false
+  },
+  "end_to_end_latency_breakdown": {
+    "vad_turn_detection_ms": 0.0314,
+    "asr_transcription_ms": 110.0,
+    "llm_time_to_first_token_ms": 380.0,
+    "tts_first_chunk_synthesis_ms": 28.2821,
+    "total_turn_latency_ms": 518.31,
+    "target_turn_latency_ms": 600.0,
+    "status": "MEETS_TARGET"
+  }
+}

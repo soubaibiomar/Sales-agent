@@ -51,19 +51,20 @@ class VoiceSessionService:
         language: str = "fr-FR",
         recording_consent: bool = False,
         manager_user_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
+        session_id: Optional[str] = None
     ) -> VoiceSession:
         """
         Initializes an authenticated or verified voice session.
         Enforces mandatory AI and recording disclosure on session setup.
         """
-        session_id = f"voice_{uuid.uuid4().hex[:16]}"
+        final_session_id = session_id or f"voice_{uuid.uuid4().hex[:16]}"
         is_verified = (voice_mode.upper() == "MANAGER" and bool(manager_user_id))
 
         session = VoiceSession(
             id=str(uuid.uuid4()),
             tenant_id=tenant_id,
-            session_id=session_id,
+            session_id=final_session_id,
             channel_type=channel_type.upper(),
             voice_mode=voice_mode.upper(),
             caller_identifier=caller_identifier,

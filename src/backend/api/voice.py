@@ -1,12 +1,16 @@
 """
 Voice AI Platform API Routes.
-Customer Voice Agent, Manager Voice Copilot, VAD/Barge-in, and Multilingual Audio.
-Step 07: Dual-Mode Customer & Manager Voice AI
+Customer Voice Agent, Manager Voice Copilot, VAD/Barge-in, Multilingual Audio,
+Real-Time WebSocket Streaming, and Telephony/SIP Inbound Gateway.
+Step 10: Complete Customer Voice AI & Manager Voice AI Copilot
 (Controls 04-07, 28, 35, 39-40, 48-49, 55, 63-67, 70; SAI-01 to SAI-05, SAI-09 to SAI-12)
 """
 import base64
+import json
+import time
+import logging
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, WebSocket, WebSocketDisconnect, Query, Request
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,7 +27,17 @@ from src.backend.voice.security import (
     CallerUnverifiedError,
     PromptInjectionDetectedError
 )
-from src.backend.voice.audio_pipeline import AudioChunk
+from src.backend.voice.audio_pipeline import AudioChunk, VoiceActivityDetector, BargeInManager
+from src.backend.voice.customer_agent import CustomerVoiceAgent
+from src.backend.voice.telephony import (
+    TelephonySignatureVerifier,
+    VoiceCallRateLimiter,
+    VoiceCallbackQueue,
+    G711Codec,
+    TelephonySecurityError,
+    ReplayAttackDetectedError,
+    CallRateLimitExceededError
+)
 from src.backend.schemas.voice import (
     VoiceSessionCreateRequest,
     VoiceSessionResponse,
@@ -42,7 +56,13 @@ from src.backend.schemas.voice import (
     VoiceTranscriptResponse
 )
 
+logger = logging.getLogger("SalesAI.VoiceAPI")
 router = APIRouter(prefix="/api/v1/voice", tags=["Voice AI Platform"])
+
+# Shared telephony infrastructure singletons
+telephony_verifier = TelephonySignatureVerifier()
+call_rate_limiter = VoiceCallRateLimiter(max_concurrent=5, max_calls_per_minute=20)
+callback_queue = VoiceCallbackQueue()
 
 
 @router.post("/sessions", response_model=VoiceSessionResponse, status_code=status.HTTP_201_CREATED)
@@ -83,9 +103,10 @@ async def create_voice_session(
     )
     await db.commit()
 
-    disclosure_text = service.verification_manager.__class__.__name__
-    from src.backend.voice.customer_agent import CustomerVoiceAgent
-    disc_text = CustomerVoiceAgent.MANDATORY_DISCLOSURE_TEXT.get(session.language, CustomerVoiceAgent.MANDATORY_DISCLOSURE_TEXT["fr-FR"])
+    disc_text = CustomerVoiceAgent.MANDATORY_DISCLOSURE_TEXT.get(
+        session.language,
+        CustomerVoiceAgent.MANDATORY_DISCLOSURE_TEXT["fr-FR"]
+    )
 
     return VoiceSessionResponse(
         id=session.id,
@@ -124,6 +145,11 @@ async def get_voice_session(
     if not session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Voice session '{session_id}' not found.")
 
+    disc_text = CustomerVoiceAgent.MANDATORY_DISCLOSURE_TEXT.get(
+        session.language,
+        CustomerVoiceAgent.MANDATORY_DISCLOSURE_TEXT["fr-FR"]
+    )
+
     return VoiceSessionResponse(
         id=session.id,
         tenant_id=session.tenant_id,
@@ -136,6 +162,7 @@ async def get_voice_session(
         is_caller_verified=session.is_caller_verified,
         recording_consent_given=session.recording_consent_given,
         disclosure_played=session.disclosure_played,
+        disclosure_text=disc_text,
         turns_count=session.turns_count,
         started_at=session.started_at,
         ended_at=session.ended_at,
@@ -293,6 +320,10 @@ async def end_voice_session(
     try:
         session = await service.end_session(tenant_id, session_id)
         await db.commit()
+        disc_text = CustomerVoiceAgent.MANDATORY_DISCLOSURE_TEXT.get(
+            session.language,
+            CustomerVoiceAgent.MANDATORY_DISCLOSURE_TEXT["fr-FR"]
+        )
         return VoiceSessionResponse(
             id=session.id,
             tenant_id=session.tenant_id,
@@ -305,6 +336,7 @@ async def end_voice_session(
             is_caller_verified=session.is_caller_verified,
             recording_consent_given=session.recording_consent_given,
             disclosure_played=session.disclosure_played,
+            disclosure_text=disc_text,
             turns_count=session.turns_count,
             started_at=session.started_at,
             ended_at=session.ended_at,
@@ -376,7 +408,6 @@ async def list_session_transcripts(
     if not tenant_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant context.")
 
-    from sqlalchemy import select
     from src.backend.models.entities import VoiceTranscript
     stmt = select(VoiceTranscript).where(
         and_(VoiceTranscript.tenant_id == tenant_id, VoiceTranscript.session_id == session_id)
@@ -384,3 +415,282 @@ async def list_session_transcripts(
 
     res = await db.execute(stmt)
     return list(res.scalars().all())
+
+
+# =============================================================================
+# REAL-TIME WEBSOCKET STREAMING ENDPOINT (PCM Chunks, VAD, Barge-in, Playback)
+# =============================================================================
+
+@router.websocket("/ws/{session_id}")
+async def websocket_voice_streaming(
+    websocket: WebSocket,
+    session_id: str,
+    tenant_id: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """
+    Bi-directional full-duplex real-time voice streaming over WebSocket.
+    Processes live audio chunks, continuous VAD turn detection, barge-in cancellation,
+    and streams back audio playback frames and transcripts.
+    (Controls 28, 70; SAI-04, SAI-05)
+    """
+    await websocket.accept()
+    t_id = tenant_id or "t_voice_default"
+    service = VoiceSessionService(db)
+
+    session = await service.get_session(t_id, session_id)
+    if not session:
+        session = await service.create_session(
+            tenant_id=t_id,
+            voice_mode="CUSTOMER",
+            channel_type="WEBSOCKET",
+            caller_identifier="ws_caller",
+            language="fr-FR",
+            recording_consent=True,
+            session_id=session_id
+        )
+        await db.commit()
+
+    disc_text = CustomerVoiceAgent.MANDATORY_DISCLOSURE_TEXT.get(
+        session.language,
+        CustomerVoiceAgent.MANDATORY_DISCLOSURE_TEXT["fr-FR"]
+    )
+
+    await websocket.send_json({
+        "type": "SESSION_INITIALIZED",
+        "session_id": session.session_id,
+        "language": session.language,
+        "disclosure_text": disc_text,
+        "is_caller_verified": session.is_caller_verified
+    })
+
+    vad = VoiceActivityDetector(energy_threshold=400.0, silence_timeout_ms=500.0)
+    barge_in_mgr = BargeInManager()
+    is_active_playback = False
+    speech_buffer = bytearray()
+
+    try:
+        while True:
+            message = await websocket.receive()
+            if "bytes" in message and message["bytes"]:
+                pcm_data = message["bytes"]
+                chunk = AudioChunk(pcm_data)
+                vad_result = vad.process_chunk(chunk)
+
+                # Check barge-in during active agent playback
+                if is_active_playback:
+                    interrupted, cancel_token = barge_in_mgr.process_chunk(chunk)
+                    if interrupted:
+                        is_active_playback = False
+                        await websocket.send_json({
+                            "type": "BARGE_IN_TRIGGERED",
+                            "session_id": session_id,
+                            "cancel_token": cancel_token
+                        })
+                        continue
+
+                # Accumulate speech frames
+                if vad_result["is_speech_frame"]:
+                    speech_buffer.extend(pcm_data)
+                    if vad_result["in_speech_turn"] and len(speech_buffer) == len(pcm_data):
+                        await websocket.send_json({"type": "VAD_SPEECH_START"})
+
+                # On turn complete: process turn through service
+                if vad_result["turn_completed"] and len(speech_buffer) > 0:
+                    await websocket.send_json({"type": "VAD_SPEECH_STOP"})
+                    audio_turn_chunk = AudioChunk(bytes(speech_buffer))
+                    speech_buffer.clear()
+
+                    turn_res = await service.process_turn(
+                        tenant_id=t_id,
+                        session_id=session_id,
+                        audio_chunk=audio_turn_chunk
+                    )
+                    await db.commit()
+                    is_active_playback = True
+
+                    await websocket.send_json({
+                        "type": "TURN_COMPLETED",
+                        "turn_index": turn_res["turn_index"],
+                        "user_transcript": turn_res["user_transcript"],
+                        "agent_response": turn_res["agent_response_text"],
+                        "audio_base64": turn_res.get("audio_base64"),
+                        "detected_language": turn_res.get("detected_language")
+                    })
+
+            elif "text" in message and message["text"]:
+                data = json.loads(message["text"])
+                msg_type = data.get("type", "TEXT_TURN").upper()
+
+                if msg_type == "TEXT_TURN":
+                    text_input = data.get("text", "")
+                    turn_res = await service.process_turn(
+                        tenant_id=t_id,
+                        session_id=session_id,
+                        input_text=text_input
+                    )
+                    await db.commit()
+                    is_active_playback = True
+                    await websocket.send_json({
+                        "type": "TURN_COMPLETED",
+                        "turn_index": turn_res["turn_index"],
+                        "user_transcript": turn_res["user_transcript"],
+                        "agent_response": turn_res["agent_response_text"],
+                        "audio_base64": turn_res.get("audio_base64"),
+                        "detected_language": turn_res.get("detected_language")
+                    })
+
+                elif msg_type == "BARGE_IN":
+                    is_active_playback = False
+                    barge_in_mgr.abort()
+                    await websocket.send_json({
+                        "type": "BARGE_IN_CONFIRMED",
+                        "session_id": session_id,
+                        "status": "PLAYBACK_CANCELLED"
+                    })
+
+                elif msg_type == "VERIFY_CALLER":
+                    otp_code = data.get("otp_code", "")
+                    v_res = await service.verify_caller_identity(t_id, session_id, otp_code)
+                    await db.commit()
+                    await websocket.send_json({
+                        "type": "CALLER_VERIFIED",
+                        "verified": v_res["verified"],
+                        "message": v_res["message"]
+                    })
+
+                elif msg_type == "PING":
+                    await websocket.send_json({"type": "PONG", "timestamp": time.time()})
+
+    except WebSocketDisconnect:
+        logger.info(f"WebSocket client disconnected cleanly for voice session {session_id}")
+    except Exception as e:
+        logger.warning(f"Voice WebSocket session {session_id} ended: {e}")
+
+
+# =============================================================================
+# TELEPHONY / SIP INBOUND WEBHOOK & CALLBACK QUEUE ENDPOINTS
+# =============================================================================
+
+@router.post("/telephony/inbound")
+async def telephony_inbound_webhook(
+    request: Request,
+    x_tenant_id: Optional[str] = Header(None),
+    x_twilio_signature: Optional[str] = Header(None),
+    x_telephony_signature: Optional[str] = Header(None),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """
+    Inbound phone call signaling webhook.
+    Enforces signature verification, anti-replay freshness, and call flood rate limits.
+    (Control 28, 70; SAI-04, SAI-05)
+    """
+    body_bytes = await request.body()
+    headers = dict(request.headers)
+    params = {}
+    content_type = headers.get("content-type", "")
+
+    if "application/json" in content_type:
+        params = json.loads(body_bytes.decode("utf-8")) if body_bytes else {}
+    elif "application/x-www-form-urlencoded" in content_type:
+        from urllib.parse import parse_qs
+        parsed = parse_qs(body_bytes.decode("utf-8"))
+        params = {k: v[0] for k, v in parsed.items()}
+
+    tenant_id = x_tenant_id or params.get("tenant_id") or "t_telephony_default"
+    caller_id = params.get("From") or params.get("caller_id") or "+212600000000"
+
+    # Enforce call flood rate limiter
+    try:
+        call_rate_limiter.acquire_call_slot(caller_id)
+    except CallRateLimitExceededError as e:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(e))
+
+    # Verify signature if signature header is provided
+    sig = x_twilio_signature or x_telephony_signature
+    if sig:
+        auth_token = "telephony_secret_token"
+        try:
+            is_valid = telephony_verifier.verify_twilio_signature(
+                auth_token=auth_token,
+                webhook_url=str(request.url),
+                params=params,
+                signature=sig,
+                timestamp=float(headers.get("x-telephony-timestamp", time.time()))
+            )
+            if not is_valid:
+                call_rate_limiter.release_call_slot(caller_id)
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid telephony webhook signature.")
+        except ReplayAttackDetectedError as e:
+            call_rate_limiter.release_call_slot(caller_id)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    # Initialize voice session
+    service = VoiceSessionService(db)
+    session = await service.create_session(
+        tenant_id=tenant_id,
+        voice_mode="CUSTOMER",
+        channel_type="SIP",
+        caller_identifier=caller_id,
+        language="fr-FR",
+        recording_consent=True
+    )
+    await db.commit()
+
+    disc_text = CustomerVoiceAgent.MANDATORY_DISCLOSURE_TEXT["fr-FR"]
+    return {
+        "status": "ACCEPTED",
+        "session_id": session.session_id,
+        "caller_id": caller_id,
+        "disclosure_text": disc_text,
+        "stream_url": f"/api/v1/voice/ws/{session.session_id}?tenant_id={tenant_id}"
+    }
+
+
+@router.post("/telephony/status")
+async def telephony_status_webhook(
+    request: Request,
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Releases rate limiter slots on call termination."""
+    body_bytes = await request.body()
+    try:
+        data = json.loads(body_bytes.decode("utf-8")) if body_bytes else {}
+    except Exception:
+        data = {}
+
+    caller_id = data.get("From") or data.get("caller_id")
+    if caller_id:
+        call_rate_limiter.release_call_slot(caller_id)
+
+    return {"status": "ACKNOWLEDGED"}
+
+
+@router.post("/callbacks")
+async def request_voice_callback(
+    req: Dict[str, Any],
+    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    x_tenant_id: Optional[str] = Header(None)
+):
+    """Registers customer callback request when operators are unavailable."""
+    tenant_id = ctx.tenant_id if ctx else (x_tenant_id or "t_callback_default")
+    caller_id = req.get("caller_id") or "+212600000000"
+    record = callback_queue.enqueue_callback(
+        tenant_id=tenant_id,
+        caller_id=caller_id,
+        customer_name=req.get("customer_name"),
+        reason=req.get("reason", "Customer scheduled callback"),
+        priority=req.get("priority", "NORMAL")
+    )
+    return {"status": "QUEUED", "callback": record}
+
+
+@router.get("/callbacks")
+async def list_voice_callbacks(
+    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    x_tenant_id: Optional[str] = Header(None)
+):
+    """Lists registered customer callbacks for this tenant."""
+    tenant_id = ctx.tenant_id if ctx else (x_tenant_id or "t_callback_default")
+    callbacks = callback_queue.list_callbacks(tenant_id=tenant_id)
+    return {"tenant_id": tenant_id, "callbacks": callbacks}

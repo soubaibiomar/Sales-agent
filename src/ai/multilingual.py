@@ -44,13 +44,43 @@ class MultilingualProcessor:
 
         # Check for Arabizi patterns (Latin text with digits 3, 7, 9, 5 acting as letters)
         arabizi_word_match = re.search(r"\b[a-zA-Z]*[379528][a-zA-Z]*\b", stripped)
-        darija_latin_markers = ["dyal", "bghit", "wach", "kifach", "daba", "3afak", "bzaf", "choukrane", "salam"]
-        if arabizi_word_match or any(m in stripped.lower() for m in darija_latin_markers):
+        darija_latin_markers = [
+            "dyal", "bghit", "wach", "kifach", "daba", "3afak", "bzaf", "choukrane",
+            "salam", "fina", "ch7al", "m3a", "kayn", "kaynin", "ndiro", "n9dro", "tri9", "khdma"
+        ]
+        has_darija_latin = bool(arabizi_word_match or any(m in stripped.lower() for m in darija_latin_markers))
+
+        # French lexical vocabulary markers
+        french_words = [
+            "bonjour", "merci", "devis", "prix", "commande", "livraison", "s'il", "vous", "plaît",
+            "avec", "facture", "notre", "panne", "garantie", "quelle", "est", "pour", "nous",
+            "je", "des", "les", "le", "la", "une", "un", "dans", "sur", "qui", "que", "ce",
+            "cette", "vos", "votre", "souhaite", "obtenir", "serveur", "réseau", "matériel",
+            "statut", "possible", "fixer", "rendez-vous", "heures", "parler", "responsable",
+            "délais", "envoi", "express", "vers", "reçu", "par", "constructeur", "stockage"
+        ]
+        french_count = sum(1 for w in french_words if re.search(r"\b" + re.escape(w) + r"\b", stripped, re.IGNORECASE))
+
+        # English lexical vocabulary markers
+        english_words = [
+            "hello", "hi", "please", "order", "status", "price", "workstations", "servers",
+            "available", "stock", "delivery", "support", "demonstration", "architect", "network",
+            "gateway", "errors", "shipping", "lead", "times", "certification", "what", "how",
+            "can", "we", "our", "is", "for", "the", "with", "from", "you", "demand"
+        ]
+        english_count = sum(1 for w in english_words if re.search(r"\b" + re.escape(w) + r"\b", stripped, re.IGNORECASE))
+
+        # If it has Arabizi/Darija markers, prioritize Darija Latin
+        if has_darija_latin:
             return "ary-Latn"
 
-        # Distinguish French vs English (with word boundaries to avoid substring false positives e.g. 'merci' in 'commercial')
-        french_pattern = re.compile(r"\b(bonjour|merci|devis|prix|commande|livraison|s'il|vous|plaît|avec|facture)\b", re.IGNORECASE)
-        if french_pattern.search(stripped):
+        if french_count > english_count:
+            return "fr-FR"
+        elif english_count > french_count:
+            return "en-US"
+
+        # Fallback to French if any French marker found
+        if french_count > 0:
             return "fr-FR"
 
         return "en-US"
