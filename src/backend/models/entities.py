@@ -5,10 +5,10 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional, List
 from sqlalchemy import (
-    Column, String, Boolean, DateTime, ForeignKey, Integer, BigInteger, Numeric, Text, Table, UniqueConstraint, JSON
+    Column, String, Boolean, DateTime, ForeignKey, Integer, BigInteger, Numeric, Text, Table, UniqueConstraint, JSON, Float
 )
 from sqlalchemy.orm import declarative_base, relationship, synonym
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 
 Base = declarative_base()
 
@@ -347,7 +347,7 @@ class Lead(Base):
     assigned_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     converted_account_id = Column(String(36), ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True)
     converted_contact_id = Column(String(36), ForeignKey("contacts.id", ondelete="SET NULL"), nullable=True)
-    converted_opportunity_id = Column(String(36), ForeignKey("opportunities.id", ondelete="SET NULL"), nullable=True)
+    converted_opportunity_id = Column(String(36), ForeignKey("opportunities.id", ondelete="SET NULL", use_alter=True, name="fk_leads_converted_opportunity_id"), nullable=True)
     notes = Column(Text, nullable=True)
     metadata_json = Column(Text, nullable=True, default="{}")
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
@@ -1501,4 +1501,64 @@ class AutomationRule(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+
+class KnowledgeDocument(Base):
+    __tablename__ = "knowledge_documents"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    source_type = Column(String(50), nullable=False, default="TEXT")
+    document_hash = Column(String(64), nullable=False, index=True)
+    acl_roles = Column(ARRAY(String).with_variant(JSON, "sqlite"), nullable=False, default=list)
+    status = Column(String(50), nullable=False, default="INDEXED", index=True)  # INDEXED, TOMBSTONED, POISON_DETECTED
+    poison_reason = Column(Text, nullable=True)
+    metadata_json = Column("metadata", JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=False)
+    created_by = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    chunks = relationship("KnowledgeChunk", back_populates="document", cascade="all, delete-orphan")
+
+
+class KnowledgeChunk(Base):
+    __tablename__ = "knowledge_chunks"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    document_id = Column(String(36), ForeignKey("knowledge_documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    chunk_index = Column(Integer, nullable=False)
+    content = Column(Text, nullable=False)
+    sanitized_content = Column(Text, nullable=False)
+    token_count = Column(Integer, default=0, nullable=False)
+    embedding_vector = Column(ARRAY(Float).with_variant(JSON, "sqlite"), default=list, nullable=False)
+    metadata_json = Column("metadata", JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    document = relationship("KnowledgeDocument", back_populates="chunks")
+
+
+class ModelExecutionLog(Base):
+    __tablename__ = "model_execution_logs"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    turn_id = Column(String(64), nullable=True, index=True)
+    conversation_id = Column(String(36), ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True)
+    provider = Column(String(50), nullable=False)
+    model_name = Column(String(100), nullable=False)
+    prompt_template_id = Column(String(100), nullable=True)
+    prompt_hash = Column(String(64), nullable=True)
+    prompt_tokens = Column(Integer, default=0, nullable=False)
+    completion_tokens = Column(Integer, default=0, nullable=False)
+    total_tokens = Column(Integer, default=0, nullable=False)
+    estimated_cost_usd = Column(Numeric(10, 6), default=0.0, nullable=False)
+    latency_ms = Column(Numeric(10, 2), default=0.0, nullable=False)
+    ttft_ms = Column(Numeric(10, 2), default=0.0, nullable=False)
+    pii_redacted_count = Column(Integer, default=0, nullable=False)
+    status = Column(String(50), default="SUCCESS", nullable=False)  # SUCCESS, FALLBACK, TIMEOUT, ERROR, BLOCKED
+    error_message = Column(Text, nullable=True)
+    metadata_json = Column("metadata", JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 

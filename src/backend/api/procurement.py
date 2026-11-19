@@ -282,7 +282,7 @@ async def record_goods_receipt(
         )
     except OverReceiptError as e:
         # Invariant: Over-receipt must be strictly rejected
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+        raise HTTPException(status_code=422, detail=str(e))
     except (PurchaseOrderNotFoundError, ProcurementError) as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -392,7 +392,7 @@ async def ship_stock_transfer(
     try:
         return await service.ship_stock_transfer(ctx.tenant_id, transfer_id)
     except InsufficientTransferStockError as e:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+        raise HTTPException(status_code=422, detail=str(e))
     except StockTransferNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ProcurementError as e:

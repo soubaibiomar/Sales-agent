@@ -135,7 +135,7 @@ async def create_warranty_claim(
             warranty_days=req.warranty_days
         )
     except WarrantyExpiredError as e:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+        raise HTTPException(status_code=422, detail=str(e))
     except SupportError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 

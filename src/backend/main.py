@@ -38,6 +38,7 @@ from src.backend.api.voice import router as voice_router
 from src.backend.api.workflows import router as workflows_router
 from src.backend.api.notifications import router as notifications_router
 from src.backend.api.integrations import router as integrations_router
+from src.backend.api.ai_governance import router as ai_governance_router
 
 logger = logging.getLogger("SalesAI.API")
 
@@ -121,3 +122,4 @@ app.include_router(voice_router)
 app.include_router(workflows_router)
 app.include_router(notifications_router)
 app.include_router(integrations_router)
+app.include_router(ai_governance_router)

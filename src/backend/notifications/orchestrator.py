@@ -13,6 +13,12 @@ import uuid
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional, List, Tuple
+try:
+    from zoneinfo import ZoneInfo
+    CASABLANCA_TZ = ZoneInfo("Africa/Casablanca")
+except Exception:
+    CASABLANCA_TZ = timezone(timedelta(hours=1))
+
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,24 +41,37 @@ def utc_now() -> datetime:
 class QuietHoursPolicy:
     """
     Enforces Moroccan telecommunications marketing quiet hours:
-    - Prohibited: 21:00 (9:00 PM) to 09:00 (9:00 AM) local Moroccan time (UTC+1).
+    - Prohibited: 21:00 (9:00 PM) to 09:00 (9:00 AM) local Moroccan time (Africa/Casablanca).
     - Prohibited: All day Sunday.
     - Applies strictly to MARKETING messages; TRANSACTIONAL and SECURITY bypass.
+    - Fully configurable start/end hours and Sunday prohibition.
     """
-    @staticmethod
-    def is_quiet_hours(dt: Optional[datetime] = None) -> bool:
+    QUIET_START_HOUR: int = 21
+    QUIET_END_HOUR: int = 9
+    PROHIBIT_SUNDAYS: bool = True
+
+    @classmethod
+    def is_quiet_hours(cls, dt: Optional[datetime] = None, tz: Any = None) -> bool:
+        target_tz = tz or CASABLANCA_TZ
         check_dt = dt or datetime.now(timezone.utc)
-        # Approximate Moroccan time: UTC + 1 hour standard
-        morocco_hour = (check_dt.hour + 1) % 24
-        morocco_weekday = check_dt.weekday()  # Monday=0 ... Sunday=6
+        if check_dt.tzinfo is None:
+            check_dt = check_dt.replace(tzinfo=timezone.utc)
+        
+        local_dt = check_dt.astimezone(target_tz)
+        local_hour = local_dt.hour
+        local_weekday = local_dt.weekday()  # Monday=0 ... Sunday=6
 
         # Sunday prohibition
-        if morocco_weekday == 6:
+        if cls.PROHIBIT_SUNDAYS and local_weekday == 6:
             return True
 
-        # Evening to morning quiet window (21:00 to 09:00)
-        if morocco_hour >= 21 or morocco_hour < 9:
-            return True
+        # Evening to morning quiet window (e.g. 21:00 to 09:00)
+        if cls.QUIET_START_HOUR > cls.QUIET_END_HOUR:
+            if local_hour >= cls.QUIET_START_HOUR or local_hour < cls.QUIET_END_HOUR:
+                return True
+        else:
+            if cls.QUIET_START_HOUR <= local_hour < cls.QUIET_END_HOUR:
+                return True
 
         return False
 

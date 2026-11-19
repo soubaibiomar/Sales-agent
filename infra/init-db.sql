@@ -1239,6 +1239,59 @@ CREATE TABLE IF NOT EXISTS automation_rules (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
 );
 
+-- 40. Knowledge Documents Table (Approved Ingestion & Provenance)
+CREATE TABLE IF NOT EXISTS knowledge_documents (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    source_type VARCHAR(50) NOT NULL DEFAULT 'TEXT',
+    document_hash VARCHAR(64) NOT NULL,
+    acl_roles TEXT[] NOT NULL DEFAULT ARRAY['public'],
+    status VARCHAR(50) NOT NULL DEFAULT 'INDEXED',
+    poison_reason TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_by VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 41. Knowledge Chunks Table (Permission-Filtered RAG Chunks)
+CREATE TABLE IF NOT EXISTS knowledge_chunks (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    document_id VARCHAR(36) NOT NULL REFERENCES knowledge_documents(id) ON DELETE CASCADE,
+    chunk_index INT NOT NULL,
+    content TEXT NOT NULL,
+    sanitized_content TEXT NOT NULL,
+    token_count INT NOT NULL DEFAULT 0,
+    embedding_vector DOUBLE PRECISION[] NOT NULL DEFAULT ARRAY[]::DOUBLE PRECISION[],
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 42. Model Execution Logs Table (Model Gateway Auditing & Budgets)
+CREATE TABLE IF NOT EXISTS model_execution_logs (
+    id VARCHAR(36) PRIMARY KEY,
+    tenant_id VARCHAR(36) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    turn_id VARCHAR(64),
+    conversation_id VARCHAR(36) REFERENCES conversations(id) ON DELETE SET NULL,
+    provider VARCHAR(50) NOT NULL,
+    model_name VARCHAR(100) NOT NULL,
+    prompt_template_id VARCHAR(100),
+    prompt_hash VARCHAR(64),
+    prompt_tokens INT NOT NULL DEFAULT 0,
+    completion_tokens INT NOT NULL DEFAULT 0,
+    total_tokens INT NOT NULL DEFAULT 0,
+    estimated_cost_usd NUMERIC(10, 6) NOT NULL DEFAULT 0.0,
+    latency_ms NUMERIC(10, 2) NOT NULL DEFAULT 0.0,
+    ttft_ms NUMERIC(10, 2) NOT NULL DEFAULT 0.0,
+    pii_redacted_count INT NOT NULL DEFAULT 0,
+    status VARCHAR(50) NOT NULL DEFAULT 'SUCCESS',
+    error_message TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for Step 04 Performance
 CREATE INDEX IF NOT EXISTS idx_accounts_tenant ON accounts(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_contacts_account ON contacts(account_id);
@@ -1322,6 +1375,14 @@ CREATE INDEX IF NOT EXISTS idx_notif_templates_lookup ON notification_templates(
 CREATE INDEX IF NOT EXISTS idx_notif_logs_tenant_status ON notification_logs(tenant_id, status);
 CREATE INDEX IF NOT EXISTS idx_notif_logs_recipient ON notification_logs(tenant_id, recipient_identifier);
 CREATE INDEX IF NOT EXISTS idx_automation_rules_trigger ON automation_rules(tenant_id, trigger_event) WHERE is_active = true;
+
+-- Indexes for Step 08 RAG, Knowledge & Model Gateway
+CREATE INDEX IF NOT EXISTS idx_knowledge_documents_tenant_status ON knowledge_documents(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_knowledge_documents_hash ON knowledge_documents(tenant_id, document_hash);
+CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_tenant_doc ON knowledge_chunks(tenant_id, document_id);
+CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_doc_index ON knowledge_chunks(document_id, chunk_index);
+CREATE INDEX IF NOT EXISTS idx_model_execution_logs_tenant ON model_execution_logs(tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_model_execution_logs_turn ON model_execution_logs(turn_id);
 
 -- 4. Enable Row-Level Security (RLS) on all tenant-partitioned tables
 ALTER TABLE organization_sites ENABLE ROW LEVEL SECURITY;
@@ -1515,6 +1576,15 @@ ALTER TABLE notification_logs FORCE ROW LEVEL SECURITY;
 
 ALTER TABLE automation_rules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE automation_rules FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE knowledge_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE knowledge_documents FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE knowledge_chunks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE knowledge_chunks FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE model_execution_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE model_execution_logs FORCE ROW LEVEL SECURITY;
 
 -- 5. Define RLS Isolation Policies
 CREATE POLICY tenant_isolation_sites ON organization_sites
@@ -1863,6 +1933,21 @@ CREATE POLICY tenant_isolation_automation_rules ON automation_rules
     USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
     WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
 
+CREATE POLICY tenant_isolation_knowledge_documents ON knowledge_documents
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_knowledge_chunks ON knowledge_chunks
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+CREATE POLICY tenant_isolation_model_execution_logs ON model_execution_logs
+    AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
 -- 6. Grant least-privilege DML permissions to sales_app_user
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO sales_app_user;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO sales_app_user;
@@ -1908,5 +1993,8 @@ INSERT INTO permissions (id, code, description, domain) VALUES
     ('perm_workflows_manage', 'workflows:manage', 'Manage, trigger and retry durable workflows', 'WORKFLOWS'),
     ('perm_workflows_read', 'workflows:read', 'View workflow executions and step logs', 'WORKFLOWS'),
     ('perm_notifications_manage', 'notifications:manage', 'Manage notification templates and send broadcasts', 'NOTIFICATIONS'),
-    ('perm_integrations_manage', 'integrations:manage', 'Configure external integrations and n8n webhooks', 'INTEGRATIONS')
+    ('perm_integrations_manage', 'integrations:manage', 'Configure external integrations and n8n webhooks', 'INTEGRATIONS'),
+    ('perm_ai_manage', 'ai:manage', 'Manage Model Gateway configuration, prompt templates and budgets', 'AI'),
+    ('perm_ai_rag', 'ai:rag', 'Query and manage knowledge documents and embeddings', 'AI'),
+    ('perm_ai_tools', 'ai:tools', 'Execute bounded AI tool contracts', 'AI')
 ON CONFLICT (code) DO NOTHING;

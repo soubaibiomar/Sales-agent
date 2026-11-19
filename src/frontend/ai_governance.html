@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Governance, Model Gateway & RAG — Sales AI Platform</title>
+  <style>
+    :root {
+      --primary: #0A3A2A;
+      --primary-hover: #064E3B;
+      --primary-tint: #E6F4EA;
+      --accent: #10B981;
+      --bg-neutral: #FFFFFF;
+      --bg-page: #F8FAFC;
+      --border-muted: #E2E8F0;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --status-success: #16A34A;
+      --status-warning: #D97706;
+      --status-danger: #DC2626;
+      --status-info: #2563EB;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
+    .sidebar { width: 260px; background-color: var(--primary); color: #FFFFFF; display: flex; flex-direction: column; padding: 1.5rem 1rem; border-right: 1px solid var(--border-muted); }
+    .brand-title { font-size: 1.15rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.25rem; }
+    .brand-subtitle { font-size: 0.75rem; color: #A7F3D0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2rem; }
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+    .nav-item { padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.875rem; cursor: pointer; color: #E2E8F0; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
+    .nav-item:hover, .nav-item.active { background: rgba(255, 255, 255, 0.18); color: #FFFFFF; font-weight: 600; }
+    
+    .main-area { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    .topbar { height: 64px; background: var(--bg-neutral); border-bottom: 1px solid var(--border-muted); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
+    .topbar h1 { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+    .content { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+    
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+    .stat-card { background: var(--bg-neutral); border: 1px solid var(--border-muted); border-radius: 8px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .stat-title { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin-bottom: 0.5rem; }
+    .stat-value { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
+    .stat-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+    
+    .panel { background: var(--bg-neutral); border-radius: 8px; border: 1px solid var(--border-muted); padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-muted); padding-bottom: 0.75rem; }
+    .panel-title { font-size: 1rem; font-weight: 700; color: var(--primary); }
+    
+    .tabs { display: flex; gap: 0.5rem; border-bottom: 1px solid var(--border-muted); margin-bottom: 1.5rem; }
+    .tab-btn { padding: 0.65rem 1.25rem; border: none; background: transparent; cursor: pointer; font-size: 0.875rem; font-weight: 600; color: var(--text-muted); border-bottom: 2px solid transparent; }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #F8FAFC; padding: 0.75rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); text-align: left; }
+    td { padding: 0.85rem 0.75rem; border-bottom: 1px solid var(--border-muted); font-size: 0.85rem; }
+    tr:hover { background: #F1F5F9; }
+    
+    .badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+    .badge-success { background: #DCFCE7; color: var(--status-success); }
+    .badge-warning { background: #FEF3C7; color: var(--status-warning); }
+    .badge-danger { background: #FEE2E2; color: var(--status-danger); }
+    .badge-info { background: #DBEAFE; color: var(--status-info); }
+    
+    .btn { padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: none; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-outline { background: transparent; border: 1px solid var(--border-muted); color: var(--text-main); }
+    .btn-danger { background: var(--status-danger); color: #fff; }
+    
+    input, textarea, select { width: 100%; padding: 0.6rem; border: 1px solid var(--border-muted); border-radius: 6px; font-size: 0.85rem; margin-top: 0.35rem; }
+    label { font-size: 0.8rem; font-weight: 600; color: var(--text-main); }
+    .form-group { margin-bottom: 1rem; }
+    .result-box { background: #F8FAFC; border: 1px solid var(--border-muted); border-radius: 6px; padding: 1rem; font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; max-height: 250px; overflow-y: auto; }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand-title">Sales AI Platform</div>
+    <div class="brand-subtitle">Enterprise SaaS</div>
+    <ul class="nav-list">
+      <li><a href="index.html" class="nav-item">📊 Dashboard</a></li>
+      <li><a href="workflows.html" class="nav-item">⚡ Durable Workflows</a></li>
+      <li><a href="notifications.html" class="nav-item">📢 Notifications</a></li>
+      <li><a href="integrations.html" class="nav-item">🔌 Integrations & n8n</a></li>
+      <li><a href="ai_governance.html" class="nav-item active">🧠 AI Governance & RAG</a></li>
+    </ul>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <h1>AI Model Gateway, RAG & Tool Security</h1>
+      <button class="btn btn-primary" onclick="runOfflineEvaluations()">⚡ Run Offline Evals</button>
+    </header>
+
+    <div class="content">
+      <!-- Health & Budget KPI Ribbon -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-title">Active GPU Model</div>
+          <div class="stat-value" id="kpiActiveModel">qwen3.5:4b</div>
+          <div class="stat-sub">VRAM Mutual Exclusion: Active</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">GPU VRAM Headroom</div>
+          <div class="stat-value" id="kpiVramHeadroom">~6,100 MB</div>
+          <div class="stat-sub">Budget Cap: 7,000 MB</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Prompt Injection Defense</div>
+          <div class="stat-value" id="kpiInjectionDefense">100% Intercept</div>
+          <div class="stat-sub">Multi-dialect: FR, EN, AR, Darija</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Claim Grounding Rate</div>
+          <div class="stat-value" id="kpiClaimGrounding">100% Grounded</div>
+          <div class="stat-sub">Deterministic Commercial Authority</div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tabModelGateway')">Model Gateway</button>
+        <button class="tab-btn" onclick="switchTab('tabRAG')">Knowledge Base & RAG</button>
+        <button class="tab-btn" onclick="switchTab('tabRouter')">Language & Risk Router</button>
+        <button class="tab-btn" onclick="switchTab('tabToolGateway')">Tool Gateway & Output Guard</button>
+      </div>
+
+      <!-- Tab 1: Model Gateway -->
+      <div id="tabModelGateway" class="tab-content">
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Bounded Inference Sandbox</span>
+            </div>
+            <div class="form-group">
+              <label>Model Selector</label>
+              <select id="genModel">
+                <option value="qwen3.5:4b">Qwen 3.5 4B (Local GPU Resident)</option>
+                <option value="qwen3.5:9b-q4_K_M">Qwen 3.5 9B (On-Demand Heavy Reasoning)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Prompt (Includes PII sanitization test: credit card, CIN, email)</label>
+              <textarea id="genPrompt" rows="4">Bonjour, mon CIN est BK654321 et ma carte 4532 0150 1234 5678. Quel est le prix du kit panneau solaire ?</textarea>
+            </div>
+            <div class="form-group">
+              <label>Latency Budget (ms)</label>
+              <input type="number" id="genBudgetMs" value="5000">
+            </div>
+            <button class="btn btn-primary" onclick="executeGeneration()">Send Bounded Turn</button>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Telemetry & Execution Ledger</span>
+            </div>
+            <div class="result-box" id="genOutput">Awaiting generation...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Knowledge Base & RAG -->
+      <div id="tabRAG" class="tab-content" style="display:none;">
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Ingest Approved Document</span>
+            </div>
+            <div class="form-group">
+              <label>Document Title</label>
+              <input type="text" id="docTitle" value="Politique de Garantie et Retours 2026">
+            </div>
+            <div class="form-group">
+              <label>Source Type</label>
+              <select id="docSourceType">
+                <option value="POLICY">Commercial Policy</option>
+                <option value="CATALOG">Catalog Reference</option>
+                <option value="FAQ">Customer FAQ</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Document Content</label>
+              <textarea id="docContent" rows="4">Tous nos équipements photovoltaïques bénéficient d'une garantie constructeur de 365 jours. Les retours sont acceptés sous 14 jours.</textarea>
+            </div>
+            <button class="btn btn-primary" onclick="ingestDocument()">Ingest & Index</button>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Permission-Filtered Retrieval Test</span>
+            </div>
+            <div class="form-group">
+              <label>Query</label>
+              <input type="text" id="ragQuery" value="Quelle est la durée de la garantie ?">
+            </div>
+            <button class="btn btn-primary" onclick="searchRAG()">Query RAG Chunks</button>
+            <div class="result-box" id="ragResults" style="margin-top: 1rem;">No query results yet.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Language & Risk Router -->
+      <div id="tabRouter" class="tab-content" style="display:none;">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Multilingual Router & Adversarial Gate</span>
+          </div>
+          <div class="form-group">
+            <label>Customer Message (French, English, Arabic, Darija or Arabizi)</label>
+            <textarea id="routerInput" rows="3">salam khoya, bghit nchouf chhal taman dyal panneau solaire 3afak</textarea>
+          </div>
+          <button class="btn btn-primary" onclick="evaluateRouter()">Route Message</button>
+          <div class="result-box" id="routerOutput" style="margin-top: 1rem;">Click 'Route Message' to classify...</div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Tool Gateway & Output Guard -->
+      <div id="tabToolGateway" class="tab-content" style="display:none;">
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Role Allowlist Tool Gateway</span>
+            </div>
+            <div class="form-group">
+              <label>Calling Agent Role</label>
+              <select id="toolRole">
+                <option value="product_specialist">Product Specialist</option>
+                <option value="discovery_specialist">Discovery Specialist</option>
+                <option value="pricing_specialist">Pricing Specialist</option>
+                <option value="customer">Unprivileged Customer</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Tool Name</label>
+              <select id="toolName">
+                <option value="catalog.search">catalog.search (Safe Read)</option>
+                <option value="inventory.check_atp">inventory.check_atp (Safe Read)</option>
+                <option value="pricing.calculate_quote">pricing.calculate_quote (Deterministic Pricing)</option>
+                <option value="support.create_ticket">support.create_ticket (Mutating Action)</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="executeToolCall()">Execute Tool Contract</button>
+            <div class="result-box" id="toolOutput" style="margin-top: 1rem;">Tool output...</div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Claim-Level Verifier Sandbox</span>
+            </div>
+            <div class="form-group">
+              <label>Model Candidate Text (Test price hallucination)</label>
+              <textarea id="claimText" rows="3">Le kit solaire coûte seulement 500 MAD avec 30% de remise !</textarea>
+            </div>
+            <button class="btn btn-primary" onclick="verifyOutputClaims()">Verify Claims</button>
+            <div class="result-box" id="claimOutput" style="margin-top: 1rem;">Verification output...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(tabId).style.display = 'block';
+      event.target.classList.add('active');
+    }
+
+    async function executeGeneration() {
+      const prompt = document.getElementById('genPrompt').value;
+      const model = document.getElementById('genModel').value;
+      const maxLatency = document.getElementById('genBudgetMs').value;
+      const outBox = document.getElementById('genOutput');
+      outBox.textContent = "Processing with Model Gateway...";
+
+      try {
+        const res = await fetch('/api/v1/ai/generate', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('token') || '')},
+          body: JSON.stringify({
+            tenant_id: 'default',
+            prompt: prompt,
+            model: model,
+            max_latency_ms: parseFloat(maxLatency)
+          })
+        });
+        const data = await res.json();
+        outBox.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        outBox.textContent = "Error: " + err.message;
+      }
+    }
+
+    async function evaluateRouter() {
+      const text = document.getElementById('routerInput').value;
+      const outBox = document.getElementById('routerOutput');
+      outBox.textContent = "Analyzing language, intent and risk...";
+
+      try {
+        const res = await fetch('/api/v1/ai/route', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('token') || '')},
+          body: JSON.stringify({ text: text })
+        });
+        const data = await res.json();
+        outBox.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        outBox.textContent = "Error: " + err.message;
+      }
+    }
+
+    async function verifyOutputClaims() {
+      const text = document.getElementById('claimText').value;
+      const outBox = document.getElementById('claimOutput');
+      outBox.textContent = "Verifying against ground truth evidence...";
+
+      try {
+        const res = await fetch('/api/v1/ai/guard/verify', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('token') || '')},
+          body: JSON.stringify({
+            text: text,
+            evidence: {
+              tenant_id: 'default',
+              verified_prices: {"SKU-SOLAR-01": 1250.0},
+              approved_discounts_percent: [10.0]
+            }
+          })
+        });
+        const data = await res.json();
+        outBox.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        outBox.textContent = "Error: " + err.message;
+      }
+    }
+
+    async function executeToolCall() {
+      const role = document.getElementById('toolRole').value;
+      const toolName = document.getElementById('toolName').value;
+      const outBox = document.getElementById('toolOutput');
+      outBox.textContent = "Evaluating tool authorization...";
+
+      try {
+        const res = await fetch('/api/v1/ai/tools/execute', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('token') || '')},
+          body: JSON.stringify({
+            tool_name: toolName,
+            params: { query: "solaire", sku: "SKU-SOLAR-01", items: [], idempotency_key: "IDEM-TEST-12345", subject: "Test Ticket", description: "Test ticket details" }
+          })
+        });
+        const data = await res.json();
+        outBox.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        outBox.textContent = "Error: " + err.message;
+      }
+    }
+
+    async function runOfflineEvaluations() {
+      alert("Triggering offline evaluation suite across defense, routing, and grounding...");
+      try {
+        const res = await fetch('/api/v1/ai/evaluations/run', {
+          headers: {'Authorization': 'Bearer ' + (localStorage.getItem('token') || '')}
+        });
+        const data = await res.json();
+        alert(`Evaluation Complete!\nPassed: ${data.passed_cases}/${data.total_cases} (${data.accuracy_percent}%)`);
+      } catch (err) {
+        alert("Evaluation run failed: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
