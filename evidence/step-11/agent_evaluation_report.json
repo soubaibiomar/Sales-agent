@@ -1,0 +1,180 @@
+{
+  "suite_name": "18_ROLE_AGENT_ECOSYSTEM_QUALITY_EVALUATION",
+  "timestamp": "2026-11-19T18:20:27.266183+00:00",
+  "total_cases": 21,
+  "passed_cases": 21,
+  "failed_cases": 0,
+  "accuracy_pct": 100.0,
+  "duration_s": 0.021,
+  "status": "PASS",
+  "results": [
+    {
+      "case_id": "R00_01",
+      "role_code": "R00",
+      "category": "INTENT_ROUTING",
+      "description": "Router maps pricing and quote queries to pricing specialist",
+      "passed": true,
+      "message": "Routed to 'pricing_specialist' (expected: 'pricing_specialist')"
+    },
+    {
+      "case_id": "R00_02",
+      "role_code": "R00",
+      "category": "INTENT_ROUTING",
+      "description": "Router maps delivery tracking query to order specialist",
+      "passed": true,
+      "message": "Routed to 'order_specialist' (expected: 'order_specialist')"
+    },
+    {
+      "case_id": "S00_01",
+      "role_code": "S00_CONV",
+      "category": "SUPERVISOR_FENCING",
+      "description": "Supervisor rejects stale turn version race condition",
+      "passed": true,
+      "message": "Stale turn correctly fenced: Stale turn rejected: incoming 1 <= current 2"
+    },
+    {
+      "case_id": "S00_02",
+      "role_code": "S00_CONV",
+      "category": "HUMAN_TAKEOVER",
+      "description": "Supervisor strictly silences autonomous responses under human takeover",
+      "passed": true,
+      "message": "Supervisor status: SILENCED_TAKEOVER, should_generate=False"
+    },
+    {
+      "case_id": "S00_OPS_01",
+      "role_code": "S00_OPS",
+      "category": "WORKER_TRIAGE",
+      "description": "Operations supervisor triages worker alerts and queue dead-letters",
+      "passed": true,
+      "message": "Operations action: ALERT_CRITICAL"
+    },
+    {
+      "case_id": "A01_01",
+      "role_code": "A01",
+      "category": "LEAD_QUALIFICATION",
+      "description": "Qualification specialist extracts B2B company size and budget",
+      "passed": true,
+      "message": "Extracted: size=150, budget=300000"
+    },
+    {
+      "case_id": "A02_01",
+      "role_code": "A02",
+      "category": "CLAIM_GROUNDING",
+      "description": "Product specialist answers with grounded catalog specifications",
+      "passed": true,
+      "message": "Ungrounded claim correctly rejected: Claimed price 100.0 is not grounded in verified prices: {'item': 12000.0}"
+    },
+    {
+      "case_id": "A03_01",
+      "role_code": "A03",
+      "category": "DETERMINISTIC_PRICING",
+      "description": "Quotation specialist adheres strictly to domain pricing formulas without LLM arithmetic authority",
+      "passed": true,
+      "message": "Computed total: 540000 cents (expected: 540000)"
+    },
+    {
+      "case_id": "A04_01",
+      "role_code": "A04",
+      "category": "ORDER_STATUS",
+      "description": "Order specialist returns verifiable order tracking and payment status",
+      "passed": true,
+      "message": "Order status summary cleanly formatted with tracking link"
+    },
+    {
+      "case_id": "A05_01",
+      "role_code": "A05",
+      "category": "SCHEDULING_BOUNDS",
+      "description": "Scheduling specialist respects staff working hours and calendar slots",
+      "passed": true,
+      "message": "Workhour validation: 14:30=True, 02:15=False"
+    },
+    {
+      "case_id": "A06_01",
+      "role_code": "A06",
+      "category": "DISCOUNT_CEILING",
+      "description": "Negotiation specialist strictly rejects custom discounts exceeding policy ceiling (15%)",
+      "passed": true,
+      "message": "Unauthorized discount rejected: Requested discount 25.0% exceeds sales rep authority ceiling of 15%."
+    },
+    {
+      "case_id": "A07_01",
+      "role_code": "A07",
+      "category": "RMA_ELIGIBILITY",
+      "description": "Support specialist enforces 30-day return policy and warranty checks",
+      "passed": true,
+      "message": "RMA eligibility: 12 days=True, 45 days=False"
+    },
+    {
+      "case_id": "A08_01",
+      "role_code": "A08",
+      "category": "ACCOUNT_ISOLATION",
+      "description": "Account manager isolates corporate agreements to tenant context",
+      "passed": true,
+      "message": "Tool permissions: account.get_summary=True, incident.apply_runbook=False"
+    },
+    {
+      "case_id": "A09_01",
+      "role_code": "A09",
+      "category": "TAX_INVOICE_GROUNDING",
+      "description": "Documents specialist delivers tax-compliant invoice breakdown with 20% TVA",
+      "passed": true,
+      "message": "Tax invoice breakdown: TTC=1200000 cents"
+    },
+    {
+      "case_id": "B01_01",
+      "role_code": "B01",
+      "category": "QUIET_HOURS_OPTOUT",
+      "description": "Outreach agent enforces STOP opt-out filtering and Moroccan quiet hours (21:00-08:00)",
+      "passed": true,
+      "message": "Outreach gating: Day=True, Night=False, OptOut=False"
+    },
+    {
+      "case_id": "B02_01",
+      "role_code": "B02",
+      "category": "DATA_ENRICHMENT",
+      "description": "Research agent performs structured organization profile enrichment",
+      "passed": true,
+      "message": "Enriched: industry=Banking & Financial Services, country=Morocco"
+    },
+    {
+      "case_id": "B03_01",
+      "role_code": "B03",
+      "category": "STALE_DEAL_DETECTION",
+      "description": "Pipeline coach detects deals stalled > 14 days without customer activity",
+      "passed": true,
+      "message": "Stale deal detected: Deal stalled for 18 days in PROPOSAL. Trigger sales rep nudge."
+    },
+    {
+      "case_id": "B04_01",
+      "role_code": "B04",
+      "category": "REASONING_9B_TIER",
+      "description": "Pricing analyst routes complex multi-product elasticity modeling to REASONING_9B tier",
+      "passed": true,
+      "message": "B04 Pricing Analyst assigned tier: REASONING_9B"
+    },
+    {
+      "case_id": "B05_01",
+      "role_code": "B05",
+      "category": "EDITORIAL_REVIEW_BARRIER",
+      "description": "Knowledge curator requires human editorial sign-off; autonomous self-publishing is blocked",
+      "passed": true,
+      "message": "Self-publish=False, status=DRAFT_PENDING_EDITORIAL_REVIEW"
+    },
+    {
+      "case_id": "B06_01",
+      "role_code": "B06",
+      "category": "REVERSIBLE_RUNBOOKS",
+      "description": "Incident responder executes strictly bounded, reversible diagnostic runbooks",
+      "passed": true,
+      "message": "Runbook safety: DROP_TABLE=False, FLUSH_CACHE=True"
+    },
+    {
+      "case_id": "I01_01",
+      "role_code": "I01",
+      "category": "HUMAN_SIGN_OFF_BARRIER",
+      "description": "Copilot quote action proposals strictly require human sales rep confirmation",
+      "passed": true,
+      "message": "Copilot action requires human sign-off: True"
+    }
+  ]
+}

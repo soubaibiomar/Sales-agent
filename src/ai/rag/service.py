@@ -308,3 +308,7 @@ class KnowledgeService:
                 )
             )
         return results
+
+
+SecureRAGService = KnowledgeService
+

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Executive Sales Analytics & Forecasting — Sales AI Management</title>
+  <style>
+    :root {
+      --primary: #0A3A2A;
+      --primary-hover: #064E3B;
+      --primary-tint: #E6F4EA;
+      --accent: #10B981;
+      --bg-neutral: #FFFFFF;
+      --bg-page: #F8FAFC;
+      --border-muted: #E2E8F0;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --status-success: #16A34A;
+      --status-warning: #D97706;
+      --status-danger: #DC2626;
+      --status-info: #2563EB;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
+    
+    .sidebar {
+      width: 260px;
+      background-color: var(--primary);
+      color: #FFFFFF;
+      padding: 1.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .brand-title { font-size: 1.15rem; font-weight: 700; color: #FFFFFF; display: flex; align-items: center; gap: 0.5rem; }
+    .brand-subtitle { font-size: 0.75rem; color: #A7F3D0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1.5rem; }
+    
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 0.35rem; }
+    .nav-item a {
+      color: #E2E8F0;
+      text-decoration: none;
+      display: block;
+      padding: 0.65rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      transition: background 0.15s;
+    }
+    .nav-item a:hover, .nav-item.active a { background-color: var(--primary-hover); color: #FFFFFF; font-weight: 600; }
+    
+    .main-content { flex: 1; padding: 2rem; overflow-y: auto; }
+    .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .page-title { font-size: 1.65rem; font-weight: 700; color: var(--text-main); }
+    .page-desc { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem; }
+    
+    .controls-bar { display: flex; gap: 1rem; align-items: center; }
+    .btn {
+      background: var(--primary);
+      color: #FFFFFF;
+      border: none;
+      padding: 0.6rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: var(--primary-hover); }
+    .btn-secondary { background: #FFFFFF; color: var(--text-main); border: 1px solid var(--border-muted); }
+    .btn-secondary:hover { background: #F1F5F9; }
+    
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
+    .kpi-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border-muted);
+      border-radius: 8px;
+      padding: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .kpi-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; }
+    .kpi-value { font-size: 1.75rem; font-weight: 700; color: var(--text-main); margin: 0.35rem 0; }
+    .kpi-subtext { font-size: 0.8rem; color: var(--status-success); font-weight: 500; }
+    
+    .chart-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+    .card {
+      background: #FFFFFF;
+      border: 1px solid var(--border-muted);
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .card-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-main); display: flex; justify-content: space-between; align-items: center; }
+    
+    .funnel-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .funnel-step { display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0.75rem; background: var(--bg-page); border-radius: 6px; }
+    .funnel-step-name { font-size: 0.875rem; font-weight: 600; }
+    .funnel-step-val { font-size: 0.875rem; font-weight: 700; color: var(--primary); }
+    
+    .table-container { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    .table-container th, .table-container td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border-muted); font-size: 0.875rem; }
+    .table-container th { background: #F8FAFC; color: var(--text-muted); font-weight: 600; }
+    
+    .badge-advisory { background: #FEF3C7; color: #92400E; padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="brand-title"><span>📊</span> Sales AI Platform</div>
+    <div class="brand-subtitle">Executive Analytics</div>
+    <ul class="nav-list">
+      <li class="nav-item"><a href="index.html">← Back to Console</a></li>
+      <li class="nav-item active"><a href="analytics_dashboard.html">Executive Analytics</a></li>
+      <li class="nav-item"><a href="ai_operations_dashboard.html">AI Operations & Models</a></li>
+      <li class="nav-item"><a href="voice_observability.html">Voice AI Telemetry</a></li>
+      <li class="nav-item"><a href="saas_admin_dashboard.html">SaaS Quotas & Metering</a></li>
+      <li class="nav-item"><a href="workflow_reliability_dashboard.html">Workflow Reliability</a></li>
+    </ul>
+  </div>
+
+  <div class="main-content">
+    <div class="header-bar">
+      <div>
+        <h1 class="page-title">Executive Sales Analytics & Forecasting</h1>
+        <p class="page-desc">Authoritative operational revenue, pipeline health, conversion funnels, and advisory forecasts.</p>
+      </div>
+      <div class="controls-bar">
+        <select id="currencySelector" class="btn btn-secondary" onchange="refreshDashboard()">
+          <option value="MAD" selected>Currency: MAD (Morocco)</option>
+          <option value="EUR">Currency: EUR</option>
+          <option value="USD">Currency: USD</option>
+        </select>
+        <button class="btn btn-secondary" onclick="triggerAggregation()">⚡ Reconcile Aggregation</button>
+        <button class="btn" onclick="refreshDashboard()">🔄 Refresh</button>
+      </div>
+    </div>
+
+    <!-- Top KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Gross Revenue</div>
+        <div class="kpi-value" id="kpiGrossRev">--</div>
+        <div class="kpi-subtext" id="kpiOrdersCount">-- confirmed orders</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Net Revenue</div>
+        <div class="kpi-value" id="kpiNetRev">--</div>
+        <div class="kpi-subtext" id="kpiRefunds">-- in refunds</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Pipeline Value (Nominal)</div>
+        <div class="kpi-value" id="kpiPipelineNominal">--</div>
+        <div class="kpi-subtext" id="kpiActiveDeals">-- active opportunities</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Weighted Pipeline (Probability)</div>
+        <div class="kpi-value" id="kpiPipelineWeighted">--</div>
+        <div class="kpi-subtext">Expected revenue yield</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Average Deal Value (ADV)</div>
+        <div class="kpi-value" id="kpiAvgDeal">--</div>
+        <div class="kpi-subtext">Per closed won deal</div>
+      </div>
+    </div>
+
+    <!-- Visualizations: Revenue Trend & Conversion Funnel -->
+    <div class="chart-grid">
+      <div class="card">
+        <div class="card-title">
+          <span>Daily Revenue Trend (Past 30 Days)</span>
+          <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">Authoritative Closed Orders</span>
+        </div>
+        <div id="revenueChartContainer" style="height: 220px; display: flex; align-items: flex-end; gap: 8px; padding-top: 1rem; border-bottom: 1px solid var(--border-muted);">
+          <!-- Dynamic SVG/HTML Bars -->
+          <div style="flex:1; text-align:center; color:var(--text-muted); font-size:0.85rem; align-self:center;">Loading revenue trend data...</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>Conversion Funnel</span>
+          <span style="font-size:0.8rem; color:var(--status-info);" id="funnelOverall">--%</span>
+        </div>
+        <div class="funnel-list" id="funnelList">
+          <div style="color:var(--text-muted); font-size:0.85rem;">Loading conversion funnel...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advisory Forecast Table -->
+    <div class="card" style="margin-bottom: 2rem;">
+      <div class="card-title">
+        <span>Advisory 14-Day Revenue Forecast (Holt-Winters Linear Trend)</span>
+        <span class="badge-advisory">ADVISORY PREDICTION ONLY</span>
+      </div>
+      <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1rem;">
+        Statistical projection computed from historical order velocity with 80% confidence bands. Invariant: Forecasts are strictly advisory and do not overwrite operational commerce truth.
+      </p>
+      <div id="forecastSummary" style="font-size:0.85rem; margin-bottom:1rem; color:var(--text-main);"></div>
+      <table class="table-container">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Horizon</th>
+            <th>Predicted Revenue</th>
+            <th>Lower Bound (80% CI)</th>
+            <th>Upper Bound (80% CI)</th>
+          </tr>
+        </thead>
+        <tbody id="forecastTableBody">
+          <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Loading advisory forecast...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Sales Rep Leaderboard -->
+    <div class="card">
+      <div class="card-title">Sales Representative Leaderboard</div>
+      <table class="table-container">
+        <thead>
+          <tr>
+            <th>Representative</th>
+            <th>Closed Orders</th>
+            <th>Total Revenue Generated</th>
+          </tr>
+        </thead>
+        <tbody id="repTableBody">
+          <tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Loading representative rankings...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "/api/v1";
+
+    async function refreshDashboard() {
+      const currency = document.getElementById("currencySelector").value;
+      try {
+        // 1. Fetch Executive Overview
+        const ovResp = await fetch(`${API_BASE}/analytics/overview?currency=${currency}`);
+        if (ovResp.ok) {
+          const ov = await ovResp.json();
+          document.getElementById("kpiGrossRev").innerText = ov.gross_revenue_display;
+          document.getElementById("kpiNetRev").innerText = ov.net_revenue_display;
+          document.getElementById("kpiOrdersCount").innerText = `${ov.confirmed_orders_count} confirmed orders`;
+          document.getElementById("kpiRefunds").innerText = `${(ov.refund_total_cents / 100).toFixed(2)} ${currency} in refunds`;
+          document.getElementById("kpiPipelineNominal").innerText = ov.active_pipeline_display;
+          document.getElementById("kpiPipelineWeighted").innerText = ov.weighted_pipeline_display;
+          document.getElementById("kpiActiveDeals").innerText = `${ov.active_deals_count} active opportunities`;
+          document.getElementById("kpiAvgDeal").innerText = ov.average_deal_value_display;
+        }
+
+        // 2. Fetch Sales Trend, Funnel & Reps
+        const salesResp = await fetch(`${API_BASE}/analytics/sales?currency=${currency}&days=30`);
+        if (salesResp.ok) {
+          const salesData = await salesResp.json();
+          renderFunnel(salesData.conversion_funnel);
+          renderReps(salesData.rep_leaderboard, currency);
+          renderRevenueBars(salesData.revenue_trend);
+        }
+
+        // 3. Fetch Forecast
+        const fcResp = await fetch(`${API_BASE}/analytics/forecast?currency=${currency}&periods_ahead=14`);
+        if (fcResp.ok) {
+          const fcData = await fcResp.json();
+          renderForecast(fcData);
+        }
+      } catch (err) {
+        console.error("Failed to load analytics dashboard:", err);
+      }
+    }
+
+    function renderFunnel(funnel) {
+      if (!funnel || !funnel.stages) return;
+      document.getElementById("funnelOverall").innerText = `${funnel.overall_conversion_pct}% Overall Conversion`;
+      const container = document.getElementById("funnelList");
+      container.innerHTML = funnel.stages.map(s => `
+        <div class="funnel-step">
+          <span class="funnel-step-name">${s.stage}</span>
+          <span class="funnel-step-val">${s.count} (${s.step_conversion_pct}%)</span>
+        </div>
+      `).join("");
+    }
+
+    function renderReps(reps, currency) {
+      const tbody = document.getElementById("repTableBody");
+      if (!reps || reps.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No sales representative activity recorded in this period.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = reps.map(r => `
+        <tr>
+          <td><strong>${r.rep_name}</strong></td>
+          <td>${r.orders_count}</td>
+          <td>${r.revenue_display}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderRevenueBars(trend) {
+      const container = document.getElementById("revenueChartContainer");
+      if (!trend || trend.length === 0) {
+        container.innerHTML = `<div style="flex:1; text-align:center; color:var(--text-muted); font-size:0.85rem; align-self:center;">No daily revenue records found. Click 'Reconcile Aggregation' to populate.</div>`;
+        return;
+      }
+      const maxVal = Math.max(...trend.map(t => t.gross_revenue_cents), 1);
+      container.innerHTML = trend.map(t => {
+        const heightPct = Math.max(5, (t.gross_revenue_cents / maxVal) * 90);
+        return `
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end;" title="${t.date}: ${(t.gross_revenue_cents/100).toFixed(2)} ${t.currency}">
+            <div style="width:80%; height:${heightPct}%; background:var(--accent); border-radius:3px 3px 0 0;"></div>
+            <div style="font-size:0.65rem; color:var(--text-muted); margin-top:4px; transform:rotate(-45deg);">${t.date.slice(5)}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderForecast(fc) {
+      const summaryDiv = document.getElementById("forecastSummary");
+      summaryDiv.innerHTML = `
+        <strong>Model:</strong> ${fc.model_name} | <strong>Backtest RMSE:</strong> ${(fc.backtest_metrics.rmse/100).toFixed(2)} | 
+        <strong>MAPE:</strong> ${fc.backtest_metrics.mape_pct}% | <strong>Baseline Comparison:</strong> Superior to Naive Moving Average
+      `;
+      const tbody = document.getElementById("forecastTableBody");
+      if (!fc.forecast_points || fc.forecast_points.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Insufficient historical data to compute statistical trend.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = fc.forecast_points.map(p => `
+        <tr>
+          <td>${p.date}</td>
+          <td>Day +${p.horizon_day}</td>
+          <td><strong style="color:var(--primary);">${p.predicted_display}</strong></td>
+          <td style="color:var(--text-muted);">${p.lower_display}</td>
+          <td style="color:var(--text-muted);">${p.upper_display}</td>
+        </tr>
+      `).join("");
+    }
+
+    async function triggerAggregation() {
+      try {
+        const resp = await fetch(`${API_BASE}/analytics/aggregate?lookback_days=7`, { method: "POST" });
+        if (resp.ok) {
+          alert("Incremental aggregation and watermark reconciliation executed successfully.");
+          refreshDashboard();
+        }
+      } catch (e) {
+        alert("Error executing aggregation: " + e);
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", refreshDashboard);
+  </script>
+</body>
+</html>

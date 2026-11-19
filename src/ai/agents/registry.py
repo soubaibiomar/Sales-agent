@@ -352,8 +352,19 @@ class AgentRegistry:
     @classmethod
     def get_role(cls, role_id: str) -> AgentRoleDefinition:
         if role_id not in AGENT_CATALOG:
+            # Check by role_code fallback (e.g. B04)
+            for role in AGENT_CATALOG.values():
+                if role.role_code == role_id:
+                    return role
             raise ValueError(f"Agent role '{role_id}' is not registered in capability catalog.")
         return AGENT_CATALOG[role_id]
+
+    @classmethod
+    def get_definition(cls, identifier: str) -> Optional[AgentRoleDefinition]:
+        try:
+            return cls.get_role(identifier)
+        except ValueError:
+            return None
 
     @classmethod
     def list_roles(cls) -> List[AgentRoleDefinition]:
@@ -372,3 +383,13 @@ class AgentRegistry:
     def get_model_tier(cls, role_id: str) -> str:
         role = cls.get_role(role_id)
         return role.model_tier
+
+
+class ModelTier:
+    PRIMARY_4B = "PRIMARY_4B"
+    REASONING_9B = "REASONING_9B"
+
+
+AgentRole = AgentRoleDefinition
+agent_registry = AgentRegistry
+

@@ -54,17 +54,20 @@ class MultilingualVoiceEngine:
         is_code_switching = False
         darija_markers = [
             "bghit", "dyal", "wach", "kifach", "daba", "3afak", "bzaf", "choukrane", "salam",
-            "ch7al", "m3a", "kayn", "kaynin", "ndiro", "n9dro", "tri9", "khdma",
-            "ديال", "بغيت", "واش", "عفاك", "بزاف", "كيفاش", "دابا"
+            "ch7al", "m3a", "kayn", "kaynin", "ndiro", "n9dro", "tri9", "khdma", "chouf", "wakha",
+            "ديال", "بغيت", "واش", "عفاك", "بزاف", "كيفاش", "دابا", "مزيان"
         ]
         french_markers = [
             "devis", "prix", "commande", "livraison", "facture", "catalogue", "merci", "bonjour",
-            "urgent", "matériel", "informatique", "livreur", "problème", "technique", "serveur",
-            "messagerie", "réunion", "opérateur", "humain", "remise", "spéciale", "laptops", "pc",
-            "portables", "confirmation", "bonne", "journée"
+            "urgent", "matériel", "materiel", "informatique", "livreur", "problème", "probleme",
+            "technique", "serveur", "messagerie", "réunion", "reunion", "opérateur", "operateur",
+            "humain", "remise", "spéciale", "speciale", "laptops", "pc", "portables", "confirmation",
+            "bonne", "journée", "journee", "assistance", "rapide", "achats", "achat", "volume",
+            "pour", "avec", "dans", "sur", "par", "le", "la", "les", "un", "une", "des", "svp",
+            "mot", "passe", "admin", "code"
         ]
 
-        has_arabizi_digits = bool(re.search(r"\b[a-zA-Z]*[379528][a-zA-Z]*\b", text_lower))
+        has_arabizi_digits = bool(re.search(r"\b(?=[a-zA-Z0-9]*[379528])(?=[a-zA-Z0-9]*[a-zA-Z])[a-zA-Z0-9]+\b", text_lower))
         has_darija = has_arabizi_digits or any(re.search(r"\b" + re.escape(m) + r"\b", text_lower) for m in darija_markers)
         has_french = any(re.search(r"\b" + re.escape(m) + r"\b", text_lower) for m in french_markers)
 

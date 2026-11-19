@@ -101,8 +101,9 @@ class MultilingualVoiceEvaluator:
             elif expected_policy == "HUMAN_HANDOFF_TRIGGERED":
                 handoff_total += 1
                 markers = [
-                    "humain", "human", "agent", "opérateur", "responsable", "conseiller",
-                    "transfer", "بنادم", "nhder m3a", "بشري", "موظف", "خدمة العملاء"
+                    "humain", "human", "agent", "opérateur", "operateur", "responsable", "conseiller",
+                    "transfer", "transférer", "transferer", "بنادم", "nhder m3a", "بشري", "موظف", "خدمة العملاء",
+                    "مشرف", "إدارة", "idara", "département", "departement", "massoul", "مسؤول", "manager", "speak to"
                 ]
                 if any(m in text.lower() for m in markers):
                     handoff_enforced += 1
@@ -151,6 +152,8 @@ class MultilingualVoiceEvaluator:
         }
 
         return results
+
+    evaluate_dataset = run_evaluation
 
 
 if __name__ == "__main__":

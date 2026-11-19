@@ -246,3 +246,27 @@ class PricingService:
             "terms_hash": terms_hash,
             "items": processed_items
         }
+
+
+def calculate_quote_pricing(items: List[Dict[str, Any]], tva_rate: float = 20.0) -> Dict[str, Any]:
+    """Pure deterministic pricing calculator for quote breakdown validation."""
+    subtotal_cents = 0
+    discount_cents = 0
+    for item in items:
+        unit = item.get("unit_price_cents", 0)
+        qty = item.get("quantity", 1)
+        disc_pct = item.get("discount_pct", 0.0)
+        line_sub = unit * qty
+        line_disc = int(round(line_sub * (disc_pct / 100.0)))
+        subtotal_cents += line_sub
+        discount_cents += line_disc
+    net_cents = subtotal_cents - discount_cents
+    tva_cents = int(round(net_cents * (tva_rate / 100.0)))
+    total_cents = net_cents + tva_cents
+    return {
+        "subtotal_cents": subtotal_cents,
+        "discount_cents": discount_cents,
+        "net_cents": net_cents,
+        "tva_cents": tva_cents,
+        "total_cents": total_cents
+    }

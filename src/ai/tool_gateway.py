@@ -1,11 +1,14 @@
 """
 Strict Typed Tool Gateway Service.
+Step 08: Model Gateway, RAG, Router, Protected Tools and Output Verification
+(Controls 40, 63, 67; SAI-07, SAI-08; Invariants 2, 4)
 Step 08 & Step 09: Model Gateway, RAG, Router, Protected Tools, and 18-Role Agent Ecosystem
 (Controls 40, 63, 67; SAI-07, SAI-08, SAI-09; Invariants 2, 4)
 
 Enforces:
 1. Strict Pydantic-typed tool request and response schemas.
 2. Server-issued security context (never trust tenant/actor supplied in LLM prompts).
+3. Role-based tool allowlists (least privilege per agent specialist).
 3. Role-based tool allowlists (least privilege across all 18 catalog agent roles).
 4. Non-delegable commercial authority (delegation to deterministic domain services).
 5. Execution timeout / deadline and idempotency enforcement.
@@ -30,6 +33,10 @@ class ToolGatewayError(Exception):
 
 class UnauthorizedToolError(ToolGatewayError):
     code = "UNAUTHORIZED_TOOL"
+
+
+ToolAccessDeniedError = UnauthorizedToolError
+SecurityRole = str
 
 
 class TenantMismatchError(ToolGatewayError):
@@ -355,6 +362,7 @@ class ToolGateway:
     role allowlists, server-issued security contexts, and deterministic validation.
     """
 
+    # Role Allowlists (Invariant: Least privilege per specialist role)
     # Role Allowlists (Invariant: Least privilege across all 18 catalog agent roles)
     ROLE_ALLOWLISTS: Dict[str, List[str]] = {
         # Front Door & Supervisors
@@ -469,6 +477,12 @@ class ToolGateway:
             "orders.get_status",
             "support.create_ticket"
         ],
+        "sales_copilot": [
+            "catalog.search",
+            "inventory.check_atp",
+            "pricing.calculate_quote",
+            "orders.get_status"
+        ],
         "platform_admin": [
             "catalog.search",
             "inventory.check_atp",
@@ -516,6 +530,172 @@ class ToolGateway:
             "incident.apply_runbook",
             "copilot.generate_brief",
             "copilot.propose_action"
+        ],
+        # Canonical Role Codes (A01 - A09, B01 - B06, I01, R00, S00) & Evaluation Aliases
+        "R00": [],
+        "S00": [
+            "catalog.search",
+            "inventory.check_atp",
+            "orders.get_status",
+            "crm.update_lead"
+        ],
+        "S00_CONV": [
+            "catalog.search",
+            "inventory.check_atp",
+            "orders.get_status",
+            "crm.update_lead"
+        ],
+        "S00_OPS": [
+            "analytics.get_kpi_summary",
+            "pipeline.analyze_stale_deals",
+            "incident.diagnose_system",
+            "incident.apply_runbook"
+        ],
+        "A01": [
+            "crm.qualify_lead",
+            "crm.update_lead",
+            "catalog.search"
+        ],
+        "A01_DISCOVERY": [
+            "crm.qualify_lead",
+            "crm.update_lead",
+            "catalog.search"
+        ],
+        "A02": [
+            "catalog.search",
+            "inventory.check_atp"
+        ],
+        "A02_CATALOG": [
+            "catalog.search",
+            "inventory.check_atp"
+        ],
+        "A03": [
+            "catalog.search",
+            "pricing.calculate_quote",
+            "inventory.check_atp"
+        ],
+        "A03_QUOTATION": [
+            "catalog.search",
+            "pricing.calculate_quote",
+            "inventory.check_atp"
+        ],
+        "A04": [
+            "orders.get_status",
+            "inventory.check_atp"
+        ],
+        "A04_ORDER": [
+            "orders.get_status",
+            "inventory.check_atp"
+        ],
+        "A05": [
+            "scheduling.get_slots",
+            "scheduling.book_appointment"
+        ],
+        "A05_SCHEDULING": [
+            "scheduling.get_slots",
+            "scheduling.book_appointment"
+        ],
+        "A06": [
+            "catalog.search",
+            "pricing.calculate_quote",
+            "negotiation.propose_discount"
+        ],
+        "A06_NEGOTIATION": [
+            "catalog.search",
+            "pricing.calculate_quote",
+            "negotiation.propose_discount"
+        ],
+        "A07": [
+            "orders.get_status",
+            "support.create_ticket"
+        ],
+        "A07_SUPPORT": [
+            "orders.get_status",
+            "support.create_ticket"
+        ],
+        "A08": [
+            "account.get_summary",
+            "orders.get_status",
+            "catalog.search"
+        ],
+        "A08_ACCOUNT": [
+            "account.get_summary",
+            "orders.get_status",
+            "catalog.search"
+        ],
+        "A08_APPOINTMENT": [
+            "scheduling.get_slots",
+            "scheduling.book_appointment"
+        ],
+        "A09": [
+            "documents.get_invoice",
+            "documents.get_quote"
+        ],
+        "A09_DOCUMENTS": [
+            "documents.get_invoice",
+            "documents.get_quote"
+        ],
+        "B01": [
+            "outreach.draft_campaign",
+            "crm.update_lead"
+        ],
+        "B01_LEAD_ENRICHMENT": [
+            "research.enrich_account",
+            "catalog.search"
+        ],
+        "B02": [
+            "research.enrich_account",
+            "catalog.search"
+        ],
+        "B02_FOLLOWUP": [
+            "outreach.draft_campaign",
+            "crm.update_lead"
+        ],
+        "B03": [
+            "pipeline.analyze_stale_deals",
+            "account.get_summary"
+        ],
+        "B03_CHURN_RISK": [
+            "pipeline.analyze_stale_deals",
+            "account.get_summary"
+        ],
+        "B04": [
+            "analytics.get_kpi_summary",
+            "pricing.calculate_quote"
+        ],
+        "B04_RESTOCK": [
+            "inventory.check_atp",
+            "orders.get_status"
+        ],
+        "B05": [
+            "knowledge.propose_update",
+            "catalog.search"
+        ],
+        "B05_PRICING_OPTIM": [
+            "analytics.get_kpi_summary",
+            "pricing.calculate_quote"
+        ],
+        "B06": [
+            "incident.diagnose_system",
+            "incident.apply_runbook"
+        ],
+        "I01": [
+            "catalog.search",
+            "inventory.check_atp",
+            "pricing.calculate_quote",
+            "orders.get_status",
+            "copilot.generate_brief",
+            "copilot.propose_action",
+            "account.get_summary"
+        ],
+        "I01_SALES_COPILOT": [
+            "catalog.search",
+            "inventory.check_atp",
+            "pricing.calculate_quote",
+            "orders.get_status",
+            "copilot.generate_brief",
+            "copilot.propose_action",
+            "account.get_summary"
         ]
     }
 
@@ -698,52 +878,11 @@ class ToolGateway:
     def register_handler(self, tool_name: str, handler: Callable):
         self._handlers[tool_name] = handler
 
-    ROLE_ALIASES: Dict[str, str] = {
-        "A01_DISCOVERY": "qualification_crm",
-        "A01": "qualification_crm",
-        "A02_CATALOG": "product_knowledge",
-        "A02": "product_knowledge",
-        "A03_QUOTATION": "quote_pricing",
-        "A03": "quote_pricing",
-        "A04_ORDER": "order_payment",
-        "A04": "order_payment",
-        "A05_SCHEDULING": "scheduling",
-        "A05_APPOINTMENT": "scheduling",
-        "A05": "scheduling",
-        "A08_APPOINTMENT": "scheduling",
-        "A06_NEGOTIATION": "negotiation_objections",
-        "A06": "negotiation_objections",
-        "A07_SUPPORT": "support_returns",
-        "A07": "support_returns",
-        "A08_ACCOUNT": "account_management",
-        "A08": "account_management",
-        "A09_DOCUMENTS": "documents",
-        "A09": "documents",
-        "B01_OUTREACH": "outreach",
-        "B01": "outreach",
-        "B02_RESEARCH": "research",
-        "B02": "research",
-        "B03_CHURN": "pipeline_coach",
-        "B03_PIPELINE": "pipeline_coach",
-        "B03": "pipeline_coach",
-        "B04_ANALYST": "analyst",
-        "B04": "analyst",
-        "B05_KNOWLEDGE": "knowledge_curator",
-        "B05": "knowledge_curator",
-        "B06_INCIDENT": "incident_responder",
-        "B06": "incident_responder",
-        "I01_SALES_COPILOT": "sales_copilot",
-        "I01": "sales_copilot",
-        "R00_ROUTER": "router_classifier",
-        "R00": "router_classifier",
-        "S00_CONV_SUPERVISOR": "conversation_supervisor",
-        "S00_OPS_SUPERVISOR": "operations_supervisor",
-    }
-
     def is_tool_allowed(self, role: str, tool_name: str) -> bool:
-        canonical_role = self.ROLE_ALIASES.get(role, role)
-        allowed = self.ROLE_ALLOWLISTS.get(canonical_role, [])
+        allowed = self.ROLE_ALLOWLISTS.get(role, [])
         return tool_name in allowed
+
+    is_tool_allowed_for_role = is_tool_allowed
 
     async def execute_tool(
         self,
@@ -834,6 +973,7 @@ class ToolGateway:
             }
         # 2. Pricing & Orders
         elif tool_name == "pricing.calculate_quote":
+            # Deterministic calculation: 20% VAT in Morocco standard
             subtotal = 100000
             vat = int(subtotal * 0.20)
             return {
@@ -856,6 +996,7 @@ class ToolGateway:
             }
         # 3. Support
         elif tool_name == "support.create_ticket":
+            import uuid
             return {
                 "ticket_id": f"TCK-{str(uuid.uuid4())[:8].upper()}",
                 "status": "OPEN",

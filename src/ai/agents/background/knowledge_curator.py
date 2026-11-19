@@ -12,6 +12,16 @@ class KnowledgeCuratorAgent(BaseAgent):
     def __init__(self):
         super().__init__("knowledge_curator")
 
+    def can_publish_directly_to_production(self) -> bool:
+        return False
+
+    def create_curated_faq_draft(self, question: str, answer: str) -> Dict[str, Any]:
+        return {
+            "question": question,
+            "answer": answer,
+            "status": "DRAFT_PENDING_EDITORIAL_REVIEW"
+        }
+
     async def execute(
         self,
         input_data: AgentInput,

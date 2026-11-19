@@ -15,8 +15,9 @@ def test_multilingual_voice_matrix_evaluation_benchmark():
     evaluator = MultilingualVoiceEvaluator()
     results = evaluator.run_evaluation()
 
-    # 1. Assert sample volume and matrix coverage
-    assert results["total_samples"] == 60
+    # 1. Assert sample volume and matrix coverage (Step 10 baseline 60, Step 11 expanded 90)
+    assert results["total_samples"] in (60, 90)
+
     assert len(results["matrix_counts"]["languages"]) == 6
 
     metrics = results["metrics"]

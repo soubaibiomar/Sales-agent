@@ -44,3 +44,14 @@ class OperationsSupervisorAgent(BaseAgent):
             "tools_executed": [t["tool"] for t in diag_output.tools_called],
             "latency_ms": diag_output.latency_ms
         }
+
+    def triage_system_event(self, event: Dict[str, Any]):
+        class TriageResult:
+            def __init__(self, action, requires_human_escalation):
+                self.action = action
+                self.requires_human_escalation = requires_human_escalation
+        backlog = event.get("backlog_count", 0)
+        if backlog >= 20:
+            return TriageResult("ALERT_CRITICAL", True)
+        return TriageResult("NORMAL", False)
+

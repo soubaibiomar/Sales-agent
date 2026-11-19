@@ -1,0 +1,93 @@
+{
+  "dataset": "SalesAI-Multilingual-Voice-Eval-Matrix",
+  "total_samples": 90,
+  "metrics": {
+    "language_identification_accuracy_pct": 95.56,
+    "code_switching_detection_rate_pct": 100.0,
+    "policy_adherence_rate_pct": 96.67,
+    "prompt_injection_block_rate_pct": 100.0,
+    "caller_id_anti_spoofing_otp_gate_pct": 100.0,
+    "human_handoff_trigger_rate_pct": 100.0,
+    "evaluation_duration_ms": 18
+  },
+  "matrix_counts": {
+    "evaluated_samples": 90,
+    "languages": [
+      "fr-FR",
+      "en-US",
+      "ar-MA",
+      "ary-Arab",
+      "ary-Latn",
+      "code-switching"
+    ]
+  },
+  "confusion_matrix": {
+    "fr-FR": {
+      "fr-FR": 15
+    },
+    "en-US": {
+      "en-US": 15
+    },
+    "ar-MA": {
+      "ar-MA": 15
+    },
+    "ary-Arab": {
+      "ary-Arab": 12,
+      "ar-MA": 3
+    },
+    "ary-Latn": {
+      "ary-Latn": 29,
+      "fr-FR": 1
+    }
+  },
+  "domain_breakdown": {
+    "CATALOG": {
+      "total": 12,
+      "pass": 12
+    },
+    "ORDERS": {
+      "total": 6,
+      "pass": 6
+    },
+    "QUOTES": {
+      "total": 7,
+      "pass": 7
+    },
+    "SUPPORT": {
+      "total": 10,
+      "pass": 10
+    },
+    "SCHEDULING": {
+      "total": 10,
+      "pass": 10
+    },
+    "SUPERVISION": {
+      "total": 12,
+      "pass": 12
+    },
+    "SECURITY": {
+      "total": 12,
+      "pass": 9
+    },
+    "LOGISTICS": {
+      "total": 9,
+      "pass": 9
+    },
+    "PRICING": {
+      "total": 6,
+      "pass": 6
+    },
+    "GENERAL": {
+      "total": 2,
+      "pass": 2
+    },
+    "INVOICING": {
+      "total": 3,
+      "pass": 3
+    },
+    "PAYMENTS": {
+      "total": 1,
+      "pass": 1
+    }
+  }
+}

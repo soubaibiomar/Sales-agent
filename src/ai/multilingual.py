@@ -42,13 +42,14 @@ class MultilingualProcessor:
                     return "ary-Arab"
             return "ar-MA"
 
-        # Check for Arabizi patterns (Latin text with digits 3, 7, 9, 5 acting as letters)
-        arabizi_word_match = re.search(r"\b[a-zA-Z]*[379528][a-zA-Z]*\b", stripped)
+        # Check for Arabizi patterns (Latin text with digits 3, 7, 9, 5 acting as letters within words)
+        arabizi_word_match = re.search(r"\b(?=[a-zA-Z0-9]*[379528])(?=[a-zA-Z0-9]*[a-zA-Z])[a-zA-Z0-9]+\b", stripped)
         darija_latin_markers = [
             "dyal", "bghit", "wach", "kifach", "daba", "3afak", "bzaf", "choukrane",
-            "salam", "fina", "ch7al", "m3a", "kayn", "kaynin", "ndiro", "n9dro", "tri9", "khdma"
+            "salam", "fina", "ch7al", "m3a", "kayn", "kaynin", "ndiro", "n9dro", "tri9", "khdma",
+            "chouf", "homa", "ntoma", "hadi", "hada", "hadou", "chwia", "wakha", "marhaban"
         ]
-        has_darija_latin = bool(arabizi_word_match or any(m in stripped.lower() for m in darija_latin_markers))
+        has_darija_latin = bool(arabizi_word_match or any(re.search(r"\b" + re.escape(m) + r"\b", stripped, re.IGNORECASE) for m in darija_latin_markers))
 
         # French lexical vocabulary markers
         french_words = [

@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional, List
 from sqlalchemy import (
-    Column, String, Boolean, DateTime, ForeignKey, Integer, BigInteger, Numeric, Text, Table, UniqueConstraint, JSON, Float
+    Column, String, Boolean, DateTime, ForeignKey, Integer, BigInteger, Numeric, Text, Table, UniqueConstraint, JSON, Float, Date
 )
 from sqlalchemy.orm import declarative_base, relationship, synonym
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
@@ -1640,5 +1640,157 @@ class AgentEvaluation(Base):
     category_scores = Column(JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=False)
     details = Column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+# ============================================================================
+# Step 11: Governed Analytics, Observability, Telemetry & SaaS Administration
+# ============================================================================
+
+class TenantSubscription(Base):
+    __tablename__ = "tenant_subscriptions"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    plan_id = Column(String(32), default="professional", nullable=False)
+    status = Column(String(32), default="ACTIVE", nullable=False)
+    current_period_start = Column(DateTime(timezone=True), nullable=False)
+    current_period_end = Column(DateTime(timezone=True), nullable=False)
+    monthly_token_limit = Column(BigInteger, default=5000000, nullable=False)
+    monthly_voice_minutes_limit = Column(Integer, default=1000, nullable=False)
+    monthly_api_call_limit = Column(BigInteger, default=100000, nullable=False)
+    max_seats = Column(Integer, default=25, nullable=False)
+    features_json = Column(JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+
+class TenantUsageMeter(Base):
+    __tablename__ = "tenant_usage_meters"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    period_month = Column(String(7), nullable=False)  # '2026-11'
+    llm_input_tokens = Column(BigInteger, default=0, nullable=False)
+    llm_output_tokens = Column(BigInteger, default=0, nullable=False)
+    total_tokens = Column(BigInteger, default=0, nullable=False)
+    voice_seconds = Column(BigInteger, default=0, nullable=False)
+    api_requests_count = Column(BigInteger, default=0, nullable=False)
+    storage_bytes_used = Column(BigInteger, default=0, nullable=False)
+    active_users_count = Column(Integer, default=0, nullable=False)
+    last_updated_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "period_month", name="uq_tenant_usage_meters_tenant_period"),
+    )
+
+
+class TenantQuotaLimit(Base):
+    __tablename__ = "tenant_quota_limits"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    metric_name = Column(String(64), nullable=False)
+    limit_value = Column(BigInteger, nullable=False)
+    warning_threshold_pct = Column(Integer, default=80, nullable=False)
+    enforce_hard_cap = Column(Boolean, default=True, nullable=False)
+    is_exhausted = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "metric_name", name="uq_tenant_quota_limits_tenant_metric"),
+    )
+
+
+class AnalyticsDailySales(Base):
+    __tablename__ = "analytics_daily_sales"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    date = Column(Date, nullable=False)
+    total_revenue_cents = Column(BigInteger, default=0, nullable=False)
+    order_count = Column(Integer, default=0, nullable=False)
+    paid_order_count = Column(Integer, default=0, nullable=False)
+    refund_count = Column(Integer, default=0, nullable=False)
+    refund_total_cents = Column(BigInteger, default=0, nullable=False)
+    net_revenue_cents = Column(BigInteger, default=0, nullable=False)
+    average_order_value_cents = Column(BigInteger, default=0, nullable=False)
+    currency = Column(String(10), default="MAD", nullable=False)
+    last_aggregated_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "date", "currency", name="uq_analytics_daily_sales_tenant_date_curr"),
+    )
+
+
+class AnalyticsPipelineSnapshot(Base):
+    __tablename__ = "analytics_pipeline_snapshots"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    snapshot_date = Column(Date, nullable=False)
+    stage = Column(String(50), nullable=False)
+    deal_count = Column(Integer, default=0, nullable=False)
+    total_value_cents = Column(BigInteger, default=0, nullable=False)
+    weighted_value_cents = Column(BigInteger, default=0, nullable=False)
+    currency = Column(String(10), default="MAD", nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "snapshot_date", "stage", "currency", name="uq_pipeline_snapshots_tenant_date_stage_curr"),
+    )
+
+
+class AnalyticsAIPerformance(Base):
+    __tablename__ = "analytics_ai_performance"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    date = Column(Date, nullable=False)
+    agent_role = Column(String(64), nullable=False)
+    total_executions = Column(Integer, default=0, nullable=False)
+    successful_executions = Column(Integer, default=0, nullable=False)
+    failed_executions = Column(Integer, default=0, nullable=False)
+    total_input_tokens = Column(BigInteger, default=0, nullable=False)
+    total_output_tokens = Column(BigInteger, default=0, nullable=False)
+    avg_latency_ms = Column(Integer, default=0, nullable=False)
+    tool_call_count = Column(Integer, default=0, nullable=False)
+    human_handoff_count = Column(Integer, default=0, nullable=False)
+    last_aggregated_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "date", "agent_role", name="uq_analytics_ai_perf_tenant_date_role"),
+    )
+
+
+class SystemAlertEvent(Base):
+    __tablename__ = "system_alert_events"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    alert_id = Column(String(64), nullable=False)
+    severity = Column(String(16), default="WARNING", nullable=False)
+    source = Column(String(32), nullable=False)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=False)
+    metadata_json = Column(JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=False)
+    status = Column(String(16), default="ACTIVE", nullable=False)
+    acknowledged_by = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    acknowledged_at = Column(DateTime(timezone=True), nullable=True)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class SystemMetricSnapshot(Base):
+    __tablename__ = "system_metric_snapshots"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    metric_family = Column(String(64), nullable=False)
+    metric_name = Column(String(64), nullable=False)
+    value = Column(Float, nullable=False)
+    labels_json = Column(JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=False)
+    recorded_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
 
 

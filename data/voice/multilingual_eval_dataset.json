@@ -2,14 +2,14 @@
   "version": "1.0.0",
   "dataset_name": "SalesAI-Multilingual-Voice-Eval-Matrix",
   "description": "Consented, rights-cleared benchmark evaluation dataset for 5 language matrices + code-switching in Moroccan B2B sales context.",
-  "total_samples": 60,
+  "total_samples": 90,
   "matrix_breakdown": {
-    "fr-FR": 10,
-    "en-US": 10,
-    "ar-MA": 10,
-    "ary-Arab": 10,
-    "ary-Latn": 10,
-    "code-switching": 10
+    "fr-FR": 15,
+    "en-US": 15,
+    "ar-MA": 15,
+    "ary-Arab": 15,
+    "ary-Latn": 15,
+    "code-switching": 15
   },
   "samples": [
     {
@@ -92,7 +92,6 @@
       "expected_policy": "SAFE_DIRECT_ANSWER",
       "domain": "CATALOG"
     },
-
     {
       "sample_id": "EN-01",
       "language": "en-US",
@@ -173,7 +172,6 @@
       "expected_policy": "SAFE_DIRECT_ANSWER",
       "domain": "CATALOG"
     },
-
     {
       "sample_id": "AR-01",
       "language": "ar-MA",
@@ -254,7 +252,6 @@
       "expected_policy": "SAFE_DIRECT_ANSWER",
       "domain": "PRICING"
     },
-
     {
       "sample_id": "DAR-AR-01",
       "language": "ary-Arab",
@@ -335,7 +332,6 @@
       "expected_policy": "SAFE_DIRECT_ANSWER",
       "domain": "PRICING"
     },
-
     {
       "sample_id": "ARABIZI-01",
       "language": "ary-Latn",
@@ -416,7 +412,6 @@
       "expected_policy": "SAFE_DIRECT_ANSWER",
       "domain": "PRICING"
     },
-
     {
       "sample_id": "CS-01",
       "language": "ary-Latn",
@@ -476,7 +471,7 @@
     {
       "sample_id": "CS-08",
       "language": "ary-Latn",
-      "text": "Mon code de confirmation est 332211, s'il vous plaît validez.",
+      "text": "3afak mon code de confirmation est 332211, s'il vous plaît validez.",
       "expected_intent": "CUSTOMER_VERIFICATION",
       "expected_policy": "PII_REDACTION_REQUIRED",
       "domain": "SECURITY"
@@ -493,6 +488,246 @@
       "sample_id": "CS-10",
       "language": "ary-Latn",
       "text": "Choukrane bzaf pour votre assistance rapide, bonne journée !",
+      "expected_intent": "GREETING",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "GENERAL"
+    },
+    {
+      "sample_id": "FR-11",
+      "language": "fr-FR",
+      "text": "Est-ce que la facture mentionne l'identifiant fiscal ICE de notre société ?",
+      "expected_intent": "INVOICE_INQUIRY",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "INVOICING"
+    },
+    {
+      "sample_id": "FR-12",
+      "language": "fr-FR",
+      "text": "Nous aimerions programmer une démonstration du module logistique mardi matin.",
+      "expected_intent": "SCHEDULE_DEMO",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "SCHEDULING"
+    },
+    {
+      "sample_id": "FR-13",
+      "language": "fr-FR",
+      "text": "Quel est le montant de l'acompte obligatoire avant la validation définitive ?",
+      "expected_intent": "PAYMENT_QUERY",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "PAYMENTS"
+    },
+    {
+      "sample_id": "FR-14",
+      "language": "fr-FR",
+      "text": "Veuillez me confirmer si les disques SSD NVMe sont garantis cinq ans.",
+      "expected_intent": "WARRANTY_QUERY",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "CATALOG"
+    },
+    {
+      "sample_id": "FR-15",
+      "language": "fr-FR",
+      "text": "Pouvez-vous me transférer immédiatement au département facturation s'il vous plaît ?",
+      "expected_intent": "HUMAN_ESCALATION",
+      "expected_policy": "HUMAN_HANDOFF_TRIGGERED",
+      "domain": "SUPERVISION"
+    },
+    {
+      "sample_id": "EN-11",
+      "language": "en-US",
+      "text": "Could you send over the updated price list for the rackmount server units?",
+      "expected_intent": "CATALOG_QUERY",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "CATALOG"
+    },
+    {
+      "sample_id": "EN-12",
+      "language": "en-US",
+      "text": "We need an engineer to review the network architecture diagram tomorrow.",
+      "expected_intent": "SCHEDULE_APPOINTMENT",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "SCHEDULING"
+    },
+    {
+      "sample_id": "EN-13",
+      "language": "en-US",
+      "text": "What is the return window for defective hardware components?",
+      "expected_intent": "SUPPORT_ISSUE",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "SUPPORT"
+    },
+    {
+      "sample_id": "EN-14",
+      "language": "en-US",
+      "text": "Please confirm that our VAT exemption number is applied to invoice INV-904.",
+      "expected_intent": "INVOICE_INQUIRY",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "INVOICING"
+    },
+    {
+      "sample_id": "EN-15",
+      "language": "en-US",
+      "text": "I would like to speak to an executive account manager right now.",
+      "expected_intent": "HUMAN_ESCALATION",
+      "expected_policy": "HUMAN_HANDOFF_TRIGGERED",
+      "domain": "SUPERVISION"
+    },
+    {
+      "sample_id": "AR-11",
+      "language": "ar-MA",
+      "text": "هل يتضمن السعر المقترح مصاريف الشحن إلى المنطقة الصناعية بطنجة؟",
+      "expected_intent": "PRICING_QUOTE",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "LOGISTICS"
+    },
+    {
+      "sample_id": "AR-12",
+      "language": "ar-MA",
+      "text": "نود حجز موعد لزيارة تقنية لمقر شركتنا يوم الأربعاء القادم.",
+      "expected_intent": "SCHEDULE_APPOINTMENT",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "SCHEDULING"
+    },
+    {
+      "sample_id": "AR-13",
+      "language": "ar-MA",
+      "text": "ما هي شروط الضمان المطبقة على الخوادم ووحدات التخزين السحابية؟",
+      "expected_intent": "WARRANTY_QUERY",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "CATALOG"
+    },
+    {
+      "sample_id": "AR-14",
+      "language": "ar-MA",
+      "text": "يرجى تزويدي بنسخة إلكترونية من الفاتورة الضريبية للطلب الأخير.",
+      "expected_intent": "INVOICE_INQUIRY",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "INVOICING"
+    },
+    {
+      "sample_id": "AR-15",
+      "language": "ar-MA",
+      "text": "أريد التحدث مع المشرف المسؤول عن خدمة العملاء فورا.",
+      "expected_intent": "HUMAN_ESCALATION",
+      "expected_policy": "HUMAN_HANDOFF_TRIGGERED",
+      "domain": "SUPERVISION"
+    },
+    {
+      "sample_id": "DARIJA-AR-11",
+      "language": "ary-Arab",
+      "text": "واش كاين شي تخفيض إلا خدينا عشرين بيسي طرونش وحدة؟",
+      "expected_intent": "PRICING_QUOTE",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "PRICING"
+    },
+    {
+      "sample_id": "DARIJA-AR-12",
+      "language": "ary-Arab",
+      "text": "بغيت نعرف واش التوصيل كيوصل حتى للمنطقة الحرة في القنيطرة؟",
+      "expected_intent": "LOGISTICS_QUERY",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "LOGISTICS"
+    },
+    {
+      "sample_id": "DARIJA-AR-13",
+      "language": "ary-Arab",
+      "text": "السيرفور طاح وما بقاش كيجاوب، عفاك عتقونا بسرعة.",
+      "expected_intent": "SUPPORT_ISSUE",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "SUPPORT"
+    },
+    {
+      "sample_id": "DARIJA-AR-14",
+      "language": "ary-Arab",
+      "text": "عفاك بغيت نهضر مع شي واحد من الإدارة دابا.",
+      "expected_intent": "HUMAN_ESCALATION",
+      "expected_policy": "HUMAN_HANDOFF_TRIGGERED",
+      "domain": "SUPERVISION"
+    },
+    {
+      "sample_id": "DARIJA-AR-15",
+      "language": "ary-Arab",
+      "text": "واش الضمانة كتشمل الإصلاح في عين المكان ولا خاصنا نجيبو البيسي؟",
+      "expected_intent": "WARRANTY_QUERY",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "CATALOG"
+    },
+    {
+      "sample_id": "ARABIZI-11",
+      "language": "ary-Latn",
+      "text": "Wach kayn chi remise ila khdina 20 pc f d9a w7da ?",
+      "expected_intent": "PRICING_QUOTE",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "PRICING"
+    },
+    {
+      "sample_id": "ARABIZI-12",
+      "language": "ary-Latn",
+      "text": "Bghit n3ref wach livraison katwsal tal zone franche dial Kenitra ?",
+      "expected_intent": "LOGISTICS_QUERY",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "LOGISTICS"
+    },
+    {
+      "sample_id": "ARABIZI-13",
+      "language": "ary-Latn",
+      "text": "Le serveur t-bloka w ma b9ach khdam, 3afak 3t9ona b zrba.",
+      "expected_intent": "SUPPORT_ISSUE",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "SUPPORT"
+    },
+    {
+      "sample_id": "ARABIZI-14",
+      "language": "ary-Latn",
+      "text": "3afak bghit nhder m3a chi massoul men l-idara daba.",
+      "expected_intent": "HUMAN_ESCALATION",
+      "expected_policy": "HUMAN_HANDOFF_TRIGGERED",
+      "domain": "SUPERVISION"
+    },
+    {
+      "sample_id": "ARABIZI-15",
+      "language": "ary-Latn",
+      "text": "Wach la garantie fiha l-esla7 sur place wla khassna njibo l-pc ?",
+      "expected_intent": "WARRANTY_QUERY",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "CATALOG"
+    },
+    {
+      "sample_id": "CS-11",
+      "language": "ary-Latn",
+      "text": "Salam 3afak, wach momkin t-envoyiw lina le devis actualisé par email ?",
+      "expected_intent": "PRICING_QUOTE",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "QUOTES"
+    },
+    {
+      "sample_id": "CS-12",
+      "language": "ary-Latn",
+      "text": "Wach kayn un ingénieur avant-vente li y9der y-assister m3ana f la réunion ?",
+      "expected_intent": "SCHEDULE_APPOINTMENT",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "SCHEDULING"
+    },
+    {
+      "sample_id": "CS-13",
+      "language": "ary-Latn",
+      "text": "3ndna un problème urgent dial connexion m3a la base de données f le serveur.",
+      "expected_intent": "SUPPORT_ISSUE",
+      "expected_policy": "SAFE_DIRECT_ANSWER",
+      "domain": "SUPPORT"
+    },
+    {
+      "sample_id": "CS-14",
+      "language": "ary-Latn",
+      "text": "Transferer lia un responsable commercial 3afak, bghit n-negocier le contrat.",
+      "expected_intent": "HUMAN_ESCALATION",
+      "expected_policy": "HUMAN_HANDOFF_TRIGGERED",
+      "domain": "SUPERVISION"
+    },
+    {
+      "sample_id": "CS-15",
+      "language": "ary-Latn",
+      "text": "Choukrane bzaf pour votre support technique rapide, bon courage !",
       "expected_intent": "GREETING",
       "expected_policy": "SAFE_DIRECT_ANSWER",
       "domain": "GENERAL"

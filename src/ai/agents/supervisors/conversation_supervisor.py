@@ -63,6 +63,23 @@ class ConversationSupervisorAgent(BaseAgent):
         self._turn_versions[conversation_id] = new_version
         return True, new_version
 
+    def validate_turn_version(self, conversation_id: str, incoming_version: int, current_version: int) -> Tuple[bool, str]:
+        """Validates turn concurrency against race conditions."""
+        if incoming_version <= current_version:
+            return False, f"Stale turn rejected: incoming {incoming_version} <= current {current_version}"
+        return True, "Turn version valid"
+
+    def evaluate_turn_eligibility(self, is_human_takeover: bool = False, has_active_handshake: bool = True):
+        """Evaluates whether autonomous turn should execute or be suppressed."""
+        class EligibilityResult:
+            def __init__(self, status, should_generate):
+                self.status = status
+                self.should_generate = should_generate
+        if is_human_takeover:
+            return EligibilityResult("SILENCED_TAKEOVER", False)
+        return EligibilityResult("ACTIVE", True)
+
+
     def select_specialist(self, routing: RoutingDecision, conversation_id: Optional[str] = None) -> str:
         """Determines which interactive specialist role should own this turn."""
         intent = routing.intent

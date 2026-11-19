@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SaaS Administration & Quota Metering — Sales AI Management</title>
+  <style>
+    :root {
+      --primary: #0A3A2A;
+      --primary-hover: #064E3B;
+      --primary-tint: #E6F4EA;
+      --accent: #10B981;
+      --bg-neutral: #FFFFFF;
+      --bg-page: #F8FAFC;
+      --border-muted: #E2E8F0;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --status-success: #16A34A;
+      --status-warning: #D97706;
+      --status-danger: #DC2626;
+      --status-info: #2563EB;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
+    
+    .sidebar {
+      width: 260px;
+      background-color: var(--primary);
+      color: #FFFFFF;
+      padding: 1.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .brand-title { font-size: 1.15rem; font-weight: 700; color: #FFFFFF; display: flex; align-items: center; gap: 0.5rem; }
+    .brand-subtitle { font-size: 0.75rem; color: #A7F3D0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1.5rem; }
+    
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 0.35rem; }
+    .nav-item a {
+      color: #E2E8F0;
+      text-decoration: none;
+      display: block;
+      padding: 0.65rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      transition: background 0.15s;
+    }
+    .nav-item a:hover, .nav-item.active a { background-color: var(--primary-hover); color: #FFFFFF; font-weight: 600; }
+    
+    .main-content { flex: 1; padding: 2rem; overflow-y: auto; }
+    .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .page-title { font-size: 1.65rem; font-weight: 700; color: var(--text-main); }
+    .page-desc { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem; }
+    
+    .controls-bar { display: flex; gap: 1rem; align-items: center; }
+    .btn {
+      background: var(--primary);
+      color: #FFFFFF;
+      border: none;
+      padding: 0.6rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn:hover { background: var(--primary-hover); }
+    .btn-secondary { background: var(--bg-neutral); color: var(--text-main); border: 1px solid var(--border-muted); }
+    .btn-secondary:hover { background: #F1F5F9; }
+    
+    .tenant-badge {
+      background: var(--primary-tint);
+      color: var(--primary);
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    
+    .alert-banner {
+      background: #FEF3C7;
+      border-left: 4px solid var(--status-warning);
+      padding: 1rem 1.5rem;
+      border-radius: 6px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #92400E;
+      font-size: 0.875rem;
+    }
+    .alert-banner.hidden { display: none; }
+    
+    .grid-plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .plan-card {
+      background: var(--bg-neutral);
+      border: 1px solid var(--border-muted);
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      position: relative;
+      transition: transform 0.15s;
+    }
+    .plan-card.current { border: 2px solid var(--primary); background: #FDFEFE; }
+    .plan-badge {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: var(--primary);
+      color: #FFFFFF;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+    }
+    .plan-name { font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem; }
+    .plan-price { font-size: 1.5rem; font-weight: 800; color: var(--primary); margin: 0.5rem 0 1rem 0; }
+    .plan-features { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem; color: var(--text-muted); }
+    .plan-features li { display: flex; align-items: center; gap: 0.5rem; }
+    .plan-features li span { color: var(--status-success); font-weight: 700; }
+    
+    .grid-meters { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .meter-card {
+      background: var(--bg-neutral);
+      border: 1px solid var(--border-muted);
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .meter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+    .meter-title { font-size: 0.95rem; font-weight: 600; color: var(--text-main); }
+    .meter-values { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+    .progress-bar-container {
+      background: #E2E8F0;
+      border-radius: 9999px;
+      height: 10px;
+      overflow: hidden;
+      margin-bottom: 0.75rem;
+    }
+    .progress-bar {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 9999px;
+      transition: width 0.3s ease;
+    }
+    .progress-bar.warning { background: var(--status-warning); }
+    .progress-bar.danger { background: var(--status-danger); }
+    .meter-footer { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); }
+    
+    .card {
+      background: var(--bg-neutral);
+      border: 1px solid var(--border-muted);
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      margin-bottom: 2rem;
+    }
+    .card-title { font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; }
+    
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left; }
+    .data-table th { background: var(--bg-page); padding: 0.75rem 1rem; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border-muted); }
+    .data-table td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border-muted); }
+    
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal-card {
+      background: #FFFFFF;
+      border-radius: 8px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    .form-group { margin-bottom: 1.25rem; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.35rem; }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 0.6rem 0.85rem;
+      border: 1px solid var(--border-muted);
+      border-radius: 6px;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="brand-title">🛡️ Sales AI</div>
+    <div class="brand-subtitle">Enterprise SaaS Core</div>
+    <ul class="nav-list">
+      <li class="nav-item"><a href="index.html">🏠 Home Console</a></li>
+      <li class="nav-item"><a href="analytics_dashboard.html">📈 Executive Analytics</a></li>
+      <li class="nav-item"><a href="ai_operations_dashboard.html">🤖 AI Model Operations</a></li>
+      <li class="nav-item"><a href="voice_observability.html">🎙️ Voice Observability</a></li>
+      <li class="nav-item active"><a href="saas_admin_dashboard.html">🏢 SaaS Admin & Quotas</a></li>
+      <li class="nav-item"><a href="workflow_reliability_dashboard.html">🩺 Reliability & Alerts</a></li>
+    </ul>
+  </div>
+
+  <div class="main-content">
+    <div class="header-bar">
+      <div>
+        <h1 class="page-title">SaaS Administration & Multi-Tenant Quotas</h1>
+        <p class="page-desc">Authoritative usage meters, subscription tiers, and noisy-neighbor quota enforcement.</p>
+      </div>
+      <div class="controls-bar">
+        <span class="tenant-badge" id="tenantBadge">🏢 Tenant: Acme Corp (Production)</span>
+        <button class="btn btn-secondary" onclick="openQuotaModal()">⚙️ Adjust Quotas</button>
+        <button class="btn" onclick="fetchSaaSData()">🔄 Refresh</button>
+      </div>
+    </div>
+
+    <!-- 80% Quota Warning Banner -->
+    <div id="quotaWarningBanner" class="alert-banner hidden">
+      <div>
+        <strong>⚠️ Quota Warning:</strong> Your organization has exceeded 80% of your allocated monthly limits on one or more metrics. Consider upgrading or adjusting limits to avoid workflow throttling.
+      </div>
+      <button class="btn btn-secondary" style="font-size:0.75rem; padding:0.4rem 0.8rem;" onclick="openQuotaModal()">Request Increase</button>
+    </div>
+
+    <!-- Active Subscription Tier Overview -->
+    <div class="grid-plans">
+      <div class="plan-card" id="planStarter">
+        <div class="plan-name">Starter Tier</div>
+        <div class="plan-price">999 MAD <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted)">/ month</span></div>
+        <ul class="plan-features">
+          <li><span>✓</span> 1,000,000 Monthly LLM Tokens</li>
+          <li><span>✓</span> 100 Voice Minutes</li>
+          <li><span>✓</span> 50,000 API Calls</li>
+          <li><span>✓</span> Up to 5 User Seats</li>
+        </ul>
+      </div>
+
+      <div class="plan-card current" id="planPro">
+        <span class="plan-badge">Active Plan</span>
+        <div class="plan-name">Professional Tier</div>
+        <div class="plan-price">2,999 MAD <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted)">/ month</span></div>
+        <ul class="plan-features">
+          <li><span>✓</span> 10,000,000 Monthly LLM Tokens</li>
+          <li><span>✓</span> 1,000 Voice Minutes</li>
+          <li><span>✓</span> 500,000 API Calls</li>
+          <li><span>✓</span> Up to 25 User Seats</li>
+          <li><span>✓</span> Dedicated Model Prioritization</li>
+        </ul>
+      </div>
+
+      <div class="plan-card" id="planEnterprise">
+        <div class="plan-name">Enterprise Tier</div>
+        <div class="plan-price">7,999 MAD <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted)">/ month</span></div>
+        <ul class="plan-features">
+          <li><span>✓</span> 50,000,000 Monthly LLM Tokens</li>
+          <li><span>✓</span> 5,000 Voice Minutes</li>
+          <li><span>✓</span> 2,500,000 API Calls</li>
+          <li><span>✓</span> Unlimited User Seats</li>
+          <li><span>✓</span> 24/7 SRE Support & Custom RAG</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Real-Time Metered Usage Progress Bars -->
+    <h2 style="font-size:1.15rem; font-weight:700; margin-bottom:1rem; color:var(--text-main);">Current Billing Period Usage Meters</h2>
+    <div class="grid-meters">
+      <!-- LLM Tokens Meter -->
+      <div class="meter-card">
+        <div class="meter-header">
+          <div class="meter-title">🧠 LLM Tokens Meter</div>
+          <div class="meter-values" id="tokensValues">3,420,110 / 10,000,000</div>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="tokensProgressBar" style="width: 34.2%;"></div>
+        </div>
+        <div class="meter-footer">
+          <span id="tokensPct">34.2% Utilized</span>
+          <span>Hard Cap: 10,000,000 Tokens</span>
+        </div>
+      </div>
+
+      <!-- Voice Minutes Meter -->
+      <div class="meter-card">
+        <div class="meter-header">
+          <div class="meter-title">🎙️ Voice Minutes Meter</div>
+          <div class="meter-values" id="voiceValues">412 / 1,000 min</div>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="voiceProgressBar" style="width: 41.2%;"></div>
+        </div>
+        <div class="meter-footer">
+          <span id="voicePct">41.2% Utilized</span>
+          <span>Hard Cap: 1,000 Minutes</span>
+        </div>
+      </div>
+
+      <!-- API Calls Meter -->
+      <div class="meter-card">
+        <div class="meter-header">
+          <div class="meter-title">🔌 API Requests Meter</div>
+          <div class="meter-values" id="apiValues">184,200 / 500,000</div>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="apiProgressBar" style="width: 36.8%;"></div>
+        </div>
+        <div class="meter-footer">
+          <span id="apiPct">36.8% Utilized</span>
+          <span>Hard Cap: 500,000 Requests</span>
+        </div>
+      </div>
+
+      <!-- User Seats Meter -->
+      <div class="meter-card">
+        <div class="meter-header">
+          <div class="meter-title">👥 Active User Seats</div>
+          <div class="meter-values" id="seatsValues">12 / 25 seats</div>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="seatsProgressBar" style="width: 48.0%;"></div>
+        </div>
+        <div class="meter-footer">
+          <span id="seatsPct">48.0% Utilized</span>
+          <span>Plan Limit: 25 Seats</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Quota Limits Table -->
+    <div class="card">
+      <div class="card-title">Enforced Multi-Tenant Quotas & Overdraft Rules</div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Metric Name</th>
+            <th>Enforcement Mode</th>
+            <th>Monthly Limit</th>
+            <th>Current Consumed</th>
+            <th>Warning Threshold</th>
+            <th>Action on Exhaustion</th>
+          </tr>
+        </thead>
+        <tbody id="quotasTableBody">
+          <tr>
+            <td><strong>total_tokens</strong></td>
+            <td>Monthly Hard Cap</td>
+            <td>10,000,000</td>
+            <td>3,420,110</td>
+            <td>80% (8,000,000)</td>
+            <td><span style="color:var(--status-danger); font-weight:600;">Reject Turn (429)</span></td>
+          </tr>
+          <tr>
+            <td><strong>voice_seconds</strong></td>
+            <td>Monthly Hard Cap</td>
+            <td>60,000 (1,000 min)</td>
+            <td>24,720 (412 min)</td>
+            <td>80% (48,000)</td>
+            <td><span style="color:var(--status-danger); font-weight:600;">Refuse Session (429)</span></td>
+          </tr>
+          <tr>
+            <td><strong>api_calls</strong></td>
+            <td>Monthly Hard Cap</td>
+            <td>500,000</td>
+            <td>184,200</td>
+            <td>80% (400,000)</td>
+            <td><span style="color:var(--status-danger); font-weight:600;">Rate Limit (429)</span></td>
+          </tr>
+          <tr>
+            <td><strong>active_seats</strong></td>
+            <td>Seat Cap</td>
+            <td>25</td>
+            <td>12</td>
+            <td>90% (22)</td>
+            <td><span style="color:var(--status-danger); font-weight:600;">Block User Invite</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Quota Adjustment Modal -->
+  <div id="quotaModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h2 style="font-size:1.25rem; font-weight:700; color:var(--primary); margin-bottom:0.5rem;">Adjust Tenant Quota Limit</h2>
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1.5rem;">Privileged action requiring Tenant Admin authorization. Changes are logged to the immutable audit trail.</p>
+      
+      <form id="quotaForm" onsubmit="handleQuotaSubmit(event)">
+        <div class="form-group">
+          <label>Metric Name</label>
+          <select id="metricName" required>
+            <option value="total_tokens">Total LLM Tokens</option>
+            <option value="voice_seconds">Voice Seconds</option>
+            <option value="api_calls">API Requests</option>
+            <option value="active_seats">Active User Seats</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>New Monthly Limit</label>
+          <input type="number" id="newLimit" required placeholder="e.g. 15000000" min="1000">
+        </div>
+
+        <div class="form-group">
+          <label>Business Justification / Reason</label>
+          <input type="text" id="quotaReason" required placeholder="e.g. Seasonal sales campaign expansion">
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:2rem;">
+          <button type="button" class="btn btn-secondary" onclick="closeQuotaModal()">Cancel</button>
+          <button type="submit" class="btn">Confirm Adjustment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    async function fetchSaaSData() {
+      try {
+        const subRes = await fetch('/api/v1/saas/subscription');
+        if (subRes.ok) {
+          const sub = await subRes.json();
+          document.getElementById('tenantBadge').textContent = `🏢 Tenant: ${sub.tenant_id}`;
+          updatePlanHighlight(sub.plan_tier);
+        }
+
+        const usageRes = await fetch('/api/v1/saas/usage');
+        if (usageRes.ok) {
+          const usage = await usageRes.json();
+          renderUsageMeters(usage);
+        }
+      } catch (err) {
+        console.warn('API fetch error, keeping default authoritative display', err);
+      }
+    }
+
+    function updatePlanHighlight(planTier) {
+      document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('current'));
+      if (planTier === 'STARTER') document.getElementById('planStarter')?.classList.add('current');
+      else if (planTier === 'ENTERPRISE') document.getElementById('planEnterprise')?.classList.add('current');
+      else document.getElementById('planPro')?.classList.add('current');
+    }
+
+    function renderUsageMeters(usage) {
+      if (!usage || !usage.meters) return;
+      
+      let hasWarning = false;
+      const meters = usage.meters;
+      
+      // Tokens
+      if (meters.tokens) {
+        const cur = meters.tokens.current || 0;
+        const lim = meters.tokens.limit || 10000000;
+        const pct = Math.min(100, (cur / lim) * 100).toFixed(1);
+        document.getElementById('tokensValues').textContent = `${cur.toLocaleString()} / ${lim.toLocaleString()}`;
+        document.getElementById('tokensPct').textContent = `${pct}% Utilized`;
+        const bar = document.getElementById('tokensProgressBar');
+        bar.style.width = `${pct}%`;
+        if (pct >= 90) bar.className = 'progress-bar danger';
+        else if (pct >= 80) { bar.className = 'progress-bar warning'; hasWarning = true; }
+        else bar.className = 'progress-bar';
+      }
+
+      // Voice
+      if (meters.voice_seconds) {
+        const curMin = Math.round((meters.voice_seconds.current || 0) / 60);
+        const limMin = Math.round((meters.voice_seconds.limit || 60000) / 60);
+        const pct = Math.min(100, (curMin / limMin) * 100).toFixed(1);
+        document.getElementById('voiceValues').textContent = `${curMin} / ${limMin} min`;
+        document.getElementById('voicePct').textContent = `${pct}% Utilized`;
+        const bar = document.getElementById('voiceProgressBar');
+        bar.style.width = `${pct}%`;
+        if (pct >= 90) bar.className = 'progress-bar danger';
+        else if (pct >= 80) { bar.className = 'progress-bar warning'; hasWarning = true; }
+        else bar.className = 'progress-bar';
+      }
+
+      // API calls
+      if (meters.api_calls) {
+        const cur = meters.api_calls.current || 0;
+        const lim = meters.api_calls.limit || 500000;
+        const pct = Math.min(100, (cur / lim) * 100).toFixed(1);
+        document.getElementById('apiValues').textContent = `${cur.toLocaleString()} / ${lim.toLocaleString()}`;
+        document.getElementById('apiPct').textContent = `${pct}% Utilized`;
+        const bar = document.getElementById('apiProgressBar');
+        bar.style.width = `${pct}%`;
+        if (pct >= 90) bar.className = 'progress-bar danger';
+        else if (pct >= 80) { bar.className = 'progress-bar warning'; hasWarning = true; }
+        else bar.className = 'progress-bar';
+      }
+
+      const warnBanner = document.getElementById('quotaWarningBanner');
+      if (hasWarning) warnBanner.classList.remove('hidden');
+      else warnBanner.classList.add('hidden');
+    }
+
+    function openQuotaModal() {
+      document.getElementById('quotaModal').classList.remove('hidden');
+    }
+
+    function closeQuotaModal() {
+      document.getElementById('quotaModal').classList.add('hidden');
+    }
+
+    async function handleQuotaSubmit(e) {
+      e.preventDefault();
+      const metric = document.getElementById('metricName').value;
+      const limit = parseInt(document.getElementById('newLimit').value, 10);
+      const reason = document.getElementById('quotaReason').value;
+
+      try {
+        const res = await fetch('/api/v1/saas/quotas/adjust', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ metric_name: metric, new_limit: limit, reason: reason })
+        });
+        if (res.ok) {
+          alert('Quota successfully adjusted.');
+          closeQuotaModal();
+          fetchSaaSData();
+        } else {
+          alert('Adjustment failed: ' + (await res.text()));
+        }
+      } catch (err) {
+        alert('Network or server error during quota adjustment');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', fetchSaaSData);
+  </script>
+</body>
+</html>

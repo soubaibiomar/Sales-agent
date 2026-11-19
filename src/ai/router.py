@@ -31,6 +31,10 @@ class RoutingDecision(BaseModel):
     adversarial_reason: Optional[str] = None
     action: str = "EXECUTE"  # EXECUTE, SILENCE_HUMAN_TAKEOVER, ESCALATE_HUMAN, REJECT_ADVERSARIAL
 
+    @property
+    def target_agent(self) -> str:
+        return self.target_specialist or ""
+
 
 class ConversationRouter:
     """
@@ -265,3 +269,7 @@ class ConversationSupervisor:
         new_version = current_version + 1
         self._turn_versions[conversation_id] = new_version
         return True, new_version
+
+
+ConversationRouter.route_intent = staticmethod(ConversationRouter.route)
+IntentRouter = ConversationRouter

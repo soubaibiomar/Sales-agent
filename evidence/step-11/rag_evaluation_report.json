@@ -1,0 +1,13 @@
+{
+  "suite_name": "RAG_RETRIEVAL_QUALITY_AND_SECURITY_EVALUATION",
+  "timestamp": "2026-11-19T17:55:46.437852+00:00",
+  "precision_at_1": 0.67,
+  "recall_at_3": 1.0,
+  "mean_reciprocal_rank_mrr": 0.833,
+  "cross_tenant_isolation_verified": true,
+  "role_based_filtering_verified": true,
+  "poisoned_document_quarantined": true,
+  "ungrounded_query_abstention_verified": true,
+  "duration_ms": 2.56,
+  "status": "PASS"
+}

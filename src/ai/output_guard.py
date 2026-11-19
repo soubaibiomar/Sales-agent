@@ -16,6 +16,9 @@ from typing import Dict, Any, Optional, List, Tuple
 from pydantic import BaseModel, Field
 
 from src.ai.model_gateway import PIIFilter
+from src.ai.rag.poison_detector import PoisonDetector
+
+PromptInjectionChecker = PoisonDetector
 
 logger = logging.getLogger("SalesAI.OutputGuard")
 
@@ -25,7 +28,7 @@ class EvidenceEnvelope(BaseModel):
     Structured domain ground truth provided to the turn from deterministic services.
     Only claims present in this envelope are considered grounded.
     """
-    tenant_id: str
+    tenant_id: str = "system"
     verified_prices: Dict[str, float] = Field(default_factory=dict)  # {"SKU-01": 1250.0, "total": 1200.0}
     verified_currency: str = "MAD"
     verified_stock_atp: Dict[str, int] = Field(default_factory=dict)  # {"SKU-01": 15}
@@ -174,6 +177,18 @@ class ClaimVerifier:
 
         is_valid = len(violations) == 0
         return is_valid, violations
+
+    @classmethod
+    def verify_price_claim(cls, text: str, authorized_price_cents: int) -> Tuple[bool, str]:
+        envelope = EvidenceEnvelope(
+            tenant_id="eval",
+            verified_prices={"item": authorized_price_cents / 100.0}
+        )
+        is_valid, violations = cls.verify(text, envelope)
+        if not is_valid:
+            reason = violations[0].detail if violations else "Ungrounded price claim"
+            return False, reason
+        return True, "Price claim grounded in verified domain records"
 
 
 class OutputGuard:

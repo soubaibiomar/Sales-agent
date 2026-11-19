@@ -3,7 +3,7 @@ Outreach & Nurture Agent (B01).
 Step 09: Complete 18-Role Agent Ecosystem & Sales Representative Copilot
 (Controls 40, 67; Invariant 2; Law 09-08 Quiet Hours & STOP)
 """
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple
 from src.ai.agents.base import BaseAgent, AgentInput, AgentOutput
 from src.ai.tool_gateway import ServerSecurityContext
 
@@ -11,6 +11,13 @@ from src.ai.tool_gateway import ServerSecurityContext
 class OutreachAgent(BaseAgent):
     def __init__(self):
         super().__init__("outreach")
+
+    def can_dispatch_message(self, hour_utc_plus_1: int, has_opted_out: bool) -> Tuple[bool, str]:
+        if has_opted_out:
+            return False, "Customer opted out via STOP"
+        if hour_utc_plus_1 < 8 or hour_utc_plus_1 >= 21:
+            return False, "Moroccan quiet hours enforced (21:00 - 08:00)"
+        return True, "Dispatch permitted"
 
     async def execute(
         self,
@@ -31,3 +38,6 @@ class OutreachAgent(BaseAgent):
                 + result.response_text
             )
         return result
+
+
+OutreachNurtureAgent = OutreachAgent

@@ -48,6 +48,16 @@ class SalesRepresentativeCopilot(BaseAgent):
     def __init__(self):
         super().__init__("sales_copilot")
 
+    def draft_action_proposal(self, action_type: str, payload: Dict[str, Any]) -> CopilotActionProposal:
+        return CopilotActionProposal(
+            proposal_id=str(uuid.uuid4()),
+            action_type=action_type,
+            description=f"Proposed {action_type}",
+            payload=payload,
+            requires_human_approval=True,
+            is_approved=False
+        )
+
     async def execute(
         self,
         input_data: AgentInput,

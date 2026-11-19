@@ -40,6 +40,9 @@ from src.backend.api.notifications import router as notifications_router
 from src.backend.api.integrations import router as integrations_router
 from src.backend.api.ai_governance import router as ai_governance_router
 from src.backend.api.agent_ecosystem import router as agent_ecosystem_router
+from src.backend.api.analytics import router as analytics_router
+from src.backend.api.observability import router as observability_router
+from src.backend.api.saas_admin import router as saas_router
 
 logger = logging.getLogger("SalesAI.API")
 
@@ -125,3 +128,6 @@ app.include_router(notifications_router)
 app.include_router(integrations_router)
 app.include_router(ai_governance_router)
 app.include_router(agent_ecosystem_router)
+app.include_router(analytics_router, prefix="/api/v1")
+app.include_router(observability_router, prefix="/api/v1")
+app.include_router(saas_router, prefix="/api/v1")
