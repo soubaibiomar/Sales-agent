@@ -1,272 +1,19 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+  <script src="js/api_client.js"></script>
+  <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sales AI Management Platform — Agent Ecosystem & Sales Copilot</title>
   <link rel="stylesheet" href="css/design_system.css">
-  <style>
-/* Sidebar */
-    
-    
-    
-    .tenant-badge {
-      background: rgba(255, 255, 255, 0.12);
-      padding: 0.5rem 0.75rem;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      margin-bottom: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-    .tenant-label { font-size: 0.7rem; color: #D1FAE5; }
-    .tenant-selector {
-      background: #FFFFFF;
-      color: var(--text-main);
-      border: none;
-      border-radius: 4px;
-      padding: 0.35rem 0.5rem;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    
-    
-    
-    
-    /* Main Area */
-    
-    
-    .role-indicator {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.35rem 0.75rem;
-      background: var(--primary-tint);
-      color: var(--primary);
-      border-radius: 9999px;
-      font-size: 0.8rem;
-      font-weight: 600;
-    }
-    .user-profile { display: flex; align-items: center; gap: 1rem; font-size: 0.875rem; }
-    
-    /* Content Layout */
-    .content-
-    .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
-    .page-title { font-size: 1.4rem; font-weight: 800; color: var(--primary); }
-    .page-desc { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem; }
-    
-    /* Tab Navigation */
-    .tabs-header { display: flex; gap: 0.5rem; border-bottom: 2px solid var(--border-muted); margin-bottom: 1.5rem; }
-    .tab-btn {
-      padding: 0.75rem 1.25rem;
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      background: none;
-      border: none;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -2px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: all 0.15s ease;
-    }
-    .tab-btn:hover { color: var(--primary); }
-    .tab-btn.active { color: var(--primary); border-bottom-color: var(--accent); }
-    .tab-pane { display: none; }
-    .tab-pane.active { display: block; }
-
-    /* Cards & Components */
-    .card {
-      background: var(--bg-neutral);
-      border: 1px solid var(--border-muted);
-      border-radius: 8px;
-      padding: 1.5rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      margin-bottom: 1.5rem;
-    }
-    .card-title { font-size: 1.1rem; font-weight: 700; color: var(--primary); margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between; }
-    .card-subtitle { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; }
-    
-    /* Hardware Bar */
-    .hardware-bar {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-    .metric-card {
-      background: #FFFFFF;
-      border: 1px solid var(--border-muted);
-      border-radius: 6px;
-      padding: 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-    .metric-label { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
-    .metric-val { font-size: 1.25rem; font-weight: 800; color: var(--text-main); }
-    .metric-tag { font-size: 0.7rem; color: var(--status-success); font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem; }
-
-    /* Tables */
-    .data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
-    .data-table th { padding: 0.75rem; background: var(--bg-page); border-bottom: 2px solid var(--border-muted); color: var(--text-muted); font-weight: 600; }
-    .data-table td { padding: 0.75rem; border-bottom: 1px solid var(--border-muted); vertical-align: top; }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      padding: 0.2rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-    .badge-primary { background: var(--primary-tint); color: var(--primary); }
-    .badge-success { background: #DCFCE7; color: var(--status-success); }
-    .badge-warning { background: #FEF3C7; color: var(--status-warning); }
-    .badge-danger { background: #FEE2E2; color: var(--status-danger); }
-    .badge-info { background: #DBEAFE; color: var(--status-info); }
-
-    /* Copilot Split Layout */
-    .copilot-grid {
-      display: grid;
-      grid-template-columns: 320px 1fr 340px;
-      gap: 1.5rem;
-      align-items: start;
-    }
-    .chat-snippet-box {
-      background: var(--bg-page);
-      border: 1px solid var(--border-muted);
-      border-radius: 6px;
-      padding: 1rem;
-      font-size: 0.85rem;
-      line-height: 1.4;
-      max-height: 280px;
-      overflow-y: auto;
-      margin-bottom: 1rem;
-    }
-    .proposal-card {
-      border: 1px solid var(--border-muted);
-      border-radius: 6px;
-      padding: 1rem;
-      background: #FFFFFF;
-      margin-bottom: 0.75rem;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-    }
-    .proposal-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.25rem; color: var(--primary); }
-    .proposal-desc { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem; }
-    
-    /* Buttons */
-    .btn {
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      transition: background 0.15s ease;
-    }
-    .btn-primary { background: var(--primary); color: #FFFFFF; }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-accent { background: var(--accent); color: #FFFFFF; }
-    .btn-accent:hover { background: #059669; }
-    .btn-outline { background: transparent; border: 1px solid var(--border-dark); color: var(--text-main); }
-    .btn-outline:hover { background: var(--bg-page); }
-    .btn-danger { background: var(--status-danger); color: #FFFFFF; }
-    .btn-danger:hover { background: #B91C1C; }
-    .btn-sm { padding: 0.35rem 0.65rem; font-size: 0.75rem; }
-
-    /* Switch */
-    .switch-wrap { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 44px;
-      height: 24px;
-    }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .slider {
-      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-      background-color: #CBD5E1; transition: .2s; border-radius: 24px;
-    }
-    .slider:before {
-      position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
-      background-color: white; transition: .2s; border-radius: 50%;
-    }
-    input:checked + .slider { background-color: var(--accent); }
-    input:checked + .slider:before { transform: translateX(20px); }
-  </style>
+  <link rel="stylesheet" href="css/pages/agent_workspace.css">
+  <script src="js/pages/agent_workspace.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
     <!-- MASTER SIDEBAR -->
-    <aside class="sidebar">
-      <div class="brand-header">
-        <div class="brand-logo-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 20V10M12 20V4M6 20v-6"></path></svg>
-        </div>
-        <div class="brand-text">
-          <span class="title">Sales AI</span>
-          <span class="subtitle">Management</span>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <ul class="nav-list">
-          <li><a href="index.html" class="nav-item"><span class="icon">📊</span><span class="label">Tableau de bord</span></a></li>
-          <li><a href="pipeline.html" class="nav-item"><span class="icon">📈</span><span class="label">CRM & Pipeline</span></a></li>
-          <li><a href="catalog.html" class="nav-item"><span class="icon">📦</span><span class="label">Catalogue</span></a></li>
-          <li><a href="quote_builder.html" class="nav-item"><span class="icon">📝</span><span class="label">Devis & Approbations</span></a></li>
-          <li><a href="orders.html" class="nav-item"><span class="icon">🛒</span><span class="label">Commandes</span></a></li>
-          <li><a href="inventory.html" class="nav-item"><span class="icon">🏭</span><span class="label">Stock & Entrepôts</span></a></li>
-          <li><a href="procurement.html" class="nav-item"><span class="icon">🚢</span><span class="label">Achats & Fournisseurs</span></a></li>
-          <li><a href="logistics.html" class="nav-item"><span class="icon">🚚</span><span class="label">Logistique & Expéditions</span></a></li>
-          <li><a href="invoices.html" class="nav-item"><span class="icon">📄</span><span class="label">Factures & TVA</span></a></li>
-          <li><a href="checkout.html" class="nav-item"><span class="icon">💳</span><span class="label">Caisse & Paiements</span></a></li>
-          <li><a href="support.html" class="nav-item"><span class="icon">🎧</span><span class="label">Support & SAV</span></a></li>
-          <li><a href="schedule.html" class="nav-item"><span class="icon">📅</span><span class="label">Rendez-vous</span></a></li>
-          <li><a href="inbox.html" class="nav-item"><span class="icon">💬</span><span class="label">Omnicanal</span> <span class="badge">8</span></a></li>
-          <li><a href="notifications.html" class="nav-item"><span class="icon">🔔</span><span class="label">Notifications</span></a></li>
-          <li><a href="integrations.html" class="nav-item"><span class="icon">🔌</span><span class="label">Intégrations & n8n</span></a></li>
-          <li><a href="workflows.html" class="nav-item"><span class="icon">⚡</span><span class="label">Workflows Durables</span></a></li>
-          <li><a href="workflow_reliability_dashboard.html" class="nav-item"><span class="icon">🩺</span><span class="label">Fiabilité & DLQ</span></a></li>
-          <li><a href="ai_governance.html" class="nav-item"><span class="icon">🧠</span><span class="label">Gouvernance IA</span></a></li>
-          <li><a href="agent_workspace.html" class="nav-item active"><span class="icon">🤖</span><span class="label">Écosystème 18 Agents</span></a></li>
-          <li><a href="voice_agent.html" class="nav-item"><span class="icon">🎙️</span><span class="label">Agent Vocal Client</span></a></li>
-          <li><a href="voice_copilot.html" class="nav-item"><span class="icon">🗣️</span><span class="label">Copilote Vocal Manager</span></a></li>
-          <li><a href="voice_observability.html" class="nav-item"><span class="icon">📡</span><span class="label">Télémétrie Vocale</span></a></li>
-          <li><a href="analytics_dashboard.html" class="nav-item"><span class="icon">📉</span><span class="label">Analytics Exécutif</span></a></li>
-          <li><a href="ai_operations_dashboard.html" class="nav-item"><span class="icon">💻</span><span class="label">Opérations GPU/VRAM</span></a></li>
-          <li><a href="saas_admin_dashboard.html" class="nav-item"><span class="icon">🏢</span><span class="label">Admin SaaS & Quotas</span></a></li>
-          <li><a href="release_console.html" class="nav-item"><span class="icon">🚀</span><span class="label">Console de Déploiement</span></a></li>
-        </ul>
-      </div>
-
-      <div class="sidebar-footer">
-        <div class="ai-status-pill" onclick="window.location.href='agent_workspace.html'">
-          <span class="sparkle-icon">✨</span>
-          <div class="info">
-            <span class="status-title">IA Active</span>
-            <span class="status-desc">4 agents opérationnels</span>
-          </div>
-        </div>
-
-        <div class="user-profile-card">
-          <div class="user-avatar">OA</div>
-          <div class="user-details">
-            <span class="name">Omar A.</span>
-            <span class="role">Administrateur</span>
-          </div>
-        </div>
-      </div>
-    </aside>
+    <aside class="sidebar"><div data-app-nav></div></aside>
 
     <div class="main-wrapper">
       <header class="topbar">
@@ -279,12 +26,11 @@
 
         <div class="topbar-actions">
           <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel">Atlas Commerce</span>
+            <span>🏢</span> <span id="currentTenantLabel"></span>
           </div>
 
           <div class="icon-btn-badge" id="notifBtn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-            <span class="badge-counter">3</span>
           </div>
 
           <button class="btn-header-primary" id="btnQuickNew">
@@ -292,10 +38,10 @@
           </button>
 
           <div class="user-topbar-pill">
-            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;">OA</div>
+            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;"></div>
             <div style="display:flex; flex-direction:column; line-height:1.2;">
-              <span style="font-weight:600; font-size:13px; color:#17251F;">Omar A.</span>
-              <span style="font-size:11px; color:#66756D;">Administrateur</span>
+              <span style="font-weight:600; font-size:13px; color:#17251F;"></span>
+              <span style="font-size:11px; color:#66756D;"></span>
             </div>
           </div>
         </div>
@@ -308,8 +54,8 @@
           <p class="page-desc">Complete 18-Role Orchestration Catalog, Real-Time Copilot Briefings, and Governed Autonomous Background Dispatches.</p>
         </div>
         <div style="display: flex; gap: 0.5rem;">
-          <button class="btn btn-outline btn-sm" onclick="refreshCatalog()">🔄 Refresh Catalog</button>
-          <button class="btn btn-primary btn-sm" onclick="runOperationsTriage()">⚡ Run Ops Triage</button>
+          <button class="btn btn-outline btn-sm" data-on-click="h2">🔄 Refresh Catalog</button>
+          <button class="btn btn-primary btn-sm" data-on-click="h3">⚡ Run Ops Triage</button>
         </div>
       </div>
 
@@ -339,13 +85,13 @@
 
       <!-- Tab Navigation -->
       <div class="tabs-header">
-        <button class="tab-btn active" onclick="switchAgentTab('catalog')">
+        <button class="tab-btn active" data-on-click="h4">
           <span>📚</span> Agent Catalog (18 Roles)
         </button>
-        <button class="tab-btn" onclick="switchAgentTab('copilot')">
+        <button class="tab-btn" data-on-click="h5">
           <span>💼</span> Sales Rep Copilot Workspace
         </button>
-        <button class="tab-btn" onclick="switchAgentTab('activity')">
+        <button class="tab-btn" data-on-click="h6">
           <span>📈</span> Agent Operations & Activity Monitor
         </button>
       </div>
@@ -404,7 +150,7 @@
                   <div style="font-size: 0.7rem; color: var(--text-muted);">Silences AI autonomous answers</div>
                 </div>
                 <label class="switch">
-                  <input type="checkbox" id="takeoverToggle" onchange="toggleHumanTakeover(this.checked)">
+                  <input type="checkbox" id="takeoverToggle" data-on-change="h7">
                   <span class="slider"></span>
                 </label>
               </div>
@@ -419,7 +165,7 @@
               <strong>Client:</strong> Si vous pouvez vous aligner ou proposer une garantie sur site de 5 ans, nous signons le bon de commande cette semaine.
             </div>
 
-            <button class="btn btn-primary" style="width: 100%;" onclick="generateCopilotBrief()">
+            <button class="btn btn-primary" style="width: 100%;" data-on-click="h8">
               <span>✨</span> Generate Live Copilot Brief
             </button>
           </div>
@@ -456,201 +202,15 @@
               <div id="copilotSuggestedReplies" style="display: flex; flex-direction: column; gap: 0.5rem;">
                 <div style="background: var(--bg-page); border: 1px solid var(--border-muted); border-radius: 6px; padding: 0.75rem; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
                   <span>"Notre tarif comprend l'installation certifiée et le remplacement garanti sous 48h partout à Casablanca."</span>
-                  <button class="btn btn-outline btn-sm" onclick="copyReply(this)">Copy</button>
+                  <button class="btn btn-outline btn-sm" data-on-click="h9">Copy</button>
       </main>
     </div>
   </div>
 
 
   <script src="js/app_shell.js"></script>
-  <script>
-// Tab Switching
-    function switchAgentTab(tabName) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-      
-      const btn = event.currentTarget;
-      if (btn) btn.classList.add('active');
-      const pane = document.getElementById('pane-' + tabName);
-      if (pane) pane.classList.add('active');
-
-      if (tabName === 'catalog') refreshCatalog();
-      if (tabName === 'activity') loadActivityLogs();
-    }
-
-    // Agent Catalog Data & Population
-    const CATALOG_DATA = [
-      { code: "R00", group: "FRONT_DOOR", role_id: "router_classifier", name: "Inbound Router & Classifier", tier: "PRIMARY_4B", cap: 2048, tools: ["router.classify_intent", "router.detect_language"], delegation: "Any Specialist", active: true },
-      { code: "S00", group: "SUPERVISOR", role_id: "conversation_supervisor", name: "Conversation Supervisor", tier: "PRIMARY_4B", cap: 4096, tools: ["supervisor.handoff", "supervisor.takeover"], delegation: "A01-A09, I01", active: true },
-      { code: "S00", group: "SUPERVISOR", role_id: "operations_supervisor", name: "Operations Supervisor", tier: "PRIMARY_4B", cap: 4096, tools: ["ops.triage_alerts", "ops.monitor_workers"], delegation: "B01-B06", active: true },
-      { code: "A01", group: "INTERACTIVE", role_id: "qualification_crm", name: "Discovery & Qualification", tier: "PRIMARY_4B", cap: 4096, tools: ["crm.get_contact", "crm.update_lead"], delegation: "product_knowledge, quote_pricing", active: true },
-      { code: "A02", group: "INTERACTIVE", role_id: "product_knowledge", name: "Product & Catalog Specialist", tier: "PRIMARY_4B", cap: 4096, tools: ["catalog.search", "inventory.check_atp"], delegation: "quote_pricing, scheduling", active: true },
-      { code: "A03", group: "INTERACTIVE", role_id: "quote_pricing", name: "Quotation & Pricing Specialist", tier: "PRIMARY_4B", cap: 4096, tools: ["pricing.calculate_quote", "pricing.check_discount"], delegation: "order_payment, negotiation", active: true },
-      { code: "A04", group: "INTERACTIVE", role_id: "order_payment", name: "Order & Checkout Specialist", tier: "PRIMARY_4B", cap: 4096, tools: ["orders.get_status", "payments.initiate"], delegation: "support_returns, scheduling", active: true },
-      { code: "A05", group: "INTERACTIVE", role_id: "scheduling", name: "Appointment & Scheduling", tier: "PRIMARY_4B", cap: 2048, tools: ["scheduling.get_slots", "scheduling.book_slot"], delegation: "qualification_crm", active: true },
-      { code: "A06", group: "INTERACTIVE", role_id: "negotiation", name: "Negotiation & Commercial Terms", tier: "PRIMARY_4B", cap: 4096, tools: ["pricing.check_discount", "quotes.request_approval"], delegation: "quote_pricing, supervisor", active: true },
-      { code: "A07", group: "INTERACTIVE", role_id: "support_returns", name: "Support & Issue Resolution", tier: "PRIMARY_4B", cap: 4096, tools: ["support.lookup_ticket", "returns.check_policy"], delegation: "order_payment, supervisor", active: true },
-      { code: "A08", group: "INTERACTIVE", role_id: "account_management", name: "Account Management & Retention", tier: "PRIMARY_4B", cap: 4096, tools: ["account.get_summary", "contracts.get_terms"], delegation: "quote_pricing", active: true },
-      { code: "A09", group: "INTERACTIVE", role_id: "documents_billing", name: "Invoices & Documents Specialist", tier: "PRIMARY_4B", cap: 2048, tools: ["documents.get_invoice", "documents.export_pdf"], delegation: "order_payment", active: true },
-      { code: "B01", group: "BACKGROUND", role_id: "outreach", name: "Outreach & Nurture Agent", tier: "PRIMARY_4B", cap: 2048, tools: ["campaigns.draft_message", "compliance.check_optout"], delegation: "None (Worker Queue)", active: true },
-      { code: "B02", group: "BACKGROUND", role_id: "research", name: "Organization & Lead Research", tier: "PRIMARY_4B", cap: 4096, tools: ["research.enrich_lead", "research.scrape_domain"], delegation: "qualification_crm", active: true },
-      { code: "B03", group: "BACKGROUND", role_id: "pipeline_coach", name: "Sales Pipeline Velocity Coach", tier: "PRIMARY_4B", cap: 4096, tools: ["pipeline.analyze_stale_deals"], delegation: "sales_copilot", active: true },
-      { code: "B04", group: "BACKGROUND", role_id: "analyst", name: "Pricing & Performance Analyst", tier: "REASONING_9B", cap: 4096, tools: ["analytics.get_kpi_summary", "pricing.analyze_margins"], delegation: "None (Worker Queue)", active: true },
-      { code: "B05", group: "BACKGROUND", role_id: "knowledge_curator", name: "Knowledge & FAQ Curator", tier: "PRIMARY_4B", cap: 4096, tools: ["knowledge.propose_article"], delegation: "None (Editorial Review)", active: true },
-      { code: "B06", group: "BACKGROUND", role_id: "incident_responder", name: "Incident Diagnostics & Responder", tier: "PRIMARY_4B", cap: 4096, tools: ["incident.diagnose_system", "incident.flush_cache"], delegation: "operations_supervisor", active: true },
-      { code: "I01", group: "COPILOT", role_id: "sales_copilot", name: "Sales Representative Copilot", tier: "PRIMARY_4B", cap: 4096, tools: ["copilot.generate_brief", "catalog.search"], delegation: "Human Rep Only", active: true }
-    ];
-
-    function refreshCatalog() {
-      const tbody = document.getElementById('agentCatalogBody');
-      tbody.innerHTML = '';
-      CATALOG_DATA.forEach(a => {
-        const tr = document.createElement('tr');
-        const tierBadge = a.tier === 'REASONING_9B' 
-          ? `<span class="badge badge-warning">⚡ REASONING_9B</span>` 
-          : `<span class="badge badge-primary">PRIMARY_4B</span>`;
-        const toolsList = a.tools.map(t => `<code style="font-size:0.75rem; background:#F1F5F9; padding:1px 4px; border-radius:3px;">${t}</code>`).join(' ');
-        
-        tr.innerHTML = `
-          <td><strong>${a.code}</strong></td>
-          <td><span class="badge badge-info">${a.group}</span></td>
-          <td>
-            <strong>${a.name}</strong><br>
-            <code style="font-size:0.75rem; color:var(--text-muted);">${a.role_id}</code>
-          </td>
-          <td>${tierBadge}</td>
-          <td>${a.cap} tok</td>
-          <td>${toolsList}</td>
-          <td style="font-size:0.8rem; color:var(--text-muted);">${a.delegation}</td>
-          <td>
-            <span class="badge badge-success">Active</span>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    // Copilot Actions
-    async function generateCopilotBrief() {
-      const convId = document.getElementById('copilotConvSelect').value;
-      const snippet = document.getElementById('transcriptSnippet').innerText;
-      
-      document.getElementById('briefIdBadge').innerText = "Generating brief...";
-      
-      try {
-        const res = await fetch('/api/v1/agents/copilot/brief', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            conversation_id: convId,
-            customer_id: 'cust-casablanca-01',
-            transcript_snippet: snippet
-          })
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          document.getElementById('briefIdBadge').innerText = data.brief_id || "BRF-LIVE-01";
-          document.getElementById('briefIdBadge').className = "badge badge-success";
-          document.getElementById('copilotSummary').innerText = data.customer_summary || "Client is requesting volume discount of 5% and 5-year on-site warranty for 50 solar panels.";
-        } else {
-          // Graceful fallback for UI demonstration
-          document.getElementById('briefIdBadge').innerText = "BRF-09-VERIFIED";
-          document.getElementById('briefIdBadge').className = "badge badge-success";
-          document.getElementById('copilotSummary').innerText = "Le client Société Maghrébine de Plastique met en concurrence notre offre avec un fournisseur étranger (2 150 MAD vs 2 400 MAD). Recommandation : ne pas céder sur le prix brut mais valoriser la garantie sur site à Casablanca et offrir une remise volume maximale de 5% (2 280 MAD).";
-        }
-      } catch (e) {
-        document.getElementById('briefIdBadge').innerText = "BRF-DEMO-SIM";
-        document.getElementById('briefIdBadge').className = "badge badge-success";
-      }
-    }
-
-    async function toggleHumanTakeover(isTakeover) {
-      const pill = document.getElementById('takeoverStatusPill');
-      const convId = document.getElementById('copilotConvSelect').value;
-      
-      try {
-        await fetch('/api/v1/agents/takeover', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            conversation_id: convId,
-            action: isTakeover ? 'TAKEOVER' : 'RELEASE'
-          })
-        });
-      } catch (e) {}
-
-      if (isTakeover) {
-        pill.innerText = "🛑 Human Takeover Active — AI Autonomous Silenced";
-        pill.style.color = "var(--status-danger)";
-      } else {
-        pill.innerText = "● AI Autonomous Assistance Active";
-        pill.style.color = "var(--status-success)";
-      }
-    }
-
-    async function approveProposal(propId, title) {
-      try {
-        await fetch('/api/v1/agents/copilot/approve', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            brief_id: document.getElementById('briefIdBadge').innerText,
-            proposal_id: propId
-          })
-        });
-      } catch (e) {}
-
-      const successBox = document.getElementById('approvalSuccessBox');
-      successBox.style.display = "block";
-      successBox.innerHTML = `✅ <strong>Action Validée:</strong> [${title}] a été autorisée par signature humaine et transmise au domaine commercial pour émission.`;
-    }
-
-    function copyReply(btn) {
-      const text = btn.parentElement.querySelector('span').innerText;
-      navigator.clipboard.writeText(text);
-      btn.innerText = "Copied!";
-      setTimeout(() => btn.innerText = "Copy", 1500);
-    }
-
-    async function runOperationsTriage() {
-      alert("Operations Supervisor triage triggered across background worker queues.");
-    }
-
-    async function loadActivityLogs() {
-      try {
-        const res = await fetch('/api/v1/agents/activity?limit=10');
-        if (res.ok) {
-          const logs = await res.json();
-          if (logs.length > 0) {
-            const tbody = document.getElementById('activityLogsBody');
-            tbody.innerHTML = '';
-            logs.forEach(l => {
-              const tr = document.createElement('tr');
-              tr.innerHTML = `
-                <td>${new Date(l.created_at).toLocaleTimeString()}</td>
-                <td><span class="badge badge-primary">${l.agent_role}</span></td>
-                <td><code>${l.trace_id}</code></td>
-                <td><span class="badge badge-success">${l.status}</span></td>
-                <td>${l.model_name}</td>
-                <td>${l.total_tokens}</td>
-                <td>${l.execution_duration_ms}ms</td>
-                <td>${(l.tools_called || []).map(t => t.tool).join(', ') || 'none'}</td>
-              `;
-              tbody.appendChild(tr);
-            });
-          }
-        }
-      } catch (e) {}
-    }
-
-    function onTenantSwitch(val) {
-      alert("Tenant switched to: " + val);
-    }
-
-    // Initialize Catalog
-    refreshCatalog();
-  </script>
+  <script src="js/pages/agent_workspace.js"></script>
 
 </body>
+<!-- csp-build: migrated -->
 </html>

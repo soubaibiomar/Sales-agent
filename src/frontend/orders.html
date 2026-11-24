@@ -1,50 +1,18 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+  <script src="js/api_client.js"></script>
+  <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sales AI Management — Commandes & Exécution Commerciale</title>
   <link rel="stylesheet" href="css/design_system.css">
+  <script src="js/pages/orders.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
     <!-- MASTER SIDEBAR -->
-    <aside class="sidebar">
-      <div class="brand-header">
-        <div class="brand-logo-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 20V10M12 20V4M6 20v-6"></path></svg>
-        </div>
-        <div class="brand-text">
-          <span class="title">Sales AI</span>
-          <span class="subtitle">Management</span>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <ul class="nav-list">
-          <li><a href="index.html" class="nav-item"><span class="icon">📊</span><span class="label">Tableau de bord</span></a></li>
-          <li><a href="pipeline.html" class="nav-item"><span class="icon">📈</span><span class="label">CRM & Pipeline</span></a></li>
-          <li><a href="catalog.html" class="nav-item"><span class="icon">📦</span><span class="label">Catalogue</span></a></li>
-          <li><a href="quote_builder.html" class="nav-item"><span class="icon">📝</span><span class="label">Devis & Approbations</span></a></li>
-          <li><a href="orders.html" class="nav-item active"><span class="icon">🛒</span><span class="label">Commandes</span></a></li>
-          <li><a href="inventory.html" class="nav-item"><span class="icon">🏭</span><span class="label">Stock & Entrepôts</span></a></li>
-          <li><a href="procurement.html" class="nav-item"><span class="icon">🚢</span><span class="label">Achats & Fournisseurs</span></a></li>
-          <li><a href="invoices.html" class="nav-item"><span class="icon">📄</span><span class="label">Factures & TVA</span></a></li>
-          <li><a href="inbox.html" class="nav-item"><span class="icon">💬</span><span class="label">Omnicanal</span><span class="badge">8</span></a></li>
-          <li><a href="analytics_dashboard.html" class="nav-item"><span class="icon">📊</span><span class="label">Rapports</span></a></li>
-        </ul>
-      </div>
-
-      <div class="sidebar-footer">
-        <div class="user-profile-card">
-          <div class="user-avatar">OA</div>
-          <div class="user-details">
-            <span class="name">Omar A.</span>
-            <span class="role">Administrateur</span>
-          </div>
-        </div>
-      </div>
-    </aside>
+    <aside class="sidebar"><div data-app-nav></div></aside>
 
     <!-- MAIN APPLICATION WRAPPER -->
     <div class="main-wrapper">
@@ -58,9 +26,9 @@
 
         <div class="topbar-actions">
           <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel">Atlas Commerce</span>
+            <span>🏢</span> <span id="currentTenantLabel"></span>
           </div>
-          <button class="btn-header-primary" onclick="window.location.href='checkout.html'">+ Nouvelle Commande</button>
+          <button class="btn-header-primary" data-on-click="h1">+ Nouvelle Commande</button>
         </div>
       </header>
 
@@ -72,13 +40,13 @@
           </div>
 
           <div style="display:flex; gap:0.5rem;">
-            <button class="btn btn-outline" onclick="loadOrders()">🔄 Actualiser</button>
+            <button class="btn btn-outline" data-on-click="h2">🔄 Actualiser</button>
             <a href="checkout.html" class="btn btn-primary">+ Passer Commande</a>
           </div>
         </div>
 
         <!-- KPI summary -->
-        <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="kpi-grid kpi-grid--4">
           <div class="kpi-card" style="padding:1rem;">
             <span class="kpi-title">Commandes Totales (Mois)</span>
             <div class="kpi-value">428</div>
@@ -166,40 +134,7 @@
   </div>
 
   <script src="js/app_shell.js"></script>
-  <script>
-    async function loadOrders() {
-      try {
-        const token = localStorage.getItem("token") || "";
-        const res = await fetch("/api/v1/orders", {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (!res.ok) return;
-        const orders = await res.json();
-        const tbody = document.getElementById("orders-body");
-        if (orders && orders.length > 0) {
-          tbody.innerHTML = "";
-          orders.forEach(o => {
-            const totalFmt = (o.grand_total_cents / 100).toLocaleString('fr-FR', {minimumFractionDigits: 2}) + " " + o.currency;
-            const dateFmt = new Date(o.created_at).toLocaleDateString('fr-FR');
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td><strong>${o.order_number}</strong></td>
-              <td>${o.account_id || "Client Direct"}</td>
-              <td><strong>${totalFmt}</strong></td>
-              <td><span class="badge badge-success">${o.status}</span></td>
-              <td><span class="badge badge-info">${o.payment_status}</span></td>
-              <td><span class="badge badge-purple">${o.fulfillment_status}</span></td>
-              <td><code style="font-size:11px;">${(o.terms_hash || "hash").slice(0,8)}...</code></td>
-              <td>${dateFmt}</td>
-              <td><a href="invoices.html?order_id=${o.id}" class="btn btn-outline" style="padding:2px 8px; font-size:11px;">Facture</a></td>
-            `;
-            tbody.appendChild(tr);
-          });
-        }
-      } catch (e) {
-        console.warn("API offline, displaying authenticated local ledger orders.");
-      }
-    }
-  </script>
+  <script src="js/pages/orders.js"></script>
 </body>
+<!-- csp-build: migrated -->
 </html>

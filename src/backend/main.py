@@ -61,7 +61,15 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Content-Security-Policy"] = "default-src 'self'"
+        # F-20: strict CSP compatible with the migrated frontend - no inline or eval'd
+        # script at all; only static style="" attributes are tolerated (style-src-attr).
+        # blob:/data: media is needed to play synthesized voice replies.
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; "
+            "img-src 'self' data:; media-src 'self' blob: data:; font-src 'self'; connect-src 'self'; "
+            "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        )
+        response.headers["Permissions-Policy"] = "microphone=(self), camera=(), geolocation=()"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["X-Correlation-ID"] = correlation_id
         

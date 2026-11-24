@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <script src="js/api_client.js"></script>
+  <script src="js/data_views.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales AI Management — Connexion</title>
+  <link rel="stylesheet" href="css/design_system.css">
+  <link rel="stylesheet" href="css/pages/login.css">
+  <script src="js/pages/login.js" defer></script>
+</head>
+<body class="login-body">
+  <main class="login-shell">
+    <section class="login-brand" aria-hidden="true">
+      <div class="brand-logo-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 20V10M12 20V4M6 20v-6"></path></svg></div>
+      <h2>Sales AI Management</h2>
+      <p>Ventes, opérations et IA gouvernée dans un seul espace sécurisé.</p>
+    </section>
+
+    <section class="login-card">
+      <h1>Connexion</h1>
+      <p class="login-sub">Accédez à votre espace avec votre compte professionnel.</p>
+
+      <form id="loginForm" novalidate>
+        <label for="email">Adresse e-mail</label>
+        <input id="email" name="email" type="email" autocomplete="username" required>
+
+        <label for="password">Mot de passe</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+
+        <details class="login-advanced">
+          <summary>Plusieurs organisations ?</summary>
+          <label for="tenantId">Identifiant d'organisation (optionnel)</label>
+          <input id="tenantId" name="tenantId" type="text" autocomplete="organization">
+        </details>
+
+        <button type="submit" class="btn-primary login-submit" id="loginSubmit">Se connecter</button>
+      </form>
+
+      <form id="mfaForm" hidden novalidate>
+        <p class="login-sub">Vérification en deux étapes : saisissez le code à 6 chiffres de votre application d'authentification.</p>
+        <label for="mfaCode">Code de vérification</label>
+        <input id="mfaCode" name="mfaCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required>
+        <button type="submit" class="btn-primary login-submit">Vérifier</button>
+      </form>
+
+      <div id="loginMessage" class="login-message" role="alert" aria-live="assertive"></div>
+    </section>
+  </main>
+</body>
+</html>

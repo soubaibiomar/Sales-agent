@@ -1,107 +1,19 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+  <script src="js/api_client.js"></script>
+  <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Durable Workflows & Sagas — Sales AI Platform</title>
   <link rel="stylesheet" href="css/design_system.css">
-  <style>
-.content { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
-    
-    .panel { background: var(--bg-neutral); border-radius: 8px; border: 1px solid var(--border-muted); padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-muted); padding-bottom: 0.75rem; }
-    .panel-title { font-size: 1rem; font-weight: 700; color: var(--primary); }
-    
-    table { width: 100%; border-collapse: collapse; }
-    th { background: #F8FAFC; padding: 0.75rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); text-align: left; }
-    td { padding: 0.85rem 0.75rem; border-bottom: 1px solid var(--border-muted); font-size: 0.85rem; }
-    tr:hover { background: #F1F5F9; }
-    
-    .badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
-    .badge-success { background: #DCFCE7; color: var(--status-success); }
-    .badge-running { background: #FEF3C7; color: var(--status-warning); }
-    .badge-failed { background: #FEE2E2; color: var(--status-danger); }
-    .badge-compensated { background: #EDE9FE; color: #7C3AED; }
-    .badge-info { background: #DBEAFE; color: var(--status-info); }
-    
-    .btn { padding: 0.45rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
-    .btn-primary { background: var(--primary); color: #fff; }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-outline { background: transparent; border: 1px solid var(--border-muted); color: var(--text-main); }
-    .btn-outline:hover { background: #E2E8F0; }
-    .btn-danger { background: var(--status-danger); color: #fff; }
-    
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    .form-group { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.75rem; }
-    .form-group label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
-    .form-group input, .form-group select, .form-group textarea {
-      padding: 0.5rem; border: 1px solid var(--border-muted); border-radius: 6px; font-size: 0.85rem;
-    }
-  </style>
+  <link rel="stylesheet" href="css/pages/workflows.css">
+  <script src="js/pages/workflows.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
     <!-- MASTER SIDEBAR -->
-    <aside class="sidebar">
-      <div class="brand-header">
-        <div class="brand-logo-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 20V10M12 20V4M6 20v-6"></path></svg>
-        </div>
-        <div class="brand-text">
-          <span class="title">Sales AI</span>
-          <span class="subtitle">Management</span>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <ul class="nav-list">
-          <li><a href="index.html" class="nav-item"><span class="icon">📊</span><span class="label">Tableau de bord</span></a></li>
-          <li><a href="pipeline.html" class="nav-item"><span class="icon">📈</span><span class="label">CRM & Pipeline</span></a></li>
-          <li><a href="catalog.html" class="nav-item"><span class="icon">📦</span><span class="label">Catalogue</span></a></li>
-          <li><a href="quote_builder.html" class="nav-item"><span class="icon">📝</span><span class="label">Devis & Approbations</span></a></li>
-          <li><a href="orders.html" class="nav-item"><span class="icon">🛒</span><span class="label">Commandes</span></a></li>
-          <li><a href="inventory.html" class="nav-item"><span class="icon">🏭</span><span class="label">Stock & Entrepôts</span></a></li>
-          <li><a href="procurement.html" class="nav-item"><span class="icon">🚢</span><span class="label">Achats & Fournisseurs</span></a></li>
-          <li><a href="logistics.html" class="nav-item"><span class="icon">🚚</span><span class="label">Logistique & Expéditions</span></a></li>
-          <li><a href="invoices.html" class="nav-item"><span class="icon">📄</span><span class="label">Factures & TVA</span></a></li>
-          <li><a href="checkout.html" class="nav-item"><span class="icon">💳</span><span class="label">Caisse & Paiements</span></a></li>
-          <li><a href="support.html" class="nav-item"><span class="icon">🎧</span><span class="label">Support & SAV</span></a></li>
-          <li><a href="schedule.html" class="nav-item"><span class="icon">📅</span><span class="label">Rendez-vous</span></a></li>
-          <li><a href="inbox.html" class="nav-item"><span class="icon">💬</span><span class="label">Omnicanal</span> <span class="badge">8</span></a></li>
-          <li><a href="notifications.html" class="nav-item"><span class="icon">🔔</span><span class="label">Notifications</span></a></li>
-          <li><a href="integrations.html" class="nav-item"><span class="icon">🔌</span><span class="label">Intégrations & n8n</span></a></li>
-          <li><a href="workflows.html" class="nav-item active"><span class="icon">⚡</span><span class="label">Workflows Durables</span></a></li>
-          <li><a href="workflow_reliability_dashboard.html" class="nav-item"><span class="icon">🩺</span><span class="label">Fiabilité & DLQ</span></a></li>
-          <li><a href="ai_governance.html" class="nav-item"><span class="icon">🧠</span><span class="label">Gouvernance IA</span></a></li>
-          <li><a href="agent_workspace.html" class="nav-item"><span class="icon">🤖</span><span class="label">Écosystème 18 Agents</span></a></li>
-          <li><a href="voice_agent.html" class="nav-item"><span class="icon">🎙️</span><span class="label">Agent Vocal Client</span></a></li>
-          <li><a href="voice_copilot.html" class="nav-item"><span class="icon">🗣️</span><span class="label">Copilote Vocal Manager</span></a></li>
-          <li><a href="voice_observability.html" class="nav-item"><span class="icon">📡</span><span class="label">Télémétrie Vocale</span></a></li>
-          <li><a href="analytics_dashboard.html" class="nav-item"><span class="icon">📉</span><span class="label">Analytics Exécutif</span></a></li>
-          <li><a href="ai_operations_dashboard.html" class="nav-item"><span class="icon">💻</span><span class="label">Opérations GPU/VRAM</span></a></li>
-          <li><a href="saas_admin_dashboard.html" class="nav-item"><span class="icon">🏢</span><span class="label">Admin SaaS & Quotas</span></a></li>
-          <li><a href="release_console.html" class="nav-item"><span class="icon">🚀</span><span class="label">Console de Déploiement</span></a></li>
-        </ul>
-      </div>
-
-      <div class="sidebar-footer">
-        <div class="ai-status-pill" onclick="window.location.href='agent_workspace.html'">
-          <span class="sparkle-icon">✨</span>
-          <div class="info">
-            <span class="status-title">IA Active</span>
-            <span class="status-desc">4 agents opérationnels</span>
-          </div>
-        </div>
-
-        <div class="user-profile-card">
-          <div class="user-avatar">OA</div>
-          <div class="user-details">
-            <span class="name">Omar A.</span>
-            <span class="role">Administrateur</span>
-          </div>
-        </div>
-      </div>
-    </aside>
+    <aside class="sidebar"><div data-app-nav></div></aside>
 
     <div class="main-wrapper">
       <header class="topbar">
@@ -114,12 +26,11 @@
 
         <div class="topbar-actions">
           <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel">Atlas Commerce</span>
+            <span>🏢</span> <span id="currentTenantLabel"></span>
           </div>
 
           <div class="icon-btn-badge" id="notifBtn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-            <span class="badge-counter">3</span>
           </div>
 
           <button class="btn-header-primary" id="btnQuickNew">
@@ -127,10 +38,10 @@
           </button>
 
           <div class="user-topbar-pill">
-            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;">OA</div>
+            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;"></div>
             <div style="display:flex; flex-direction:column; line-height:1.2;">
-              <span style="font-weight:600; font-size:13px; color:#17251F;">Omar A.</span>
-              <span style="font-size:11px; color:#66756D;">Administrateur</span>
+              <span style="font-weight:600; font-size:13px; color:#17251F;"></span>
+              <span style="font-size:11px; color:#66756D;"></span>
             </div>
           </div>
         </div>
@@ -143,7 +54,7 @@
           <div class="card-title">Execute Transactional Saga</div>
           <span style="font-size: 0.8rem; color: var(--text-muted);">Durable, Idempotent & Fully Compensating</span>
         </div>
-        <form id="workflowForm" onsubmit="handleTriggerWorkflow(event)">
+        <form id="workflowForm" data-on-submit="h2">
           <div class="grid-2">
             <div class="form-group">
               <label for="sagaType">Saga / Workflow Type</label>
@@ -257,98 +168,8 @@
 
 
   <script src="js/app_shell.js"></script>
-  <script>
-async function handleTriggerWorkflow(e) {
-      e.preventDefault();
-      const sagaType = document.getElementById('sagaType').value;
-      const idempotencyKey = document.getElementById('idempotencyKey').value || 'wf-' + Math.random().toString(36).substring(2, 9);
-      let payload = {};
-      try {
-        payload = JSON.parse(document.getElementById('payloadJson').value);
-      } catch (err) {
-        alert("Invalid JSON payload");
-        return;
-      }
-
-      try {
-        const res = await fetch('/api/v1/workflows/executions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Tenant-ID': 'tenant-acme-corp'
-          },
-          body: JSON.stringify({
-            workflow_type: sagaType,
-            workflow_name: sagaType,
-            idempotency_key: idempotencyKey,
-            input_payload: payload
-          })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          alert("Workflow dispatched! ID: " + data.id + " Status: " + data.status);
-          loadExecutions();
-        } else {
-          alert("Error: " + (data.detail || JSON.stringify(data)));
-        }
-      } catch (err) {
-        alert("Network error: " + err.message);
-      }
-    }
-
-    async function triggerCrashRecovery() {
-      try {
-        const res = await fetch('/api/v1/workflows/recovery/resume', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Tenant-ID': 'tenant-acme-corp'
-          }
-        });
-        const data = await res.json();
-        alert("Crash recovery executed! Resumed: " + data.resumed_count + " workflows.");
-        loadExecutions();
-      } catch (err) {
-        alert("Recovery error: " + err.message);
-      }
-    }
-
-    async function loadExecutions() {
-      try {
-        const res = await fetch('/api/v1/workflows/executions', {
-          headers: { 'X-Tenant-ID': 'tenant-acme-corp' }
-        });
-        if (res.ok) {
-          const list = await res.json();
-          const tbody = document.getElementById('executionsBody');
-          if (list.length > 0) {
-            tbody.innerHTML = list.map(item => `
-              <tr>
-                <td><code>${item.id}</code></td>
-                <td><strong>${item.workflow_type}</strong></td>
-                <td><span class="badge ${getStatusBadge(item.status)}">${item.status}</span></td>
-                <td>${item.current_step || '—'}</td>
-                <td>${item.retry_count}</td>
-                <td>${new Date(item.started_at).toLocaleTimeString()}</td>
-                <td>${item.completed_at ? new Date(item.completed_at).toLocaleTimeString() : 'In Progress'}</td>
-                <td><button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.75rem;">View</button></td>
-              </tr>
-            `).join('');
-          }
-        }
-      } catch (e) {
-        console.warn("Could not load executions dynamically:", e);
-      }
-    }
-
-    function getStatusBadge(status) {
-      if (status === 'COMPLETED') return 'badge-success';
-      if (status === 'RUNNING') return 'badge-running';
-      if (status === 'FAILED') return 'badge-failed';
-      if (status === 'COMPENSATED') return 'badge-compensated';
-      return 'badge-info';
-    }
-  </script>
+  <script src="js/pages/workflows.js"></script>
 
 </body>
+<!-- csp-build: migrated -->
 </html>

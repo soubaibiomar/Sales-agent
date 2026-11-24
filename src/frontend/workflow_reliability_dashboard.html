@@ -1,151 +1,19 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+  <script src="js/api_client.js"></script>
+  <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Workflow Reliability & System Health — Sales AI Management</title>
   <link rel="stylesheet" href="css/design_system.css">
-  <style>
-.main-content { flex: 1; padding: 2rem; overflow-y: auto; }
-    .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-    .page-title { font-size: 1.65rem; font-weight: 700; color: var(--text-main); }
-    .page-desc { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem; }
-    
-    .controls-bar { display: flex; gap: 1rem; align-items: center; }
-    .btn {
-      background: var(--primary);
-      color: #FFFFFF;
-      border: none;
-      padding: 0.6rem 1.25rem;
-      border-radius: 6px;
-      font-size: 0.875rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.15s;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .btn:hover { background: var(--primary-hover); }
-    .btn-secondary { background: var(--bg-neutral); color: var(--text-main); border: 1px solid var(--border-muted); }
-    .btn-secondary:hover { background: #F1F5F9; }
-    .btn-sm { padding: 0.35rem 0.65rem; font-size: 0.75rem; }
-    
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      padding: 0.25rem 0.65rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-    .status-up { background: var(--primary-tint); color: var(--status-success); }
-    .status-warn { background: #FEF3C7; color: var(--status-warning); }
-    .status-down { background: #FEE2E2; color: var(--status-danger); }
-    
-    .grid-health { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-    .health-card {
-      background: var(--bg-neutral);
-      border: 1px solid var(--border-muted);
-      border-radius: 8px;
-      padding: 1.25rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .health-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
-    .health-name { font-size: 0.9rem; font-weight: 700; color: var(--text-main); }
-    .health-meta { font-size: 0.8rem; color: var(--text-muted); }
-    
-    .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-    .stat-card {
-      background: var(--bg-neutral);
-      border: 1px solid var(--border-muted);
-      border-radius: 8px;
-      padding: 1.25rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .stat-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
-    .stat-val { font-size: 1.65rem; font-weight: 800; color: var(--text-main); margin-top: 0.25rem; }
-    
-    .card {
-      background: var(--bg-neutral);
-      border: 1px solid var(--border-muted);
-      border-radius: 8px;
-      padding: 1.5rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      margin-bottom: 2rem;
-    }
-    .card-title { font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; }
-    
-    .data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left; }
-    .data-table th { background: var(--bg-page); padding: 0.75rem 1rem; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border-muted); }
-    .data-table td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border-muted); }
-  </style>
+  <link rel="stylesheet" href="css/pages/workflow_reliability_dashboard.css">
+  <script src="js/pages/workflow_reliability_dashboard.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
     <!-- MASTER SIDEBAR -->
-    <aside class="sidebar">
-      <div class="brand-header">
-        <div class="brand-logo-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 20V10M12 20V4M6 20v-6"></path></svg>
-        </div>
-        <div class="brand-text">
-          <span class="title">Sales AI</span>
-          <span class="subtitle">Management</span>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <ul class="nav-list">
-          <li><a href="index.html" class="nav-item"><span class="icon">📊</span><span class="label">Tableau de bord</span></a></li>
-          <li><a href="pipeline.html" class="nav-item"><span class="icon">📈</span><span class="label">CRM & Pipeline</span></a></li>
-          <li><a href="catalog.html" class="nav-item"><span class="icon">📦</span><span class="label">Catalogue</span></a></li>
-          <li><a href="quote_builder.html" class="nav-item"><span class="icon">📝</span><span class="label">Devis & Approbations</span></a></li>
-          <li><a href="orders.html" class="nav-item"><span class="icon">🛒</span><span class="label">Commandes</span></a></li>
-          <li><a href="inventory.html" class="nav-item"><span class="icon">🏭</span><span class="label">Stock & Entrepôts</span></a></li>
-          <li><a href="procurement.html" class="nav-item"><span class="icon">🚢</span><span class="label">Achats & Fournisseurs</span></a></li>
-          <li><a href="logistics.html" class="nav-item"><span class="icon">🚚</span><span class="label">Logistique & Expéditions</span></a></li>
-          <li><a href="invoices.html" class="nav-item"><span class="icon">📄</span><span class="label">Factures & TVA</span></a></li>
-          <li><a href="checkout.html" class="nav-item"><span class="icon">💳</span><span class="label">Caisse & Paiements</span></a></li>
-          <li><a href="support.html" class="nav-item"><span class="icon">🎧</span><span class="label">Support & SAV</span></a></li>
-          <li><a href="schedule.html" class="nav-item"><span class="icon">📅</span><span class="label">Rendez-vous</span></a></li>
-          <li><a href="inbox.html" class="nav-item"><span class="icon">💬</span><span class="label">Omnicanal</span> <span class="badge">8</span></a></li>
-          <li><a href="notifications.html" class="nav-item"><span class="icon">🔔</span><span class="label">Notifications</span></a></li>
-          <li><a href="integrations.html" class="nav-item"><span class="icon">🔌</span><span class="label">Intégrations & n8n</span></a></li>
-          <li><a href="workflows.html" class="nav-item"><span class="icon">⚡</span><span class="label">Workflows Durables</span></a></li>
-          <li><a href="workflow_reliability_dashboard.html" class="nav-item active"><span class="icon">🩺</span><span class="label">Fiabilité & DLQ</span></a></li>
-          <li><a href="ai_governance.html" class="nav-item"><span class="icon">🧠</span><span class="label">Gouvernance IA</span></a></li>
-          <li><a href="agent_workspace.html" class="nav-item"><span class="icon">🤖</span><span class="label">Écosystème 18 Agents</span></a></li>
-          <li><a href="voice_agent.html" class="nav-item"><span class="icon">🎙️</span><span class="label">Agent Vocal Client</span></a></li>
-          <li><a href="voice_copilot.html" class="nav-item"><span class="icon">🗣️</span><span class="label">Copilote Vocal Manager</span></a></li>
-          <li><a href="voice_observability.html" class="nav-item"><span class="icon">📡</span><span class="label">Télémétrie Vocale</span></a></li>
-          <li><a href="analytics_dashboard.html" class="nav-item"><span class="icon">📉</span><span class="label">Analytics Exécutif</span></a></li>
-          <li><a href="ai_operations_dashboard.html" class="nav-item"><span class="icon">💻</span><span class="label">Opérations GPU/VRAM</span></a></li>
-          <li><a href="saas_admin_dashboard.html" class="nav-item"><span class="icon">🏢</span><span class="label">Admin SaaS & Quotas</span></a></li>
-          <li><a href="release_console.html" class="nav-item"><span class="icon">🚀</span><span class="label">Console de Déploiement</span></a></li>
-        </ul>
-      </div>
-
-      <div class="sidebar-footer">
-        <div class="ai-status-pill" onclick="window.location.href='agent_workspace.html'">
-          <span class="sparkle-icon">✨</span>
-          <div class="info">
-            <span class="status-title">IA Active</span>
-            <span class="status-desc">4 agents opérationnels</span>
-          </div>
-        </div>
-
-        <div class="user-profile-card">
-          <div class="user-avatar">OA</div>
-          <div class="user-details">
-            <span class="name">Omar A.</span>
-            <span class="role">Administrateur</span>
-          </div>
-        </div>
-      </div>
-    </aside>
+    <aside class="sidebar"><div data-app-nav></div></aside>
 
     <div class="main-wrapper">
       <header class="topbar">
@@ -158,12 +26,11 @@
 
         <div class="topbar-actions">
           <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel">Atlas Commerce</span>
+            <span>🏢</span> <span id="currentTenantLabel"></span>
           </div>
 
           <div class="icon-btn-badge" id="notifBtn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-            <span class="badge-counter">3</span>
           </div>
 
           <button class="btn-header-primary" id="btnQuickNew">
@@ -171,10 +38,10 @@
           </button>
 
           <div class="user-topbar-pill">
-            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;">OA</div>
+            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;"></div>
             <div style="display:flex; flex-direction:column; line-height:1.2;">
-              <span style="font-weight:600; font-size:13px; color:#17251F;">Omar A.</span>
-              <span style="font-size:11px; color:#66756D;">Administrateur</span>
+              <span style="font-weight:600; font-size:13px; color:#17251F;"></span>
+              <span style="font-size:11px; color:#66756D;"></span>
             </div>
           </div>
         </div>
@@ -201,8 +68,8 @@
         <p class="page-desc">Real-time dependency health checks, OpenTelemetry trace spans, and operational alert lifecycle management.</p>
       </div>
       <div class="controls-bar">
-        <button class="btn btn-secondary" onclick="triggerDLQReplay()">🔁 Replay DLQ</button>
-        <button class="btn" onclick="fetchHealthAndAlerts()">🔄 Refresh</button>
+        <button class="btn btn-secondary" data-on-click="h2">🔁 Replay DLQ</button>
+        <button class="btn" data-on-click="h3">🔄 Refresh</button>
       </div>
     </div>
 
@@ -299,8 +166,8 @@
             <td><span style="font-weight:600; color:var(--status-warning)">ACTIVE</span></td>
             <td>Just now</td>
             <td>
-              <button class="btn btn-secondary btn-sm" onclick="acknowledgeAlert('alt-001')">Acknowledge</button>
-              <button class="btn btn-sm" onclick="resolveAlert('alt-001')">Resolve</button>
+              <button class="btn btn-secondary btn-sm" data-on-click="h4">Acknowledge</button>
+              <button class="btn btn-sm" data-on-click="h5">Resolve</button>
             </td>
           </tr>
           <tr>
@@ -330,279 +197,21 @@
           </tr>
         </thead>
         <tbody id="tracesTableBody">
-          <tr>
-            <td><code>tr-91a0c84f2b1d</code></td>
-            <td><code>POST /api/v1/voice/turns/process</code></td>
-            <td>412ms</td>
-            <td><span class="status-badge status-up">200 OK</span></td>
-            <td>6 spans</td>
-            <td>tenant: tenant-acme-corp • agent: voice_copilot</td>
-          </tr>
-          <tr>
-            <td><code>tr-4e78b209d13c</code></td>
-            <td><code>POST /api/v1/quotes/calculate</code></td>
-            <td>84ms</td>
-            <td><span class="status-badge status-up">200 OK</span></td>
-            <td>3 spans</td>
-            <td>tenant: tenant-acme-corp • role: sales_rep</td>
-          </tr>
-          <tr>
-            <td><code>tr-3f11c790a82b</code></td>
-            <td><code>GET /api/v1/analytics/overview</code></td>
-            <td>38ms</td>
-            <td><span class="status-badge status-up">200 OK</span></td>
-            <td>2 spans</td>
-            <td>tenant: tenant-acme-corp • cache: HIT</td>
-          </tr>
+          <tr><td colspan="6" class="data-state data-state--loading" role="status">Chargement des traces…</td></tr>
         </tbody>
       </table></div>
     </div>
   </div>
 
-  <script>
-    async function fetchHealthAndAlerts() {
-      try {
-        const healthRes = await fetch('/api/v1/observability/health');
-        if (healthRes.ok) {
-          const health = await healthRes.json();
-          renderHealth(health);
-        }
-
-        const alertsRes = await fetch('/api/v1/observability/alerts');
-        if (alertsRes.ok) {
-          const alerts = await alertsRes.json();
-          renderAlerts(alerts);
-        }
-
-        const tracesRes = await fetch('/api/v1/observability/traces');
-        if (tracesRes.ok) {
-          const traces = await tracesRes.json();
-          renderTraces(traces);
-        }
-      } catch (err) {
-        console.warn('API error, retaining authoritative display', err);
-      }
-    }
-
-    function renderHealth(health) {
-      if (!health || !health.dependencies) return;
-      const deps = health.dependencies;
-      
-      if (deps.postgres) {
-        document.getElementById('statusPostgres').textContent = deps.postgres.status;
-        document.getElementById('statusPostgres').className = `status-badge ${deps.postgres.status === 'UP' ? 'status-up' : 'status-down'}`;
-        document.getElementById('metaPostgres').textContent = `Port 5432 • Latency: ${deps.postgres.latency_ms}ms`;
-      }
-      if (deps.redis) {
-        document.getElementById('statusRedis').textContent = deps.redis.status;
-        document.getElementById('statusRedis').className = `status-badge ${deps.redis.status === 'UP' ? 'status-up' : 'status-down'}`;
-        document.getElementById('metaRedis').textContent = `Port 6379 • Latency: ${deps.redis.latency_ms}ms`;
-      }
-      if (deps.ollama) {
-        document.getElementById('statusOllama').textContent = deps.ollama.status;
-        document.getElementById('statusOllama').className = `status-badge ${deps.ollama.status === 'UP' ? 'status-up' : 'status-down'}`;
-        document.getElementById('metaOllama').textContent = `Port 11434 • ${deps.ollama.active_model || 'qwen3.5:4b'}`;
-      }
-    }
-
-    function renderAlerts(alerts) {
-      if (!Array.isArray(alerts) || alerts.length === 0) return;
-      const tbody = document.getElementById('alertsTableBody');
-      tbody.innerHTML = '';
-      
-      let criticalCount = 0;
-      alerts.forEach(a => {
-        if (a.severity === 'CRITICAL' && a.status === 'ACTIVE') criticalCount++;
-        const tr = document.createElement('tr');
-        const badgeClass = a.severity === 'CRITICAL' ? 'status-down' : (a.severity === 'WARNING' ? 'status-warn' : 'status-up');
-        tr.innerHTML = `
-          <td><span class="status-badge ${badgeClass}">${a.severity}</span></td>
-          <td><strong>${a.component}</strong></td>
-          <td>${a.condition}</td>
-          <td>${a.trigger_value || 'Threshold met'}</td>
-          <td><span style="font-weight:600;">${a.status}</span></td>
-          <td>${new Date(a.created_at || Date.now()).toLocaleTimeString()}</td>
-          <td>
-            ${a.status === 'ACTIVE' ? `
-              <button class="btn btn-secondary btn-sm" onclick="acknowledgeAlert('${a.id}')">Acknowledge</button>
-              <button class="btn btn-sm" onclick="resolveAlert('${a.id}')">Resolve</button>
-            ` : (a.status === 'ACKNOWLEDGED' ? `
-              <button class="btn btn-sm" onclick="resolveAlert('${a.id}')">Resolve</button>
-            ` : `<span style="color:var(--text-muted); font-size:0.8rem;">Resolved</span>`)}
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-      document.getElementById('alertCountBadge').textContent = `${criticalCount} Critical Alerts`;
-    }
-
-    function renderTraces(traces) {
-      if (!Array.isArray(traces) || traces.length === 0) return;
-      const tbody = document.getElementById('tracesTableBody');
-      tbody.innerHTML = '';
-      traces.forEach(t => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><code>${t.trace_id}</code></td>
-          <td><code>${t.root_span}</code></td>
-          <td>${t.duration_ms}ms</td>
-          <td><span class="status-badge status-up">${t.status_code || '200 OK'}</span></td>
-          <td>${t.span_count} spans</td>
-          <td>${t.context_summary || 'tenant-isolated'}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    async function acknowledgeAlert(alertId) {
-      try {
-        await fetch(`/api/v1/observability/alerts/${alertId}/acknowledge`, { method: 'POST' });
-        fetchHealthAndAlerts();
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    async function resolveAlert(alertId) {
-      try {
-        await fetch(`/api/v1/observability/alerts/${alertId}/resolve`, { method: 'POST' });
-        fetchHealthAndAlerts();
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    function triggerDLQReplay() {
-      alert('DLQ Replay triggered: 0 failed tasks to replay. Backlog is clear.');
-    }
-
-    document.addEventListener('DOMContentLoaded', fetchHealthAndAlerts);
-  </script>
+  <script src="js/pages/workflow_reliability_dashboard.js"></script>
       </main>
     </div>
   </div>
 
 
   <script src="js/app_shell.js"></script>
-  <script>
-async function fetchHealthAndAlerts() {
-      try {
-        const healthRes = await fetch('/api/v1/observability/health');
-        if (healthRes.ok) {
-          const health = await healthRes.json();
-          renderHealth(health);
-        }
-
-        const alertsRes = await fetch('/api/v1/observability/alerts');
-        if (alertsRes.ok) {
-          const alerts = await alertsRes.json();
-          renderAlerts(alerts);
-        }
-
-        const tracesRes = await fetch('/api/v1/observability/traces');
-        if (tracesRes.ok) {
-          const traces = await tracesRes.json();
-          renderTraces(traces);
-        }
-      } catch (err) {
-        console.warn('API error, retaining authoritative display', err);
-      }
-    }
-
-    function renderHealth(health) {
-      if (!health || !health.dependencies) return;
-      const deps = health.dependencies;
-      
-      if (deps.postgres) {
-        document.getElementById('statusPostgres').textContent = deps.postgres.status;
-        document.getElementById('statusPostgres').className = `status-badge ${deps.postgres.status === 'UP' ? 'status-up' : 'status-down'}`;
-        document.getElementById('metaPostgres').textContent = `Port 5432 • Latency: ${deps.postgres.latency_ms}ms`;
-      }
-      if (deps.redis) {
-        document.getElementById('statusRedis').textContent = deps.redis.status;
-        document.getElementById('statusRedis').className = `status-badge ${deps.redis.status === 'UP' ? 'status-up' : 'status-down'}`;
-        document.getElementById('metaRedis').textContent = `Port 6379 • Latency: ${deps.redis.latency_ms}ms`;
-      }
-      if (deps.ollama) {
-        document.getElementById('statusOllama').textContent = deps.ollama.status;
-        document.getElementById('statusOllama').className = `status-badge ${deps.ollama.status === 'UP' ? 'status-up' : 'status-down'}`;
-        document.getElementById('metaOllama').textContent = `Port 11434 • ${deps.ollama.active_model || 'qwen3.5:4b'}`;
-      }
-    }
-
-    function renderAlerts(alerts) {
-      if (!Array.isArray(alerts) || alerts.length === 0) return;
-      const tbody = document.getElementById('alertsTableBody');
-      tbody.innerHTML = '';
-      
-      let criticalCount = 0;
-      alerts.forEach(a => {
-        if (a.severity === 'CRITICAL' && a.status === 'ACTIVE') criticalCount++;
-        const tr = document.createElement('tr');
-        const badgeClass = a.severity === 'CRITICAL' ? 'status-down' : (a.severity === 'WARNING' ? 'status-warn' : 'status-up');
-        tr.innerHTML = `
-          <td><span class="status-badge ${badgeClass}">${a.severity}</span></td>
-          <td><strong>${a.component}</strong></td>
-          <td>${a.condition}</td>
-          <td>${a.trigger_value || 'Threshold met'}</td>
-          <td><span style="font-weight:600;">${a.status}</span></td>
-          <td>${new Date(a.created_at || Date.now()).toLocaleTimeString()}</td>
-          <td>
-            ${a.status === 'ACTIVE' ? `
-              <button class="btn btn-secondary btn-sm" onclick="acknowledgeAlert('${a.id}')">Acknowledge</button>
-              <button class="btn btn-sm" onclick="resolveAlert('${a.id}')">Resolve</button>
-            ` : (a.status === 'ACKNOWLEDGED' ? `
-              <button class="btn btn-sm" onclick="resolveAlert('${a.id}')">Resolve</button>
-            ` : `<span style="color:var(--text-muted); font-size:0.8rem;">Resolved</span>`)}
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-      document.getElementById('alertCountBadge').textContent = `${criticalCount} Critical Alerts`;
-    }
-
-    function renderTraces(traces) {
-      if (!Array.isArray(traces) || traces.length === 0) return;
-      const tbody = document.getElementById('tracesTableBody');
-      tbody.innerHTML = '';
-      traces.forEach(t => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><code>${t.trace_id}</code></td>
-          <td><code>${t.root_span}</code></td>
-          <td>${t.duration_ms}ms</td>
-          <td><span class="status-badge status-up">${t.status_code || '200 OK'}</span></td>
-          <td>${t.span_count} spans</td>
-          <td>${t.context_summary || 'tenant-isolated'}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    async function acknowledgeAlert(alertId) {
-      try {
-        await fetch(`/api/v1/observability/alerts/${alertId}/acknowledge`, { method: 'POST' });
-        fetchHealthAndAlerts();
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    async function resolveAlert(alertId) {
-      try {
-        await fetch(`/api/v1/observability/alerts/${alertId}/resolve`, { method: 'POST' });
-        fetchHealthAndAlerts();
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    function triggerDLQReplay() {
-      alert('DLQ Replay triggered: 0 failed tasks to replay. Backlog is clear.');
-    }
-
-    document.addEventListener('DOMContentLoaded', fetchHealthAndAlerts);
-  </script>
+  
 
 </body>
+<!-- csp-build: migrated -->
 </html>

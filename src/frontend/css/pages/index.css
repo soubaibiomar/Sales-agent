@@ -1,0 +1,33 @@
+/* Extracted from index.html by scripts/frontend_csp_build.py */
+/* Specific dashboard enhancements */
+    .dashboard-layout-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    .dashboard-left-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .dashboard-right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .charts-dual-row {
+      display: grid;
+      grid-template-columns: 1.4fr minmax(0, 1fr);
+      gap: 1.5rem;
+    }
+    .tables-dual-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 1fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 1200px) {
+      .dashboard-layout-grid { grid-template-columns: minmax(0, 1fr); }
+      .charts-dual-row { grid-template-columns: minmax(0, 1fr); }
+      .tables-dual-row { grid-template-columns: minmax(0, 1fr); }
+    }

@@ -3,7 +3,7 @@
    Authoritative Color Palette, Layout, Typography & UI Components
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+/* Inter is used when installed locally; system sans-serif otherwise (no third-party font CDN under the CSP). */
 
 :root {
   /* Brand Core */
@@ -1074,3 +1074,89 @@ html, body {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ==========================================================================
+   GROUP E (inspection F-20 / F-32): shared shell, live-data states, responsive fixes
+   ========================================================================== */
+.nav-group-title {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55); padding: 0.9rem 1rem 0.35rem;
+}
+.sidebar-footer .user-details { display: flex; flex-direction: column; min-width: 0; }
+.sidebar-footer .user-details .name { font-weight: 600; font-size: 13px; color: #FFFFFF; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-footer .user-details .role { font-size: 11px; color: rgba(255, 255, 255, 0.65); }
+.btn-logout {
+  margin-left: auto; background: transparent; border: 1px solid rgba(255, 255, 255, 0.25); color: #FFFFFF;
+  border-radius: 8px; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.btn-logout:hover, .btn-logout:focus-visible { background: rgba(255, 255, 255, 0.12); outline: 2px solid #10B981; }
+
+.data-state { padding: 1.5rem 1rem; text-align: center; font-size: 0.9rem; color: #4A5A52; list-style: none; }
+.data-state--loading { color: #4A5A52; }
+.data-state--empty { color: #4A5A52; font-style: italic; }
+.data-state--error { color: #B91C1C; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; }
+td.data-state { padding: 2rem 1rem; }
+
+.demo-chip {
+  display: inline-block; margin: 0 0.5rem 0.5rem 0; padding: 2px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; color: #92400E; background: #FEF3C7; border: 1px solid #FDE68A;
+}
+.kpi-caption { font-size: 12px; font-weight: 500; color: #4A5A52; }
+.kpi-value--muted { color: #66756D; }
+
+.approval-live-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.approval-card-body { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+.approval-card-title { font-size: 1rem; font-weight: 700; color: #0A3A2A; overflow-wrap: anywhere; }
+.approval-card-meta { font-size: 0.8rem; color: #4A5A52; overflow-wrap: anywhere; }
+.approval-card-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.btn-danger-outline { color: #B91C1C; border-color: #FECACA; }
+
+.deal-card[data-href] { cursor: pointer; }
+.deal-card[data-href]:focus-visible { outline: 3px solid #10B981; outline-offset: 2px; }
+
+/* Responsive: nothing may force horizontal page scroll. */
+.main-wrapper, .content-wrapper, .main-content { min-width: 0; max-width: 100%; }
+.kpi-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+.kpi-value { overflow-wrap: anywhere; }
+table { max-width: 100%; }
+.table-container, .table-wrapper, .card { max-width: 100%; overflow-x: auto; }
+@media (max-width: 768px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .topbar-actions { gap: 0.4rem; }
+  .topbar-actions .user-topbar-pill > div:last-child, .tenant-selector-pill span { display: none; }
+}
+@media (max-width: 480px) {
+  .inbox-workspace, .quotation-builder-grid, .dashboard-layout-grid, .copilot-grid, .main-grid, .chart-grid {
+    grid-template-columns: minmax(0, 1fr) !important; height: auto !important;
+  }
+}
+
+[hidden] { display: none !important; }
+
+/* Group E (F-32): compact topbar on phones so it never causes horizontal scroll. */
+@media (max-width: 600px) {
+  .topbar-actions { gap: 6px; min-width: 0; }
+  .user-topbar-pill > div:last-child,
+  .icon-btn-badge[title="Applications"],
+  .btn-header-primary > span + * { display: none; }
+  .tenant-selector-pill { max-width: 96px; overflow: hidden; }
+  #currentTenantLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+/* Fixed-count KPI rows (formerly inline styles) that still collapse on small screens. */
+@media (min-width: 1100px) {
+  .kpi-grid.kpi-grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .kpi-grid.kpi-grid--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+/* Wide tables and tab bars scroll inside their own box on phones instead of widening the page. */
+@media (max-width: 600px) {
+  table.data-table:not(.table-responsive table) { display: block; max-width: 100%; overflow-x: auto; }
+  .sub-tabs-bar, .tabs-bar, .tab-bar { overflow-x: auto; max-width: 100%; flex-wrap: nowrap; }
+}
+@media (max-width: 600px) {
+  .content-wrapper table:not(.table-responsive table) { display: block; max-width: 100%; overflow-x: auto; }
+  .content-wrapper code { word-break: break-all; }
+}
+
+.demo-page-banner { margin: 0 0 16px; padding: 10px 14px; border: 1px solid #F5D08A; background: #FFFBEB; color: #78350F; border-radius: 8px; font-size: 13px; font-weight: 600; }

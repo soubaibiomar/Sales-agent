@@ -1,169 +1,19 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+  <script src="js/api_client.js"></script>
+  <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sales AI Management — Tableau de bord exécutif</title>
   <link rel="stylesheet" href="css/design_system.css">
-  <style>
-    /* Specific dashboard enhancements */
-    .dashboard-layout-grid {
-      display: grid;
-      grid-template-columns: 1fr 340px;
-      gap: 1.5rem;
-      align-items: start;
-    }
-    .dashboard-left-col {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-    .dashboard-right-col {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-    .charts-dual-row {
-      display: grid;
-      grid-template-columns: 1.4fr 1fr;
-      gap: 1.5rem;
-    }
-    .tables-dual-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
-    }
-    @media (max-width: 1200px) {
-      .dashboard-layout-grid { grid-template-columns: 1fr; }
-      .charts-dual-row { grid-template-columns: 1fr; }
-      .tables-dual-row { grid-template-columns: 1fr; }
-    }
-  </style>
+  <link rel="stylesheet" href="css/pages/index.css">
+  <script src="js/pages/index.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
     <!-- 1. LEFT SIDEBAR (Identical Master Shell) -->
-    <aside class="sidebar">
-      <div class="brand-header">
-        <div class="brand-logo-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 20V10M12 20V4M6 20v-6"></path></svg>
-        </div>
-        <div class="brand-text">
-          <span class="title">Sales AI</span>
-          <span class="subtitle">Management</span>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <ul class="nav-list">
-          <li>
-            <a href="index.html" class="nav-item active">
-              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></span>
-              <span class="label">Tableau de bord</span>
-            </a>
-          </li>
-          <li>
-            <a href="pipeline.html" class="nav-item">
-              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span>
-              <span class="label">CRM</span>
-              <span class="chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></span>
-            </a>
-          </li>
-          <li>
-            <a href="pipeline.html" class="nav-item">
-              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></span>
-              <span class="label">Ventes</span>
-              <span class="chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></span>
-            </a>
-          </li>
-          <li>
-            <a href="procurement.html" class="nav-item">
-              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg></span>
-              <span class="label">Achats</span>
-            </a>
-          </li>
-          <li>
-            <a href="catalog.html" class="nav-item">
-              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg></span>
-              <span class="label">Catalogue</span>
-              <span class="chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></span>
-            </a>
-          </li>
-          <li>
-            <a href="quote_builder.html" class="nav-item">
-              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></span>
-              <span class="label">Devis & Approbations</span>
-              <span class="chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></span>
-            </a>
-          </li>
-          <li>
-            <a href="orders.html" class="nav-item">
-              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg></span>
-              <span class="label">Commandes</span>
-            </a>
-          </li>
-          <li>
-            <a href="inventory.html" class="nav-item">
-              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"></path><path d="M3 9h18"></path><path d="M9 21V9"></path></svg></span>
-              <span class="label">Stock</span>
-            </a>
-          </li>
-          <li>
-            <a href="invoices.html" class="nav-item">
-              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></span>
-              <span class="label">Finance</span>
-            </a>
-          </li>
-          <li>
-            <a href="inbox.html" class="nav-item">
-              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></span>
-              <span class="label">Omnicanal</span>
-              <span class="badge">8</span>
-            </a>
-          </li>
-          <li>
-            <a href="agent_workspace.html" class="nav-item">
-              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span>
-              <span class="label">IA & Automatisation</span>
-            </a>
-          </li>
-          <li>
-            <a href="analytics_dashboard.html" class="nav-item">
-              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></span>
-              <span class="label">Rapports</span>
-            </a>
-          </li>
-          <li>
-            <a href="saas_admin_dashboard.html" class="nav-item">
-              <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></span>
-              <span class="label">Paramètres</span>
-            </a>
-          </li>
-        </ul>
-      </div>
-
-      <div class="sidebar-footer">
-        <div class="ai-status-pill" onclick="window.location.href='agent_workspace.html'">
-          <span class="sparkle-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg>
-          </span>
-          <div class="info">
-            <span class="status-title">IA Active</span>
-            <span class="status-desc">4 agents opérationnels</span>
-          </div>
-          <span style="color:#A7F3D0; font-size:12px;">›</span>
-        </div>
-
-        <div class="user-profile-card">
-          <div class="user-avatar">OA</div>
-          <div class="user-details">
-            <span class="name">Omar A.</span>
-            <span class="role">Administrateur</span>
-          </div>
-          <span style="color:#9ECBB6; font-size:10px;">▼</span>
-        </div>
-      </div>
-    </aside>
+    <aside class="sidebar"><div data-app-nav></div></aside>
 
     <!-- 2. MAIN APPLICATION WRAPPER -->
     <div class="main-wrapper">
@@ -182,13 +32,12 @@
         <div class="topbar-actions">
           <div class="tenant-selector-pill" id="tenantSelectorPill">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1M14 16h1M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path></svg>
-            <span id="currentTenantLabel">Atlas Commerce</span>
+            <span id="currentTenantLabel"></span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
 
           <div class="icon-btn-badge" id="notifBtn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-            <span class="badge-counter">12</span>
           </div>
 
           <div class="icon-btn-badge" title="Applications">
@@ -200,10 +49,10 @@
           </button>
 
           <div class="user-topbar-pill">
-            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;">OA</div>
+            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;"></div>
             <div style="display:flex; flex-direction:column; line-height:1.2;">
-              <span style="font-weight:600; font-size:13px; color:#17251F;">Omar A.</span>
-              <span style="font-size:11px; color:#66756D;">Administrateur</span>
+              <span style="font-weight:600; font-size:13px; color:#17251F;"></span>
+              <span style="font-size:11px; color:#66756D;"></span>
             </div>
           </div>
         </div>
@@ -214,7 +63,7 @@
         <!-- Page Title & Greeting -->
         <div class="page-header">
           <div class="page-title-group">
-            <h1>Bonjour Omar 👋</h1>
+            <h1 id="greetingTitle">Bonjour</h1>
             <p>Voici la performance commerciale et l'activité de votre entreprise aujourd'hui.</p>
           </div>
 
@@ -635,7 +484,7 @@
               </ul>
 
               <div style="display:flex; gap:0.5rem; align-items:center;">
-                <button class="btn-ai-action" onclick="window.location.href='quote_builder.html'">
+                <button class="btn-ai-action" data-on-click="h2">
                   <span>▶</span> Lancer une action IA
                 </button>
                 <button class="btn btn-outline" style="padding:0.65rem;" title="Paramètres IA">
@@ -670,7 +519,7 @@
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
                   </div>
                   <div style="flex:1; font-size:12px; line-height:1.3;">
-                    <span style="font-weight:600; color:#17251F;">Commande CMD-2026-0781 créée</span> par Omar A.
+                    <span style="font-weight:600; color:#17251F;">Commande CMD-2026-0781 créée</span> par un commercial
                     <div style="font-size:10px; color:#66756D;">Il y a 27 min</div>
                   </div>
                 </div>
@@ -713,5 +562,7 @@
   </div>
 
   <script src="js/app_shell.js"></script>
+  <script src="js/pages/index.live.js"></script>
 </body>
+<!-- csp-build: migrated -->
 </html>
