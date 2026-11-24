@@ -106,6 +106,43 @@ class ForecastingEngine:
         }
 
     @classmethod
+    def holdout_backtest(
+        cls,
+        values: List[float],
+        alpha: float = 0.35,
+        beta: float = 0.15,
+        holdout: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Out-of-sample backtest (inspection finding F-31): fit on the first part of the
+        series only, forecast the held-out tail, and compare with naive baselines fitted
+        on the same training window. In-sample fit error is not a measure of accuracy.
+        """
+        n = len(values)
+        k = holdout if holdout is not None else min(14, n // 4)
+        if n < 8 or k < 2:
+            return {"status": "INSUFFICIENT_HISTORY", "sample_size_days": n, "holdout_days": 0}
+        train, test = values[:-k], values[-k:]
+        _, model_fc, _, _ = cls.holt_linear_exponential_smoothing(train, alpha=alpha, beta=beta, periods_ahead=k)
+        naive_fc = [train[-1]] * k
+        window = train[-7:] if len(train) >= 7 else train
+        ma_fc = [sum(window) / len(window)] * k
+        model_m = cls.evaluate_backtest(test, list(model_fc))
+        naive_m = cls.evaluate_backtest(test, naive_fc)
+        ma_m = cls.evaluate_backtest(test, ma_fc)
+        return {
+            "status": "OK",
+            "method": "single-origin holdout (train on first n-k days, forecast last k days)",
+            "sample_size_days": n,
+            "training_days": len(train),
+            "holdout_days": k,
+            "model_metrics": model_m,
+            "naive_last_value_metrics": naive_m,
+            "moving_average_7_metrics": ma_m,
+            "beats_best_baseline": model_m["rmse"] < min(naive_m["rmse"], ma_m["rmse"]),
+        }
+
+    @classmethod
     def generate_advisory_revenue_forecast(
         cls,
         historical_daily_revenue: List[Dict[str, Any]],
@@ -134,11 +171,12 @@ class ForecastingEngine:
             values, alpha=0.35, beta=0.15, periods_ahead=periods_ahead
         )
 
+        # In-sample fit (how well the smoother tracks history) - NOT forecast accuracy.
         backtest = cls.evaluate_backtest(values, fitted)
-
-        # Baseline comparison: Simple moving average (window=7)
         ma_baseline = cls.moving_average(values, window_size=7)
         baseline_backtest = cls.evaluate_backtest(values, ma_baseline)
+        # Out-of-sample accuracy against naive baselines (F-31).
+        holdout = cls.holdout_backtest(values, alpha=0.35, beta=0.15)
 
         # Construct future dates starting from tomorrow
         last_date = date.fromisoformat(str(dates[-1])) if dates[-1] else date.today()
@@ -171,9 +209,12 @@ class ForecastingEngine:
             "model_name": "Holt-Linear-Trend-v1.0",
             "currency": currency,
             "sample_size_days": len(values),
-            "backtest_metrics": backtest,
+            "in_sample_fit_metrics": backtest,
+            "backtest_metrics": backtest,  # kept for API compatibility; this is in-sample fit
             "baseline_ma_metrics": baseline_backtest,
-            "is_superior_to_baseline": backtest["rmse"] <= baseline_backtest["rmse"],
+            "holdout_backtest": holdout,
+            # Superiority is only claimed from held-out data, never from in-sample fit.
+            "is_superior_to_baseline": bool(holdout.get("beats_best_baseline")) if holdout.get("status") == "OK" else None,
             "forecast_points": forecast_points
         }
 
@@ -204,7 +245,8 @@ class ForecastingEngine:
             "point_forecasts": point_forecasts,
             "lower_bounds": lower,
             "upper_bounds": upper,
-            "backtest": backtest,
+            "backtest": backtest,  # in-sample fit
+            "holdout_backtest": self.holdout_backtest(series, alpha=alpha, beta=beta),
             "is_advisory": True,
             "advisory_notice": "Statistically grounded advisory forecast. Does not mutate financial or inventory truth."
         }

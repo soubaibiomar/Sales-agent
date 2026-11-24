@@ -183,6 +183,11 @@ class BaseAgent:
         gw_res = await model_gateway.generate(gw_req, db_session=db_session)
         raw_text = gw_res.content or ""
         tokens_used = gw_res.total_tokens
+        if gw_res.status in ("UNAVAILABLE_HANDOFF", "ERROR"):
+            # F-16: the model could not answer; the turn must go to a human, and this is
+            # recorded explicitly instead of looking like a normal successful answer.
+            status = "MODEL_UNAVAILABLE_HANDOFF"
+            error_details = gw_res.error_message
 
         # Step 5: Commercial Claim Grounding & Output Guard (Invariant 2 & Control 65, 66)
         # Extract evidence envelope from tool results, explicit evidence param, or input

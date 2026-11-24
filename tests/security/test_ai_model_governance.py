@@ -185,8 +185,9 @@ async def test_streaming_holds_active_generation_lease():
     stream_gen = provider.stream("Stream prompt", model="qwen3.5:4b")
 
     # Fetch first chunk from generator
+    # Real token from the local model (the provider no longer emits canned text)
     first_chunk = await stream_gen.__anext__()
-    assert "Stream" in first_chunk
+    assert isinstance(first_chunk, str) and first_chunk
 
     # While stream is open, active lease must be held for 4B
     assert lifecycle_manager.get_active_lease_count("qwen3.5:4b") >= 1

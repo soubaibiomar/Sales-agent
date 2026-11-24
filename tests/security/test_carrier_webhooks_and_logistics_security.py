@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.pool import StaticPool
 
 from src.backend.models.entities import (
+    InventoryItem,
     Base, Tenant, Warehouse, SalesOrder, OrderItem, Shipment, Supplier, PurchaseOrder,
     SupportTicket, Appointment
 )
@@ -156,7 +157,10 @@ async def test_carrier_webhook_out_of_order_replay_does_not_regress_delivered():
                 tax_cents=20000,
                 total_cents=120000
             )
-            session.add_all([order, item])
+            # Stock must exist in the warehouse ledger before it can ship
+            stock = InventoryItem(tenant_id=tenant_a, warehouse_id=wh_a, sku="SEC-SKU-1",
+                                  on_hand_quantity=1, reserved_quantity=0, allocated_quantity=0)
+            session.add_all([order, item, stock])
             await session.flush()
 
             shipment = await logistics.create_shipment(

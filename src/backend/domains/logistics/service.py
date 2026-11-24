@@ -39,6 +39,10 @@ class InvalidShipmentStateError(LogisticsError):
     pass
 
 
+class InsufficientStockForShipmentError(LogisticsError):
+    """Raised when a shipment would ship more units than the warehouse ledger holds."""
+
+
 class CarrierNotFoundError(LogisticsError):
     pass
 
@@ -271,6 +275,14 @@ class LogisticsService:
                 await self.db.flush()
 
             prev_on = inv.on_hand_quantity
+            # Warehouse balance is ledger-backed: never ship units that are not on hand
+            # (previously the balance silently went negative; migration 012 now also
+            # rejects negative balances at the database level).
+            if inv.on_hand_quantity < item.quantity:
+                raise InsufficientStockForShipmentError(
+                    f"Cannot ship {item.quantity} x {item.sku} from warehouse {shipment.warehouse_id}: "
+                    f"only {inv.on_hand_quantity} on hand."
+                )
             inv.on_hand_quantity -= item.quantity
             inv.reserved_quantity = max(0, inv.reserved_quantity - item.quantity)
             new_on = inv.on_hand_quantity

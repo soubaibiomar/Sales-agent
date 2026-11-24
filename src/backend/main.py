@@ -73,6 +73,10 @@ async def lifespan(_app: FastAPI):
     warning = await assert_rls_enforced_connection()
     if warning:
         logger.warning(f"[SECURITY] {warning}")
+    if settings.ai_warmup_on_startup:
+        import asyncio
+        from src.ai.providers.ollama_provider import OllamaProvider
+        asyncio.create_task(OllamaProvider().warm_up())
     yield
 
 

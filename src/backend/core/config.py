@@ -80,6 +80,14 @@ class Settings(BaseSettings):
     )
     voice_session_token_ttl_seconds: int = 3600
 
+    # Signs public quote acceptance/rejection links (F-14).
+    quote_link_secret: str = Field(default="dev_quote_link_signing_secret_change_in_prod_32b", min_length=32)
+    quote_link_ttl_days: int = 45
+
+    # Load the primary LLM at startup so the first customer turn does not pay the
+    # measured ~15 s cold start (F-16).
+    ai_warmup_on_startup: bool = False
+
     # Peripheral n8n outbound signing secret.
     n8n_webhook_secret: str = "dev_n8n_webhook_secret_change_in_prod"
 
@@ -120,7 +128,7 @@ SECRET_FIELDS = (
     "postgres_password", "redis_password", "jwt_secret_key", "mfa_encryption_key",
     "s3_access_key", "s3_secret_key", "whatsapp_webhook_secret", "whatsapp_verify_token",
     "email_webhook_secret", "voice_telephony_secret", "webchat_shared_token",
-    "payment_webhook_secret", "voice_session_secret", "n8n_webhook_secret",
+    "payment_webhook_secret", "voice_session_secret", "n8n_webhook_secret", "quote_link_secret",
 )
 
 settings = Settings()

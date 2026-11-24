@@ -86,7 +86,9 @@ class QuoteSendRequest(BaseModel):
     channel_type: str = Field(default="EMAIL")
 
 class QuoteAcceptRequest(BaseModel):
+    acceptance_token: str  # signed link token issued when the quote was sent (F-14)
     signature_or_note: Optional[str] = None
 
 class QuoteRejectRequest(BaseModel):
+    acceptance_token: str  # same signed link token as for acceptance (F-14)
     reason: Optional[str] = None

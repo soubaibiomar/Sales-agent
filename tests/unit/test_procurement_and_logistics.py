@@ -233,7 +233,10 @@ async def test_logistics_monotonic_status_progression():
             tax_cents=300000,
             total_cents=1800000
         )
-        unit_session.add_all([order, o_item])
+        # Stock must exist in the warehouse ledger before it can ship
+        stock = InventoryItem(tenant_id=tenant_id, warehouse_id="wh_casa", sku="LAPTOP-PRO-16",
+                              on_hand_quantity=1, reserved_quantity=0, allocated_quantity=0)
+        unit_session.add_all([order, o_item, stock])
         await unit_session.flush()
 
         # 1. Create shipment

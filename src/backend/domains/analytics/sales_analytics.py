@@ -14,7 +14,7 @@ from src.backend.models.entities import (
     Opportunity,
     Lead,
     Quote,
-    RefundRequest,
+    RefundRequest, PaymentTransaction,
     User,
     AnalyticsDailySales,
     AnalyticsPipelineSnapshot
@@ -58,11 +58,27 @@ class SalesAnalyticsService:
         ).where(
             and_(
                 RefundRequest.tenant_id == self.tenant_id,
-                RefundRequest.status.in_(["APPROVED", "COMPLETED"])
+                RefundRequest.status.in_(["APPROVED", "COMPLETED"]),
+                RefundRequest.currency == currency  # F-31: never mix currencies
             )
         )
         refund_cents = int((await self.session.execute(refund_stmt)).scalar() or 0)
         net_rev = max(0, gross_rev - refund_cents)
+
+        # 2b. Collected (cash) revenue from provider-confirmed transactions (F-31):
+        # booked revenue counts confirmed orders even when unpaid.
+        cash_stmt = select(
+            func.coalesce(func.sum(case((PaymentTransaction.transaction_type == "CAPTURE", PaymentTransaction.amount_cents), else_=0)), 0),
+            func.coalesce(func.sum(case((PaymentTransaction.transaction_type == "REFUND", PaymentTransaction.amount_cents), else_=0)), 0)
+        ).where(
+            and_(
+                PaymentTransaction.tenant_id == self.tenant_id,
+                PaymentTransaction.currency == currency,
+                PaymentTransaction.status == "SUCCESS"
+            )
+        )
+        captured_cents, refunded_tx_cents = (await self.session.execute(cash_stmt)).one()
+        collected_net = int(captured_cents or 0) - int(refunded_tx_cents or 0)
 
         # 3. Pipeline Value & Weighted Value
         opp_stmt = select(
@@ -91,6 +107,14 @@ class SalesAnalyticsService:
             "gross_revenue_display": f"{gross_rev / 100:.2f} {currency}",
             "refund_total_cents": refund_cents,
             "net_revenue_cents": net_rev,
+            "collected_revenue_cents": int(captured_cents or 0),
+            "collected_net_revenue_cents": collected_net,
+            "revenue_definitions": {
+                "gross_revenue_cents": "Booked: grand total of CONFIRMED/SHIPPED/DELIVERED/COMPLETED orders in this currency (paid or not).",
+                "net_revenue_cents": "Booked minus approved/completed refunds in this currency.",
+                "collected_revenue_cents": "Cash: successful CAPTURE payment transactions in this currency.",
+                "collected_net_revenue_cents": "Cash captured minus successful REFUND transactions in this currency."
+            },
             "net_revenue_display": f"{net_rev / 100:.2f} {currency}",
             "confirmed_orders_count": confirmed_orders,
             "active_pipeline_value_cents": pipeline_nominal,

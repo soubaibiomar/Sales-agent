@@ -19,31 +19,45 @@ DEFAULT_ROLE_PERMISSIONS: Dict[str, List[str]] = {
         "catalog:read", "catalog:write", "quotes:read", "quotes:write",
         "orders:read", "orders:write", "inventory:read", "inventory:write",
         "conversations:read", "conversations:write", "conversations:handoff",
-        "workflows:read", "workflows:manage", "notifications:manage", "integrations:manage"
+        "workflows:read", "workflows:manage", "notifications:manage", "integrations:manage",
+        # F-34: domain permissions required by the API (previously super_admin only)
+        "crm:read", "crm:write", "inventory:manage", "orders:manage", "procurement:manage",
+        "logistics:read", "logistics:manage", "scheduling:read", "scheduling:manage",
+        "support:read", "support:manage", "ai:agents", "ai:copilot", "ai:manage", "ai:rag",
+        "ai:tools", "voice:copilot"
     ],
     "sales_manager": [
         "users:read", "sites:read", "catalog:read", "catalog:write",
         "quotes:read", "quotes:write", "quotes:approve", "quotes:discount_override",
         "orders:read", "orders:write", "inventory:read", "copilot:access",
-        "audit:read", "conversations:read", "conversations:write", "conversations:handoff"
+        "audit:read", "conversations:read", "conversations:write", "conversations:handoff",
+        "crm:read", "crm:write", "orders:manage", "logistics:read", "scheduling:read",
+        "scheduling:manage", "support:read", "ai:agents", "ai:copilot", "ai:rag", "voice:copilot"
     ],
     "sales_representative": [
         "catalog:read", "quotes:read", "quotes:create", "quotes:draft",
         "orders:read", "orders:create", "customers:read", "customers:write",
-        "copilot:access", "conversations:read", "conversations:write", "conversations:handoff"
+        "copilot:access", "conversations:read", "conversations:write", "conversations:handoff",
+        "crm:read", "crm:write", "scheduling:read", "scheduling:manage", "support:read",
+        "logistics:read", "ai:copilot", "ai:rag"
     ],
     "sales_rep": [
         "catalog:read", "quotes:read", "quotes:create", "quotes:draft",
         "orders:read", "orders:create", "customers:read", "customers:write",
-        "copilot:access", "conversations:read", "conversations:write", "conversations:handoff"
+        "copilot:access", "conversations:read", "conversations:write", "conversations:handoff",
+        "crm:read", "crm:write", "scheduling:read", "scheduling:manage", "support:read",
+        "logistics:read", "ai:copilot", "ai:rag"
     ],
     "inventory_manager": [
         "catalog:read", "inventory:read", "inventory:write",
-        "procurement:read", "procurement:write", "warehouses:read", "warehouses:write"
+        "procurement:read", "procurement:write", "warehouses:read", "warehouses:write",
+        "inventory:manage", "procurement:manage", "logistics:read", "logistics:manage"
     ],
     "support_agent": [
         "tickets:read", "tickets:write", "conversations:read", "conversations:write",
-        "conversations:handoff", "returns:read", "returns:write", "customers:read"
+        "conversations:handoff", "returns:read", "returns:write", "customers:read",
+        "support:read", "support:manage", "scheduling:read", "scheduling:manage",
+        "logistics:read", "crm:read", "ai:rag"
     ],
     "customer": [
         "portal:access", "orders:read_self", "orders:create_self",

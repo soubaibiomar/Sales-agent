@@ -111,7 +111,9 @@ class ModelGatewayRequest(BaseModel):
     prompt_template_id: Optional[str] = None
     max_tokens: int = 1024
     temperature: float = 0.2
-    max_latency_ms: float = 5000.0  # Latency budget in ms
+    # Explicit latency budget in ms. None = provider timeouts sized from measured cold
+    # starts (F-16); a 5 s default made every cold start fail.
+    max_latency_ms: Optional[float] = None
     allow_fallback: bool = True
     enforce_pii_redaction: bool = True
     metadata: Dict[str, Any] = Field(default_factory=dict)
@@ -209,14 +211,14 @@ class ModelGateway:
         # Step 2: Primary local execution
         try:
             # Latency budget timeout in seconds
-            timeout_sec = max(1.0, req.max_latency_ms / 1000.0)
+            timeout_sec = max(1.0, req.max_latency_ms / 1000.0) if req.max_latency_ms else None
             gen_res = await self.local_provider.generate(
                 prompt=sanitized_prompt,
                 system_prompt=req.system_prompt,
                 model=target_model,
                 max_tokens=req.max_tokens,
                 temperature=req.temperature,
-                timeout=int(timeout_sec)
+                timeout=timeout_sec
             )
             result_content = gen_res.get("content", "")
             metrics = gen_res.get("metrics", {})
@@ -261,8 +263,9 @@ class ModelGateway:
                 target_model = fallback_res.get("model", "cloud-fallback")
             except Exception as fe:
                 logger.error(f"Fallback provider also failed: {fe}")
+                # Honest degradation (F-16): no fabricated answer; hand the turn to a human.
                 result_content = "Désolé, le service d'assistance est momentanément indisponible. Un conseiller humain va vous répondre."
-                status = "ERROR"
+                status = "UNAVAILABLE_HANDOFF"
                 error_msg = f"Fallback error: {str(fe)}"
 
         # Step 4: Output PII filter on generated text

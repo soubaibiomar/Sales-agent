@@ -322,7 +322,14 @@ async def test_real_postgres_live_logistics_monotonic_progression(real_pg06_tena
             subtotal_cents=100000,
             total_cents=120000
         )
+        # Stock must exist in the warehouse ledger before it can be shipped
+        stock = InventoryItem(
+            id=str(uuid.uuid4()), tenant_id=t_alpha, warehouse_id=wh.id, sku="PG-TRANSFORMER-50KVA",
+            on_hand_quantity=1, reserved_quantity=0, allocated_quantity=0
+        )
         session.add_all([wh, order, oi])
+        await session.flush()
+        session.add(stock)
         await session.flush()
 
         # 2. Create Shipment

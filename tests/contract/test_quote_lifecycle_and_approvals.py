@@ -4,6 +4,7 @@ Tests Quote State Machine, automatic approval trigger, pro-forma creation, custo
 (Baseline Controls 16, 17, 33, 34, 42, 51, 57, 58; SAI-08)
 """
 import pytest
+from src.backend.core.signed_links import issue_link_token
 from contextlib import asynccontextmanager
 from httpx import AsyncClient, ASGITransport
 from datetime import timedelta, datetime, timezone
@@ -201,8 +202,17 @@ async def test_quote_standard_lifecycle():
         assert send_res.status_code == 200
         assert send_res.json()["quote_status"] == "SENT"
 
-        # 5. Public Customer Acceptance (Unauthenticated customer endpoint)
+        token = send_res.json()["acceptance_token"]
+
+        # 5a. Knowing the quote id is not enough: no token / forged token are refused
+        no_tok = await client.post(f"/api/v1/quotes/{quote_id}/accept", json={"acceptance_token": ""})
+        assert no_tok.status_code == 401
+        forged = await client.post(f"/api/v1/quotes/{quote_id}/accept", json={"acceptance_token": token[:-4] + "0000"})
+        assert forged.status_code == 401
+
+        # 5. Public Customer Acceptance through the signed link sent with the quote
         accept_payload = {
+            "acceptance_token": token,
             "signature_or_note": "Digitally accepted by Procurement Director"
         }
         accept_res = await client.post(f"/api/v1/quotes/{quote_id}/accept", json=accept_payload)
@@ -292,7 +302,9 @@ async def test_quote_expiration_rejection():
             q.status = "SENT"
             q.valid_until = datetime.now(timezone.utc) - timedelta(days=2)
             await s.commit()
+            link_token = issue_link_token("quote_response", q.tenant_id, q.id, q.version, ttl_seconds=3600)
 
         # 2. Attempt customer acceptance -> MUST return 410 GONE
-        accept_res = await client.post(f"/api/v1/quotes/{quote_id}/accept", json={"signature_or_note": "Too late"})
+        accept_res = await client.post(f"/api/v1/quotes/{quote_id}/accept",
+                                       json={"acceptance_token": link_token, "signature_or_note": "Too late"})
         assert accept_res.status_code == 410, f"Expected 410 Gone for expired quote, got {accept_res.status_code}"

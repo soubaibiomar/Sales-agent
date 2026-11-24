@@ -3,12 +3,17 @@ Quotation & Pro-Forma API Endpoints.
 (Baseline Controls 16, 17, 33, 42, 51, 57, 58)
 """
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from src.backend.core.database import get_db_session
 from src.backend.core.auth_middleware import get_security_context, SecurityContext, require_permission
+from src.backend.core.config import settings
+from src.backend.core.database import bind_tenant_context
+from src.backend.core.signed_links import issue_link_token, verify_link_token, SignedLinkError
+
+QUOTE_LINK_PURPOSE = "quote_response"
 from src.backend.domains.quotations.service import (
     QuotationService, QuoteDomainError, StaleQuoteError,
     QuoteApprovalRequiredError, QuoteExpiredError, QuoteNotFoundError, InvalidStateTransitionError
@@ -211,39 +216,62 @@ async def send_quote(
             quote_id=quote_id,
             actor_user_id=context.user_id
         )
+        # F-14: the customer receives a signed link bound to this tenant, quote and
+        # version; editing the quote later bumps the version and voids the link.
+        token = issue_link_token(
+            QUOTE_LINK_PURPOSE, context.tenant_id, quote.id, quote.version,
+            ttl_seconds=settings.quote_link_ttl_days * 86400
+        )
         return {
             "status": "success",
             "quote_status": quote.status,
             "recipient": req.recipient_identifier,
-            "channel": req.channel_type
+            "channel": req.channel_type,
+            "acceptance_token": token,
+            "acceptance_path": f"/quote_view.html?quote={quote.id}&token={token}"
         }
     except QuoteNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except QuoteDomainError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
+async def _load_quote_from_link(db: AsyncSession, quote_id: str, token: str) -> Quote:
+    """Resolves a public quote action through a verified signed link (F-14)."""
+    try:
+        claims = verify_link_token(token, QUOTE_LINK_PURPOSE, quote_id)
+    except SignedLinkError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    await bind_tenant_context(db, claims.tenant_id)
+    quote = (await db.execute(
+        select(Quote).where(Quote.id == quote_id, Quote.tenant_id == claims.tenant_id)
+    )).scalars().first()
+    if not quote:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
+    if quote.version != claims.version:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                            detail="Quote terms changed since this link was issued; request a new link.")
+    return quote
+
+
 @router.post("/{quote_id}/accept")
 async def customer_accept_quote(
     quote_id: str,
     req: QuoteAcceptRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db_session)
 ):
     """
-    Public customer acceptance endpoint for received quotation.
+    Public customer acceptance through the signed link sent with the quote (F-14).
     """
-    # Tenant lookup from quote directly
-    stmt = select(Quote).where(Quote.id == quote_id)
-    res = await db.execute(stmt)
-    quote = res.scalars().first()
-    if not quote:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
-
+    quote = await _load_quote_from_link(db, quote_id, req.acceptance_token)
+    client_ip = request.client.host if request.client else "unknown"
+    note = (req.signature_or_note or "").strip()
     try:
         accepted = await QuotationService.accept_quote(
             session=db,
             tenant_id=quote.tenant_id,
             quote_id=quote.id,
-            signature_or_note=req.signature_or_note
+            signature_or_note=f"{note} [accepted via signed link from {client_ip}]".strip()
         )
         return {
             "status": "success",
@@ -262,18 +290,16 @@ async def customer_reject_quote(
     req: QuoteRejectRequest,
     db: AsyncSession = Depends(get_db_session)
 ):
-    stmt = select(Quote).where(Quote.id == quote_id)
-    res = await db.execute(stmt)
-    quote = res.scalars().first()
-    if not quote:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
-
-    rejected = await QuotationService.reject_quote(
-        session=db,
-        tenant_id=quote.tenant_id,
-        quote_id=quote.id,
-        reason=req.reason
-    )
+    quote = await _load_quote_from_link(db, quote_id, req.acceptance_token)
+    try:
+        rejected = await QuotationService.reject_quote(
+            session=db,
+            tenant_id=quote.tenant_id,
+            quote_id=quote.id,
+            reason=req.reason
+        )
+    except QuoteDomainError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     return {
         "status": "success",
         "quote_number": rejected.quote_number,

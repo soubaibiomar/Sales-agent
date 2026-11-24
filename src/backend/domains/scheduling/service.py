@@ -74,12 +74,15 @@ class SchedulingService:
 
         async with _staff_booking_locks[lock_key]:
             # Acquire database-level transaction lock on PostgreSQL to guarantee multi-worker safety
-            if staff_user_id:
-                try:
-                    lock_id = abs(hash(f"staff_booking:{tenant_id}:{staff_user_id}")) % (2**31)
-                    await self.db.execute(select(func.pg_advisory_xact_lock(lock_id)))
-                except Exception:
-                    pass  # Supported across PostgreSQL; SQLite skips gracefully
+            if staff_user_id and self.db.get_bind().dialect.name == "postgresql":
+                # Deterministic key: Python's hash() is randomised per process, so the
+                # previous key never collided across workers. The appointments exclusion
+                # constraint (migration 012) is the final guard either way.
+                import hashlib
+                lock_id = int.from_bytes(
+                    hashlib.sha256(f"staff_booking:{tenant_id}:{staff_user_id}".encode()).digest()[:8], "big", signed=True
+                )
+                await self.db.execute(select(func.pg_advisory_xact_lock(lock_id)))
 
             # Check overlap if staff assigned
             if staff_user_id:
