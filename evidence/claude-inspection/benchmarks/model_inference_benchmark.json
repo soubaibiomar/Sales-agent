@@ -1,0 +1,88 @@
+{
+ "started": "2026-11-24T16:18:45",
+ "prompt": "Réponds en français en 3 phrases: quels sont les avantages d'un kit solaire 400W pour une PME à Casablanca ?",
+ "num_predict": 128,
+ "runs": [
+  {
+   "label": "4B cold",
+   "model": "qwen3.5:4b",
+   "ttft_ms": 15154.2,
+   "total_ms": 16791.4,
+   "load_duration_ms": 14585.9,
+   "eval_tokens": 95,
+   "tokens_per_s": 57.96,
+   "peak_vram_mib": 3749,
+   "peak_host_ram_used_mib": 15961,
+   "resident_after": [
+    [
+     "qwen3.5:4b",
+     3130009844
+    ]
+   ]
+  },
+  {
+   "label": "4B warm #1",
+   "model": "qwen3.5:4b",
+   "ttft_ms": 673.9,
+   "total_ms": 2439.1,
+   "load_duration_ms": 342.0,
+   "eval_tokens": 114,
+   "tokens_per_s": 64.66,
+   "peak_vram_mib": 3749,
+   "peak_host_ram_used_mib": 15571,
+   "resident_after": [
+    [
+     "qwen3.5:4b",
+     3130009844
+    ]
+   ]
+  },
+  {
+   "label": "4B warm #2",
+   "model": "qwen3.5:4b",
+   "ttft_ms": 744.2,
+   "total_ms": 2577.3,
+   "load_duration_ms": 287.4,
+   "eval_tokens": 118,
+   "tokens_per_s": 64.58,
+   "peak_vram_mib": 3749,
+   "peak_host_ram_used_mib": 15596,
+   "resident_after": [
+    [
+     "qwen3.5:4b",
+     3130009844
+    ]
+   ]
+  },
+  {
+   "label": "9B cold (4B evicted first)",
+   "model": "qwen3.5:9b-q4_K_M",
+   "ttft_ms": 27555.8,
+   "total_ms": 29981.5,
+   "load_duration_ms": 27044.3,
+   "eval_tokens": 91,
+   "tokens_per_s": 37.63,
+   "peak_vram_mib": 6331,
+   "peak_host_ram_used_mib": 15845,
+   "resident_after": [
+    [
+     "qwen3.5:9b-q4_K_M",
+     5589560196
+    ]
+   ]
+  }
+ ],
+ "coresidency_test": {
+  "resident_before_project_call": [
+   [
+    "qwen3.5:4b",
+    5206190324
+   ]
+  ],
+  "provider_stdout": "{\"model\": \"qwen3.5:9b-q4_K_M\", \"notice\": null, \"content\": \"Thinking Process:\\n\\n1.  **Analyze the Request:**\\n    *\"}",
+  "provider_stderr_tail": "",
+  "max_models_resident_simultaneously": 1,
+  "snapshots_with_4B_and_9B_both_resident": 0,
+  "example_snapshot": []
+ }
+}

@@ -1,0 +1,8 @@
+{
+ "login_wrong_password_status": 401,
+ "login_status": 200,
+ "access_token_issued": true,
+ "authenticated_call_status": 200,
+ "authenticated_call_tenant_matches": true,
+ "header_only_call_status": 401
+}

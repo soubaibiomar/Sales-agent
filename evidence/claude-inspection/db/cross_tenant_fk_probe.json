@@ -1,0 +1,7 @@
+{
+ "A_can_read_B_account": 0,
+ "A_insert_opportunity_referencing_B_account": "ACCEPTED (FK passed across tenants)",
+ "no_tenant_context_rows_visible": 0,
+ "app_user_can_update_other_tenant_row_in_tenants": 1,
+ "app_user_has_UPDATE_on_audit_logs": "yes (statement permitted)"
+}

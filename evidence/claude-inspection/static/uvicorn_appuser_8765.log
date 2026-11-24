@@ -1,0 +1,230 @@
+INFO:     Started server process [25784]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8765 (Press CTRL+C to quit)
+INFO:     127.0.0.1:63973 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51964 - "GET /app/index.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50336 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50404 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56629 - "GET /app/index.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60781 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52576 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52576 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:62372 - "GET /app/pipeline.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62372 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59825 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59825 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56655 - "GET /app/pipeline.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56655 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53829 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53829 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52822 - "GET /app/inbox.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52822 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55086 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52822 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:65481 - "GET /app/inbox.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61429 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65481 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61429 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60513 - "GET /app/catalog.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60513 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58024 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60513 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60195 - "GET /app/catalog.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57018 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49675 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57018 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:63248 - "GET /app/quote_builder.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49696 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63248 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49696 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52675 - "GET /app/quote_builder.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63487 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52675 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52675 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:63844 - "GET /app/quote_view.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58191 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63844 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58191 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64413 - "GET /app/quote_view.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51385 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64413 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64413 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:63216 - "GET /app/approvals.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56853 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63216 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63216 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54286 - "GET /app/approvals.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54286 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53142 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53142 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54959 - "GET /app/orders.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53496 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54959 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61523 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60759 - "GET /app/orders.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51517 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60759 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55674 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:63341 - "GET /app/checkout.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49989 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63341 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63341 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:53652 - "GET /app/checkout.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53652 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61053 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61053 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60383 - "GET /app/invoices.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64020 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60383 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60383 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58810 - "GET /app/invoices.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58810 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63849 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63849 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60780 - "GET /app/inventory.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60780 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62982 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60780 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:53746 - "GET /app/inventory.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53746 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56249 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53746 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64926 - "GET /app/procurement.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64926 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54092 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54092 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49235 - "GET /app/procurement.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49235 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58113 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49235 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60927 - "GET /app/logistics.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60927 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56428 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56428 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:53697 - "GET /app/logistics.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60993 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53697 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53697 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60944 - "GET /app/support.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60944 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65082 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60944 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49253 - "GET /app/support.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49253 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62732 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62732 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60673 - "GET /app/schedule.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57049 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60673 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57049 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58864 - "GET /app/schedule.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58864 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54669 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54669 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56327 - "GET /app/agent_workspace.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56327 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62451 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55484 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52228 - "GET /app/agent_workspace.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49674 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52228 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49674 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:62475 - "GET /app/voice_agent.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65237 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62475 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62475 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50096 - "GET /app/voice_agent.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50096 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64098 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64098 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:62339 - "GET /app/voice_copilot.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62339 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51613 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62339 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56650 - "GET /app/voice_copilot.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52938 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56650 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56650 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54315 - "GET /app/voice_observability.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54538 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54315 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54315 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55247 - "GET /app/voice_observability.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60404 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55247 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55247 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56555 - "POST /auth/login HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56556 - "POST /api/v1/auth/login HTTP/1.1" 422 Unprocessable Content
+INFO:     127.0.0.1:58306 - "GET /app/analytics_dashboard.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58306 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56813 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56813 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:61031 - "GET /app/analytics_dashboard.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61175 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61031 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61031 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56154 - "GET /app/saas_admin_dashboard.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58074 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56154 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56154 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:53980 - "GET /app/saas_admin_dashboard.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57334 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53980 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53980 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55450 - "GET /app/ai_governance.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55450 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59653 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55450 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58078 - "GET /app/ai_governance.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58078 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59881 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59881 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49980 - "GET /app/ai_operations_dashboard.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49980 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63866 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63866 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:65130 - "GET /app/ai_operations_dashboard.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64755 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65130 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64755 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52481 - "GET /app/workflows.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52481 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65423 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65423 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56803 - "GET /app/workflows.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56803 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49739 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49739 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52360 - "GET /app/workflow_reliability_dashboard.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52360 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64210 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64210 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50132 - "GET /app/workflow_reliability_dashboard.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50132 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53245 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53245 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:53175 - "GET /app/notifications.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58980 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53175 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53175 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:53894 - "GET /app/notifications.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53894 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56283 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56283 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:63750 - "GET /app/integrations.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63750 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52362 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52362 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59121 - "GET /app/integrations.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49224 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59121 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49224 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59231 - "GET /app/release_console.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56523 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59231 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59231 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57159 - "GET /app/release_console.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51359 - "GET /app/css/design_system.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52339 - "GET /app/js/app_shell.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62809 - "GET /favicon.ico HTTP/1.1" 404 Not Found

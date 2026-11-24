@@ -1,0 +1,12 @@
+category,weight,score
+Functional completeness,15,5.5
+Architecture quality,12,5
+Application and infrastructure security,18,3
+Database integrity and multi-tenancy,10,5
+AI agents and RAG,10,2.5
+Voice AI,8,1
+Frontend UI/UX,10,4.5
+Testing quality,8,3
+Deployment and reliability,6,1.5
+Documentation and maintainability,3,1.5
+TOTAL,100,32.5

@@ -1,0 +1,60 @@
+step,requirement_id,original_requirement,implementation_files,tests,execution_evidence,missing_functionality,architectural_deviation,final_assessment
+01,S01-R1,Requirements catalog linked to owners/APIs/tests,docs/requirements/requirements-traceability.md,tests/step01/*,4 step01 test files passed,Links to tests not verified line by line,-,PASS
+01,S01-R2,C4 + DFD/STRIDE threat models,docs/architecture/*.mmd; security/risk-register.md,tests/step01/test_architecture_consistency.py,passed,"Diagrams describe intended, not built, system",Temporal/Keycloak/Next.js absent in code,PASS
+01,S01-R3,ADRs (10 topics),docs/adr/ADR-001..011,-,files present,ADR-007 not superseded when Temporal dropped,Yes,PASS
+01,S01-R4,"AGENTS.md, design tokens, control traceability 70+12",AGENTS.md; security/control-mapping.md,tests/step01/test_security_controls.py,passed,Later matrix overstated,-,PASS
+02,S02-R1,"Compose with health/readiness for API, PG, Redis, S3, identity, OTel",infra/docker-compose.yml,-,3 services only; /ready hardcoded,"API, identity, OTel containers",No identity provider,FAIL
+02,S02-R2,Tenancy migrations + RLS with least-privileged role,infra/init-db.sql; migrations/001-010,tests/integration/test_postgres_rls.py,RLS forced 79/84; reads fail closed,App cannot run under the role (F-09); cross-tenant FK (F-11),-,PARTIAL
+02,S02-R3,"OIDC/JWKS, MFA for privileged, sessions, revocation, no client tenant trust",core/security.py; auth_middleware.py,tests/security/test_auth_and_rbac.py,HS256 local; header fallback (F-01),OIDC/JWKS,Yes,FAIL
+02,S02-R4,"Authenticated web shells, CSRF/CORS, tenant switching",src/frontend,-,No login page; mock token,Auth UI,Static HTML not Next.js,FAIL
+02,S02-R5,"Secrets mgmt, SAST/SCA, pinned CI, encrypted backups/restore","scripts/backup_database.py, restore_database.py",tests/security/test_backup_restore.py,Backup encryption code exists; no CI/SCA; plaintext dump committed,"CI, SCA, secret store",-,PARTIAL
+03,S03-R1,Web-chat/WhatsApp/Gmail adapters with signatures,src/backend/api/channels.py; integrations/*,tests/contract/test_channel_adapters.py,HMAC + asset binding verified in tests,Real provider sandboxes,Local simulation,PARTIAL
+03,S03-R2,"Persist-before-route, dedup, consent/STOP",domains/conversations/*,tests/integration/test_step03_real_postgres.py,passed on PG,-,-,PASS
+03,S03-R3,"Conversation state machine, handoff, AI silence",domains/conversations/service.py,tests/concurrency/test_conversation_races.py,passed,-,-,PASS
+03,S03-R4,Unified inbox UI,src/frontend/inbox.html,-,"Static data, 0 API calls; broken under CSP",API wiring,-,FAIL
+03,S03-R5,"Fixtures: invalid signatures, out-of-order, outages",tests/contract/*,test_out_of_order_messages.py,passed,-,-,PASS
+04,S04-R1,CRM modules with role-scoped API/UI,domains/crm; api/crm.py,tests/contract/test_crm_and_catalog_apis.py,API ok; UI static,UI wiring,-,PARTIAL
+04,S04-R2,Catalog/pricing with exact money,domains/pricing/money.py,tests/unit/test_money_and_pricing.py,Decimal/int cents verified,-,-,PASS
+04,S04-R3,"Quote state machine, versions, terms hash",domains/quotations/service.py,tests/contract/test_quote_lifecycle_and_approvals.py,passed,Public accept without token (F-14),-,PARTIAL
+04,S04-R4,"Approval queue with MFA, one-use, anti-self-approval",domains/approvals/service.py; api/approvals.py:53,tests/concurrency/test_approval_races.py,Anti-self-approval ok; MFA bypass (F-04),Real MFA check,-,FAIL
+04,S04-R5,"Pipeline, quote builder, approval screens","src/frontend/pipeline.html, quote_builder.html, approvals.html",-,Mock-ups,Wiring,-,FAIL
+05,S05-R1,Idempotent quote acceptance -> order with version fencing,domains/orders/service.py:222-300,tests/concurrency/test_order_and_quote_acceptance_races.py,passed,DB unique on quote_id,-,PARTIAL
+05,S05-R2,"Stock ledger, ATP, holds/expiry",domains/inventory/service.py,tests/concurrency/test_hot_sku_and_reservations.py,passed; expiry needs a worker (F-19),Worker,-,PARTIAL
+05,S05-R3,"Payment intents with verified signatures, dedup, refunds",domains/payments/service.py; api/payments.py,tests/security/test_payment_security_and_webhooks.py,Forged webhook PAID; over-refund (SEC-PROBE-03/04),"Real secrets, reconciliation",Simulated provider,FAIL
+05,S05-R4,"Invoice numbering, hash, immutability",domains/invoicing/service.py,tests/contract/test_orders_and_invoices_apis.py,passed,DB immutability not enforced,-,PARTIAL
+05,S05-R5,Order/checkout/payment/invoice UIs,"src/frontend/orders.html, checkout.html, invoices.html",-,Mostly static,Wiring,-,FAIL
+06,S06-R1,"Warehouses, transfers, suppliers, RFQ, PO, partial receipt",domains/procurement/service.py; inventory,tests/unit/test_procurement_and_logistics.py; tests/integration/test_step06_real_postgres.py,passed,-,-,PASS
+06,S06-R2,"Pick/pack/ship, carrier adapters, monotonic tracking",domains/logistics; integrations/carriers/*,tests/security/test_carrier_webhooks_and_logistics_security.py,Carriers are simulators,Live carrier,Simulated,PARTIAL
+06,S06-R3,"Tickets, warranty, RMA, inspection, bookings",domains/support; domains/scheduling,tests/concurrency/test_procurement_and_booking_races.py,passed (service level),No DB exclusion constraint,-,PARTIAL
+06,S06-R4,Document corrections/credit notes,domains/documents; invoicing,tests/contract,passed,-,-,PARTIAL
+06,S06-R5,Warehouse/operations/support workspaces,"src/frontend/inventory.html, logistics.html, support.html, schedule.html",-,0-1 API calls each,Wiring,-,FAIL
+07,S07-R1,"Outbox/inbox, versioned events, DLQ",domains/conversations/outbox.py,tests/contract/test_outbox_and_dlq.py,SKIP LOCKED leasing implemented; no relay process,Worker,-,PARTIAL
+07,S07-R2,Temporal (or ADR-approved) workflows,"workflows/engine.py, sagas.py",tests/workflows/*,Custom in-request engine; ADR-007 contradicts,Temporal or ADR + worker,Undocumented deviation,FAIL
+07,S07-R3,"Notification orchestrator (consent, STOP, quiet hours TZ)",notifications/orchestrator.py,tests/notifications/test_notification_orchestrator.py,ZoneInfo Africa/Casablanca used; API unauthenticated (F-01),Auth,-,PARTIAL
+07,S07-R4,n8n restricted peripheral,integrations/n8n.py,tests/integrations/test_n8n_restricted_security.py,Stub; denylist only,Real integration,Adapter only,FAIL
+07,S07-R5,"Queue dashboards, alerts, resume",frontend workflow_reliability_dashboard.html; api/workflows.py,tests/workflows/test_workflow_api_contract.py,Recovery endpoint unauthenticated,"Auth, worker",-,PARTIAL
+08,S08-R1,"Model Gateway with budgets, fallback, tracing",src/ai/model_gateway.py; providers/ollama_provider.py,tests/ai/test_model_gateway.py,Real Ollama calls work warm; fake success on error (F-16),Honest fallback,-,PARTIAL
+08,S08-R2,Permission-filtered RAG ingestion/retrieval,src/ai/rag/*,tests/ai/test_rag_pipeline.py,Real embeddings when Ollama up; ACL from body (F-18),"pgvector, ACL fix",-,PARTIAL
+08,S08-R3,"Router, supervisor, stale-turn fencing",src/ai/router.py; supervisors,tests/ai/test_router_and_supervisor.py,Regex/keyword router; fencing tested,-,-,PARTIAL
+08,S08-R4,"Typed tool gateway with allowlists, server context",src/ai/tool_gateway.py,tests/ai/test_tool_gateway.py,Allowlist/schema ok; handlers fixtures (F-07),Real handlers,-,FAIL
+08,S08-R5,Claim verifier + guard + offline eval,src/ai/output_guard.py; evaluations,tests/ai/test_claim_verifier_and_guard.py,Fail-open (F-08); evals deterministic,Fail-closed,-,FAIL
+09,S09-R1,Register 18 roles,src/ai/agents/registry.py,tests/agents/test_agent_registry.py,Registered,-,-,PASS
+09,S09-R2,Per-role purpose/tools/schemas/budgets,registry.py,tests/agents,Present as metadata,-,-,PARTIAL
+09,S09-R3,Specialist dispatch via one turn owner; background via jobs,agents/base.py; supervisors,tests/agents/test_supervisors_and_handoffs.py,Generic agent; no job runner,Background dispatch,-,FAIL
+09,S09-R4,Sales copilot workspace & manager agent panel,copilot/sales_copilot.py; agent_workspace.html,tests/agents/test_sales_copilot.py,Fixture brief,Real data,-,PARTIAL
+09,S09-R5,Offline Quality Reviewer with pinned traces,src/ai/evaluations/*,tests/analytics/test_18_agents_and_rag_evaluations.py,"Deterministic rule checks, no model outputs",Model-in-loop evals,-,FAIL
+10,S10-R1,"Telephony/SIP/WebRTC, VAD, barge-in, STT, TTS",src/backend/voice/*,tests/voice/*,VAD/G.711 real; STT/TTS placeholders; no WebRTC,Real STT/TTS,Simulated,FAIL
+10,S10-R2,Multilingual routing + consented audio eval,multilingual_voice.py; data/voice,tests/voice/test_multilingual_voice_matrix.py,Text classification only; no audio,"Audio dataset, WER",-,FAIL
+10,S10-R3,"Customer mode: disclosure, verification before data",customer_agent.py; service.py,tests/voice/test_customer_voice_security.py,OTP backdoor (F-05),Fix,-,FAIL
+10,S10-R4,Manager mode: MFA step-up; voice never signs,manager_copilot.py; security.py,tests/voice/test_manager_copilot_and_mfa.py,Any 6 chars accepted (F-06),Fix,-,FAIL
+10,S10-R5,"Call ownership, redaction, recording-off default, rate controls",voice/*,tests/voice,Redaction ok; recording default True on WS/SIP,Fix,-,PARTIAL
+11,S11-R1,Governed read models,domains/analytics/*,tests/analytics/*,Queries real tables; booked revenue,Paid revenue definition,-,PARTIAL
+11,S11-R2,"KPI definitions, TZ/FX, forecast backtests",docs/analytics/kpi-definitions.md; forecasting.py,tests/analytics/test_forecasting_engine.py,In-sample backtest,Held-out backtest,-,PARTIAL
+11,S11-R3,"Plans, metering, quotas",domains/saas/service.py,tests/analytics/test_saas_metering_and_quotas.py,Service-level only; not enforced in gateway,Enforcement,-,PARTIAL
+11,S11-R4,Polished workspaces,src/frontend/*,-,Design good; not wired; CSP breaks,Wiring,-,PARTIAL
+11,S11-R5,Cost/ops dashboards,"analytics_dashboard.html, voice_observability.html",-,Partly wired,-,-,PARTIAL
+12,S12-R1,Full E2E across channels,tests/e2e/test_step12_full_lifecycle_e2e.py,6 scenarios passed,Service-level on in-memory SQLite (A-E),API/UI/channel E2E,-,PARTIAL
+12,S12-R2,Audit 70 + 12 controls,security/evidence/final-control-matrix.md,-,Overstated (82/82),Re-baseline,-,FAIL
+12,S12-R3,Throughput/concurrency benchmarks,scripts/benchmark_full_platform_load.py,evidence/step-12/load,Not re-run; voice figures computed,Real load test,-,NOT VERIFIED
+12,S12-R4,"Red-team, payment forgery, DR",scripts/security_audit_runner.py; dr drill,evidence/step-12,Payment forgery succeeds (SEC-PROBE-03),-,-,FAIL
+12,S12-R5,"Runbooks, release manifest, go/no-go",docs/runbooks; RELEASE_MANIFEST.json,-,Present; verdict unsupported,-,-,PARTIAL

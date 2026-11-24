@@ -1,0 +1,35 @@
+module,status,evidence_note
+CRM (leads/accounts/contacts/opportunities),"Implemented and functional (API, service level)",domains/crm; tests pass; UI static
+Sales pipeline,Implemented but partially integrated,API exists; pipeline.html renders empty board under CSP
+Product catalog / pricing,Implemented and functional,Decimal money; tests pass
+Quotations / approvals,Implemented but partially integrated,Terms hash ok; MFA bypass F-04; public accept F-14
+Orders,Implemented and functional (service level),"Version fencing, FOR UPDATE"
+Payments,Simulated,Provider sandbox simulated; forgeable webhook F-02
+Refunds,Implemented but partially integrated,No provider call; over-refund F-03
+Invoices,Implemented and functional (service level),Hash/numbering; DB immutability not enforced
+Suppliers / procurement / receipts,Implemented and functional (service level),tests pass
+Warehouses / inventory / reservations / transfers,Implemented but partially integrated,Expiry needs worker (F-19)
+Fulfilment / logistics / tracking,Simulated,Carrier simulator/adapters
+Support / warranty / RMA,Implemented and functional (service level),tests pass
+Scheduling,Implemented and functional (service level),No exclusion constraint
+Model Gateway / Ollama,Implemented but partially integrated,Real inference; fake fallback F-16
+Permission-filtered RAG,Implemented but partially integrated,Real embeddings when available; ACL issue F-18
+Multilingual router,Implemented (keyword/regex),Text-only classification
+Conversation Supervisor,Implemented but partially integrated,Turn fencing/takeover tested
+Operations Supervisor,Present as scaffolding,57 lines
+Protected Tool Gateway,Simulated,Fixture handlers F-07
+ClaimVerifier / OutputGuard,Implemented but partially integrated,Fail-open F-08
+18-role agent ecosystem,Present as scaffolding,Generic BaseAgent F-17
+Sales Representative Copilot,Simulated,Fixture brief
+Customer Voice Agent,Simulated,Placeholder STT/TTS; OTP backdoor
+Manager Voice Copilot,Implemented but partially integrated,Reads KPIs; step-up fake; execute simulated
+Durable workflows / sagas,Implemented but partially integrated,In-request engine; no worker; no Temporal
+Transactional outbox / DLQ,Implemented but partially integrated,Leasing ok; no relay process
+Notifications,Implemented but partially integrated,Orchestrator logic; no provider; unauthenticated API
+n8n integration,Present as scaffolding,Stub
+"External integrations (WhatsApp, email, SMS, carriers, SIP, payments)",Adapter only / local simulation,No live or sandbox verification
+Executive analytics / forecasting,Implemented but partially integrated,Real queries; in-sample backtest; dashboard static
+AI / voice observability,Implemented but partially integrated,Telemetry code; voice metrics from simulated pipeline
+SaaS tiers / quotas / metering,Implemented but partially integrated,Service level; not enforced at gateway
+Tenant administration / users,Implemented but partially integrated,APIs exist; login requires RLS bypass F-09
+Frontend application,Present as scaffolding (high-fidelity mock-ups),"No auth, mostly static data"

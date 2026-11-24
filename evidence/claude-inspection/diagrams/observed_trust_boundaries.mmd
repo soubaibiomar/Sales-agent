@@ -1,0 +1,14 @@
+flowchart TB
+  Internet((Internet caller)) -->|"no token + X-Tenant-ID"| Fallback["Optional-auth routes:\nworkflows, notifications, integrations,\nvoice sessions/transcripts, callbacks"]
+  Internet -->|"forged HMAC (constant in Git)"| PayWH["/api/v1/payments/webhook"]
+  Internet -->|"unsigned"| Tel["/api/v1/voice/telephony/inbound"]
+  Internet -->|"no auth, tenant in query"| WS["/api/v1/voice/ws/{id}"]
+  Internet -->|"quote UUID only"| QA["/quotes/{id}/accept"]
+  Fallback --> DB[(PostgreSQL)]
+  PayWH --> DB
+  subgraph DBmode["DB connection mode"]
+    SU["postgres superuser\n(.env.example) - RLS bypassed"]
+    AU["sales_app_user - RLS enforced\nbut login/webhooks return nothing"]
+    SQ["SQLite default - no RLS"]
+  end
+  DB --- DBmode

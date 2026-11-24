@@ -1,0 +1,40 @@
+    
+        # Step 5: Execute handler with timeout deadline
+        handler = self._handlers.get(tool_name)
+        if not handler:
+            from src.ai.domain_tool_handlers import AUTHORITATIVE_FACT_TOOLS
+            if tool_name in AUTHORITATIVE_FACT_TOOLS:
+                # Never answer prices/stock/payment status from fixtures (F-07).
+                raise DomainServiceRejectedError(
+                    f"No authoritative handler registered for '{tool_name}'.", code="SERVICE_REJECTED"
+                )
+            # Remaining tools are not yet wired to domain services. Their placeholder
+            # output is explicitly labelled so it can never be used as verified evidence.
+            res = await self._execute_builtin_tool(tool_name, validated_input, context, db_session)
+            if isinstance(res, dict):
+                res = {**res, "simulated": True}
+            return res
+    
+        try:
+            res = await asyncio.wait_for(
+                handler(validated_input, context, db_session),
+                timeout=timeout_seconds
+            )
+            return res.dict() if hasattr(res, "dict") else res
+        except asyncio.TimeoutError:
+            raise DeadlineExceededError(
+                f"Tool '{tool_name}' exceeded timeout deadline of {timeout_seconds}s.",
+                code="DEADLINE_EXCEEDED"
+            )
+        except Exception as e:
+            logger.error(f"Domain service rejected tool execution: {e}")
+>           raise DomainServiceRejectedError(str(e), code="SERVICE_REJECTED")
+E           src.ai.tool_gateway.DomainServiceRejectedError: No database session: authoritative data unavailable.
+
+src\ai\tool_gateway.py:961: DomainServiceRejectedError
+------------------------------ Captured log call ------------------------------
+ERROR    SalesAI.ToolGateway:tool_gateway.py:960 Domain service rejected tool execution: No database session: authoritative data unavailable.
+=========================== short test summary info ===========================
+FAILED tests/ai/test_tool_gateway.py::test_tool_role_allowlist_enforcement - ...
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 54 passed in 174.14s (0:02:54)

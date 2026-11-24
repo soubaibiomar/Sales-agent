@@ -1,0 +1,743 @@
+......................................................F...F............. [ 18%]
+.......................................................................F [ 37%]
+........................................................................ [ 56%]
+........................................................................ [ 75%]
+...........................................................F............ [ 94%]
+F...FF.FF......FFF...                                                    [100%]Running teardown with pytest sessionfinish...
+
+================================== FAILURES ===================================
+____________________ test_tool_role_allowlist_enforcement _____________________
+
+self = <src.ai.tool_gateway.ToolGateway object at 0x00000204DFF87110>
+tool_name = 'catalog.search', params = {'query': 'panneau'}
+context = ServerSecurityContext(tenant_id='tenant-acme', user_id=None, role='product_specialist', permissions=[])
+db_session = None, timeout_seconds = 5.0
+
+    async def execute_tool(
+        self,
+        tool_name: str,
+        params: Dict[str, Any],
+        context: ServerSecurityContext,
+        db_session=None,
+        timeout_seconds: float = 5.0
+    ) -> Dict[str, Any]:
+        """
+        Executes a tool call under strict authorization, schema validation,
+        and deadline controls.
+        """
+        # Step 1: Tool existence check
+        if tool_name not in self._schemas:
+            raise UnauthorizedToolError(f"Tool '{tool_name}' is not recognized in catalog.", code="TOOL_NOT_FOUND")
+    
+        tool_def = self._schemas[tool_name]
+    
+        # Step 2: Role allowlist enforcement (Fail-closed)
+        if not self.is_tool_allowed(context.role, tool_name):
+            logger.warning(
+                f"Unauthorized tool attempt: role '{context.role}' attempted to call '{tool_name}'"
+            )
+            raise UnauthorizedToolError(
+                f"Role '{context.role}' is not authorized to invoke tool '{tool_name}'.",
+                code="UNAUTHORIZED_TOOL"
+            )
+    
+        # Step 3: Input schema validation
+        try:
+            validated_input = tool_def.input_schema(**params)
+        except ValidationError as ve:
+            logger.warning(f"Tool input schema validation failed: {ve}")
+            raise SchemaValidationError(f"Invalid parameters for tool '{tool_name}': {str(ve)}")
+    
+        # Step 4: Server Context Integrity (Check for tenant injection attempts)
+        if "tenant_id" in params and params["tenant_id"] != context.tenant_id:
+            logger.warning(
+                f"Tenant injection attempt: param tenant '{params['tenant_id']}' != ctx tenant '{context.tenant_id}'"
+            )
+            raise TenantMismatchError("Cross-tenant tool execution prohibited.", code="TENANT_MISMATCH")
+    
+        # Step 5: Execute handler with timeout deadline
+        handler = self._handlers.get(tool_name)
+        if not handler:
+            from src.ai.domain_tool_handlers import AUTHORITATIVE_FACT_TOOLS
+            if tool_name in AUTHORITATIVE_FACT_TOOLS:
+                # Never answer prices/stock/payment status from fixtures (F-07).
+                raise DomainServiceRejectedError(
+                    f"No authoritative handler registered for '{tool_name}'.", code="SERVICE_REJECTED"
+                )
+            # Remaining tools are not yet wired to domain services. Their placeholder
+            # output is explicitly labelled so it can never be used as verified evidence.
+            res = await self._execute_builtin_tool(tool_name, validated_input, context, db_session)
+            if isinstance(res, dict):
+                res = {**res, "simulated": True}
+            return res
+    
+        try:
+>           res = await asyncio.wait_for(
+                handler(validated_input, context, db_session),
+                timeout=timeout_seconds
+            )
+
+src\ai\tool_gateway.py:949: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\tasks.py:488: in wait_for
+    return await fut
+           ^^^^^^^^^
+src\ai\domain_tool_handlers.py:36: in handle_catalog_search
+    db = _require_db(db_session)
+         ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+db_session = None
+
+    def _require_db(db_session):
+        if db_session is None:
+>           raise ToolDataUnavailableError("No database session: authoritative data unavailable.")
+E           src.ai.domain_tool_handlers.ToolDataUnavailableError: No database session: authoritative data unavailable.
+
+src\ai\domain_tool_handlers.py:31: ToolDataUnavailableError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.mark.asyncio
+    async def test_tool_role_allowlist_enforcement():
+        """Validates that specialists can only call tools in their role allowlist."""
+        gateway = ToolGateway()
+    
+        # Product specialist calling authorized tool
+        ctx_prod = ServerSecurityContext(tenant_id="tenant-acme", role="product_specialist")
+>       res_allowed = await gateway.execute_tool(
+            tool_name="catalog.search",
+            params={"query": "panneau"},
+            context=ctx_prod
+        )
+
+tests\ai\test_tool_gateway.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.ai.tool_gateway.ToolGateway object at 0x00000204DFF87110>
+tool_name = 'catalog.search', params = {'query': 'panneau'}
+context = ServerSecurityContext(tenant_id='tenant-acme', user_id=None, role='product_specialist', permissions=[])
+db_session = None, timeout_seconds = 5.0
+
+    async def execute_tool(
+        self,
+        tool_name: str,
+        params: Dict[str, Any],
+        context: ServerSecurityContext,
+        db_session=None,
+        timeout_seconds: float = 5.0
+    ) -> Dict[str, Any]:
+        """
+        Executes a tool call under strict authorization, schema validation,
+        and deadline controls.
+        """
+        # Step 1: Tool existence check
+        if tool_name not in self._schemas:
+            raise UnauthorizedToolError(f"Tool '{tool_name}' is not recognized in catalog.", code="TOOL_NOT_FOUND")
+    
+        tool_def = self._schemas[tool_name]
+    
+        # Step 2: Role allowlist enforcement (Fail-closed)
+        if not self.is_tool_allowed(context.role, tool_name):
+            logger.warning(
+                f"Unauthorized tool attempt: role '{context.role}' attempted to call '{tool_name}'"
+            )
+            raise UnauthorizedToolError(
+                f"Role '{context.role}' is not authorized to invoke tool '{tool_name}'.",
+                code="UNAUTHORIZED_TOOL"
+            )
+    
+        # Step 3: Input schema validation
+        try:
+            validated_input = tool_def.input_schema(**params)
+        except ValidationError as ve:
+            logger.warning(f"Tool input schema validation failed: {ve}")
+            raise SchemaValidationError(f"Invalid parameters for tool '{tool_name}': {str(ve)}")
+    
+        # Step 4: Server Context Integrity (Check for tenant injection attempts)
+        if "tenant_id" in params and params["tenant_id"] != context.tenant_id:
+            logger.warning(
+                f"Tenant injection attempt: param tenant '{params['tenant_id']}' != ctx tenant '{context.tenant_id}'"
+            )
+            raise TenantMismatchError("Cross-tenant tool execution prohibited.", code="TENANT_MISMATCH")
+    
+        # Step 5: Execute handler with timeout deadline
+        handler = self._handlers.get(tool_name)
+        if not handler:
+            from src.ai.domain_tool_handlers import AUTHORITATIVE_FACT_TOOLS
+            if tool_name in AUTHORITATIVE_FACT_TOOLS:
+                # Never answer prices/stock/payment status from fixtures (F-07).
+                raise DomainServiceRejectedError(
+                    f"No authoritative handler registered for '{tool_name}'.", code="SERVICE_REJECTED"
+                )
+            # Remaining tools are not yet wired to domain services. Their placeholder
+            # output is explicitly labelled so it can never be used as verified evidence.
+            res = await self._execute_builtin_tool(tool_name, validated_input, context, db_session)
+            if isinstance(res, dict):
+                res = {**res, "simulated": True}
+            return res
+    
+        try:
+            res = await asyncio.wait_for(
+                handler(validated_input, context, db_session),
+                timeout=timeout_seconds
+            )
+            return res.dict() if hasattr(res, "dict") else res
+        except asyncio.TimeoutError:
+            raise DeadlineExceededError(
+                f"Tool '{tool_name}' exceeded timeout deadline of {timeout_seconds}s.",
+                code="DEADLINE_EXCEEDED"
+            )
+        except Exception as e:
+            logger.error(f"Domain service rejected tool execution: {e}")
+>           raise DomainServiceRejectedError(str(e), code="SERVICE_REJECTED")
+E           src.ai.tool_gateway.DomainServiceRejectedError: No database session: authoritative data unavailable.
+
+src\ai\tool_gateway.py:961: DomainServiceRejectedError
+------------------------------ Captured log call ------------------------------
+ERROR    SalesAI.ToolGateway:tool_gateway.py:960 Domain service rejected tool execution: No database session: authoritative data unavailable.
+_______________________ test_deterministic_pricing_tool _______________________
+
+self = <src.ai.tool_gateway.ToolGateway object at 0x00000204E0789010>
+tool_name = 'pricing.calculate_quote'
+params = {'items': [{'sku': 'SKU-SOLAR-01', 'quantity': 1}]}
+context = ServerSecurityContext(tenant_id='tenant-acme', user_id=None, role='pricing_specialist', permissions=[])
+db_session = None, timeout_seconds = 5.0
+
+    async def execute_tool(
+        self,
+        tool_name: str,
+        params: Dict[str, Any],
+        context: ServerSecurityContext,
+        db_session=None,
+        timeout_seconds: float = 5.0
+    ) -> Dict[str, Any]:
+        """
+        Executes a tool call under strict authorization, schema validation,
+        and deadline controls.
+        """
+        # Step 1: Tool existence check
+        if tool_name not in self._schemas:
+            raise UnauthorizedToolError(f"Tool '{tool_name}' is not recognized in catalog.", code="TOOL_NOT_FOUND")
+    
+        tool_def = self._schemas[tool_name]
+    
+        # Step 2: Role allowlist enforcement (Fail-closed)
+        if not self.is_tool_allowed(context.role, tool_name):
+            logger.warning(
+                f"Unauthorized tool attempt: role '{context.role}' attempted to call '{tool_name}'"
+            )
+            raise UnauthorizedToolError(
+                f"Role '{context.role}' is not authorized to invoke tool '{tool_name}'.",
+                code="UNAUTHORIZED_TOOL"
+            )
+    
+        # Step 3: Input schema validation
+        try:
+            validated_input = tool_def.input_schema(**params)
+        except ValidationError as ve:
+            logger.warning(f"Tool input schema validation failed: {ve}")
+            raise SchemaValidationError(f"Invalid parameters for tool '{tool_name}': {str(ve)}")
+    
+        # Step 4: Server Context Integrity (Check for tenant injection attempts)
+        if "tenant_id" in params and params["tenant_id"] != context.tenant_id:
+            logger.warning(
+                f"Tenant injection attempt: param tenant '{params['tenant_id']}' != ctx tenant '{context.tenant_id}'"
+            )
+            raise TenantMismatchError("Cross-tenant tool execution prohibited.", code="TENANT_MISMATCH")
+    
+        # Step 5: Execute handler with timeout deadline
+        handler = self._handlers.get(tool_name)
+        if not handler:
+            from src.ai.domain_tool_handlers import AUTHORITATIVE_FACT_TOOLS
+            if tool_name in AUTHORITATIVE_FACT_TOOLS:
+                # Never answer prices/stock/payment status from fixtures (F-07).
+                raise DomainServiceRejectedError(
+                    f"No authoritative handler registered for '{tool_name}'.", code="SERVICE_REJECTED"
+                )
+            # Remaining tools are not yet wired to domain services. Their placeholder
+            # output is explicitly labelled so it can never be used as verified evidence.
+            res = await self._execute_builtin_tool(tool_name, validated_input, context, db_session)
+            if isinstance(res, dict):
+                res = {**res, "simulated": True}
+            return res
+    
+        try:
+>           res = await asyncio.wait_for(
+                handler(validated_input, context, db_session),
+                timeout=timeout_seconds
+            )
+
+src\ai\tool_gateway.py:949: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\tasks.py:488: in wait_for
+    return await fut
+           ^^^^^^^^^
+src\ai\domain_tool_handlers.py:71: in handle_pricing_quote
+    db = _require_db(db_session)
+         ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+db_session = None
+
+    def _require_db(db_session):
+        if db_session is None:
+>           raise ToolDataUnavailableError("No database session: authoritative data unavailable.")
+E           src.ai.domain_tool_handlers.ToolDataUnavailableError: No database session: authoritative data unavailable.
+
+src\ai\domain_tool_handlers.py:31: ToolDataUnavailableError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.mark.asyncio
+    async def test_deterministic_pricing_tool():
+        """Validates that pricing tool produces deterministic Moroccan VAT calculations."""
+        gateway = ToolGateway()
+        ctx = ServerSecurityContext(tenant_id="tenant-acme", role="pricing_specialist")
+    
+>       res = await gateway.execute_tool(
+            tool_name="pricing.calculate_quote",
+            params={"items": [{"sku": "SKU-SOLAR-01", "quantity": 1}]},
+            context=ctx
+        )
+
+tests\ai\test_tool_gateway.py:102: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.ai.tool_gateway.ToolGateway object at 0x00000204E0789010>
+tool_name = 'pricing.calculate_quote'
+params = {'items': [{'sku': 'SKU-SOLAR-01', 'quantity': 1}]}
+context = ServerSecurityContext(tenant_id='tenant-acme', user_id=None, role='pricing_specialist', permissions=[])
+db_session = None, timeout_seconds = 5.0
+
+    async def execute_tool(
+        self,
+        tool_name: str,
+        params: Dict[str, Any],
+        context: ServerSecurityContext,
+        db_session=None,
+        timeout_seconds: float = 5.0
+    ) -> Dict[str, Any]:
+        """
+        Executes a tool call under strict authorization, schema validation,
+        and deadline controls.
+        """
+        # Step 1: Tool existence check
+        if tool_name not in self._schemas:
+            raise UnauthorizedToolError(f"Tool '{tool_name}' is not recognized in catalog.", code="TOOL_NOT_FOUND")
+    
+        tool_def = self._schemas[tool_name]
+    
+        # Step 2: Role allowlist enforcement (Fail-closed)
+        if not self.is_tool_allowed(context.role, tool_name):
+            logger.warning(
+                f"Unauthorized tool attempt: role '{context.role}' attempted to call '{tool_name}'"
+            )
+            raise UnauthorizedToolError(
+                f"Role '{context.role}' is not authorized to invoke tool '{tool_name}'.",
+                code="UNAUTHORIZED_TOOL"
+            )
+    
+        # Step 3: Input schema validation
+        try:
+            validated_input = tool_def.input_schema(**params)
+        except ValidationError as ve:
+            logger.warning(f"Tool input schema validation failed: {ve}")
+            raise SchemaValidationError(f"Invalid parameters for tool '{tool_name}': {str(ve)}")
+    
+        # Step 4: Server Context Integrity (Check for tenant injection attempts)
+        if "tenant_id" in params and params["tenant_id"] != context.tenant_id:
+            logger.warning(
+                f"Tenant injection attempt: param tenant '{params['tenant_id']}' != ctx tenant '{context.tenant_id}'"
+            )
+            raise TenantMismatchError("Cross-tenant tool execution prohibited.", code="TENANT_MISMATCH")
+    
+        # Step 5: Execute handler with timeout deadline
+        handler = self._handlers.get(tool_name)
+        if not handler:
+            from src.ai.domain_tool_handlers import AUTHORITATIVE_FACT_TOOLS
+            if tool_name in AUTHORITATIVE_FACT_TOOLS:
+                # Never answer prices/stock/payment status from fixtures (F-07).
+                raise DomainServiceRejectedError(
+                    f"No authoritative handler registered for '{tool_name}'.", code="SERVICE_REJECTED"
+                )
+            # Remaining tools are not yet wired to domain services. Their placeholder
+            # output is explicitly labelled so it can never be used as verified evidence.
+            res = await self._execute_builtin_tool(tool_name, validated_input, context, db_session)
+            if isinstance(res, dict):
+                res = {**res, "simulated": True}
+            return res
+    
+        try:
+            res = await asyncio.wait_for(
+                handler(validated_input, context, db_session),
+                timeout=timeout_seconds
+            )
+            return res.dict() if hasattr(res, "dict") else res
+        except asyncio.TimeoutError:
+            raise DeadlineExceededError(
+                f"Tool '{tool_name}' exceeded timeout deadline of {timeout_seconds}s.",
+                code="DEADLINE_EXCEEDED"
+            )
+        except Exception as e:
+            logger.error(f"Domain service rejected tool execution: {e}")
+>           raise DomainServiceRejectedError(str(e), code="SERVICE_REJECTED")
+E           src.ai.tool_gateway.DomainServiceRejectedError: No database session: authoritative data unavailable.
+
+src\ai\tool_gateway.py:961: DomainServiceRejectedError
+------------------------------ Captured log call ------------------------------
+ERROR    SalesAI.ToolGateway:tool_gateway.py:960 Domain service rejected tool execution: No database session: authoritative data unavailable.
+_____________ test_scenario_d_manager_copilot_and_privileged_mfa ______________
+
+    @pytest.mark.asyncio
+    async def test_scenario_d_manager_copilot_and_privileged_mfa():
+        """
+        Validates managerial voice terminal:
+        Spoken Query -> Grounded KPI Telemetry -> Spoken High-Risk Command ->
+        Privileged Action Guard Interception -> Action Preview Token -> Step-Up MFA ->
+        Executed Mutation with Audit Trail.
+        """
+        async with get_e2e_db_session() as session:
+            tenant_id = f"t_mgr_e2e_{uuid.uuid4().hex[:6]}"
+            manager_id = f"u_mgr_{uuid.uuid4().hex[:6]}"
+    
+            so = SalesOrder(
+                id=f"so_mgr_{uuid.uuid4().hex[:8]}",
+                tenant_id=tenant_id,
+                order_number="ORD-20261119-MGR",
+                status="PAID",
+                currency="MAD",
+                subtotal_cents=2500000,
+                tax_total_cents=500000,
+                grand_total_cents=3000000,
+                terms_hash="terms_mgr_01"
+            )
+            session.add(so)
+            await session.commit()
+    
+            copilot = ManagerVoiceCopilot(session, tenant_id, manager_id)
+    
+            # 1. Read-Only Query (Safe Spoken Telemetry)
+            res_sales = await copilot.process_manager_command("Donne-moi le chiffre d'affaires et les ventes")
+            assert res_sales["requires_confirmation"] is False
+            assert "30,000.00 MAD" in res_sales["insight_text"] or "30000" in res_sales["insight_text"]
+    
+            # 2. Privileged Spoken Mutation (High-Risk Purchase Order Approval)
+            res_action = await copilot.process_manager_command("Approuve le bon de commande fournisseur PO-99")
+            assert res_action["requires_confirmation"] is True
+            assert res_action["action_preview"] is not None
+            assert res_action["action_preview"]["risk_level"] == "HIGH"
+            assert res_action["action_preview"]["requires_step_up_mfa"] is True
+    
+            action_token = res_action["action_preview"]["action_token"]
+    
+            # 3. Step-up MFA verification
+            from src.backend.voice.security import VoiceSecurityError
+            with pytest.raises(VoiceSecurityError, match="Step-Up TOTP code required"):
+>               copilot.action_guard.consume_action(action_token, totp_code="")
+E               TypeError: ManagerPrivilegedActionGuard.consume_action() got an unexpected keyword argument 'totp_code'
+
+tests\e2e\test_step12_full_lifecycle_e2e.py:506: TypeError
+_____ test_manager_copilot_high_risk_spoken_rejection_and_action_preview ______
+
+    @pytest.mark.asyncio
+    async def test_manager_copilot_high_risk_spoken_rejection_and_action_preview():
+        async with get_test_voice_env() as session:
+            tenant_id = "t_mgr_02"
+            manager_id = "u_director_02"
+            copilot = ManagerVoiceCopilot(session, tenant_id, manager_id)
+    
+            # INVARIANT: Spoken commands alone CANNOT execute high-risk operations!
+            # High-risk request: approve purchase order
+            res_action = await copilot.process_manager_command("Approuve le bon de commande fournisseur PO-99")
+            assert res_action["requires_confirmation"] is True
+            assert res_action["action_preview"] is not None
+            assert res_action["action_preview"]["risk_level"] == "HIGH"
+            assert res_action["action_preview"]["requires_step_up_mfa"] is True
+            assert "seuil d'autorisation vocale" in res_action["insight_text"]
+    
+            action_token = res_action["action_preview"]["action_token"]
+    
+            # Attempt to confirm WITHOUT valid step-up MFA token fails closed
+            with pytest.raises(VoiceSecurityError, match="Step-Up TOTP code required"):
+>               copilot.action_guard.consume_action(action_token, totp_code="")
+E               TypeError: ManagerPrivilegedActionGuard.consume_action() got an unexpected keyword argument 'totp_code'
+
+tests\voice\test_manager_copilot_and_mfa.py:107: TypeError
+__________________ test_telephony_inbound_api_and_callbacks ___________________
+
+    assert rec1["queue_position"] == 1
+    
+    rec2 = queue.enqueue_callback(tenant_id, "+212688776655", customer_name="Société Beta", reason="Devis ERP", priority="HIGH")
+    assert rec2["queue_position"] == 2
+    
+    # List queued callbacks
+    queued = queue.list_callbacks(tenant_id)
+    assert len(queued) == 2
+    
+    # Complete first callback
+    success = queue.complete_callback(tenant_id, rec1["callback_id"])
+    assert success is True
+    
+    # Only 1 pending callback remains
+>   pending = queue.list_callbacks(tenant_id, status="QUEUED")
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests\voice\test_telephony_adapter_and_security.py:180: AssertionError
+___________________ test_full_customer_voice_api_lifecycle ____________________
+
+    
+    async def _get_test_db():
+        async with session_factory() as session:
+            yield session
+            await session.commit()
+    
+    async with session_factory() as session:
+        session.add(Tenant(id="t_api_voice_mgr", name="Voice Mgr Tenant", slug="voice-mgr-tenant"))
+        session.add(User(
+            id="u_manager_api", tenant_id="t_api_voice_mgr", email="manager@example.com",
+            hashed_password="x", full_name="Manager", is_active=True, mfa_enabled=True,
+            mfa_secret=SecurityService.encrypt_mfa_secret(MANAGER_TOTP_SEED)
+        ))
+        await session.commit()
+    
+    app.dependency_overrides[get_db_session] = _get_test_db
+    yield
+    app.dependency_overrides.clear()
+    register_otp_delivery_adapter(None)
+    async with engine.begin() as conn:
+>       await conn.run_sync(Base.metadata.drop_all)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests\voice\test_voice_api_contract.py:63: AssertionError
+________________ test_manager_copilot_api_and_step_up_mfa_flow ________________
+
+                )
+                assert resp_turn_audio.status_code == 200
+                assert resp_turn_audio.json()["turn_index"] == 3
+    
+                # 6. Signal Barge-in
+                resp_barge = await client.post(
+                    f"/api/v1/voice/sessions/{session_id}/barge-in",
+                    headers=headers,
+                    json={
+                        "session_id": session_id,
+                        "interrupted_turn_index": 3,
+                        "energy_level": 750.0,
+                        "timestamp_ms": 1700000000000
+                    }
+                )
+                assert resp_barge.status_code == 200
+                assert resp_barge.json()["status"] == "BARGE_IN_PROCESSED"
+    
+                # 7. Human Handoff Escalation
+                resp_handoff = await client.post(
+                    f"/api/v1/voice/sessions/{session_id}/handoff",
+                    headers=headers,
+                    json={"reason": "Customer requests live human agent", "target_department": "SUPPORT"}
+                )
+                assert resp_handoff.status_code == 200
+                assert resp_handoff.json()["handoff_status"] == "TRANSFERRED"
+    
+                # 8. List Session Transcripts
+                resp_transcripts = await client.get(
+                    f"/api/v1/voice/sessions/{session_id}/transcripts",
+                    headers=headers
+                )
+                assert resp_transcripts.status_code == 200
+                transcripts = resp_transcripts.json()
+                assert len(transcripts) >= 3
+    
+                # 9. Conclude Voice Session
+                resp_end = await client.post(
+                    f"/api/v1/voice/sessions/{session_id}/end",
+                    headers=headers,
+                    json={"reason": "COMPLETED"}
+                )
+                assert resp_end.status_code == 200
+                assert resp_end.json()["status"] == "COMPLETED"
+    
+    
+    @pytest.mark.asyncio
+    async def test_manager_copilot_api_and_step_up_mfa_flow():
+        async with override_voice_api_dependencies():
+            tenant_id = "t_api_voice_mgr"
+            manager_ctx = SecurityContext(
+                user_id="u_manager_api",
+>               tenant_id=tenant_id,
+                email="manager@example.com",
+                roles=["sales_manager"],
+                permissions=["voice:copilot", "quotes:approve"],
+                mfa_verified=True,
+                jti="jti_manager_test",
+                correlation_id="corr_test_01"
+            )
+E           assert 403 == 200
+E            +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\voice\test_voice_api_contract.py:205: AssertionError
+_____________________ test_voice_websocket_full_lifecycle _____________________
+
+        def __init__(self):
+            self.sent = {}
+    
+        async def deliver(self, tenant_id, recipient, code, session_id):
+            self.sent[session_id] = code
+    
+    
+    def _create_session_via_api(client, tenant_id: str) -> tuple:
+        """Voice sessions are created by the authenticated API (never by the socket itself)."""
+        from src.backend.core.auth_middleware import get_security_context, SecurityContext
+    
+        async def _staff():
+            return SecurityContext(user_id="u_ws_staff", tenant_id=tenant_id, email="s@x.test", roles=["support_agent"],
+                                   permissions=[], mfa_verified=False, jti="jti_ws", correlation_id="corr_ws")
+        app.dependency_overrides[get_security_context] = _staff
+        resp = client.post("/api/v1/voice/sessions", json={"voice_mode": "CUSTOMER", "channel_type": "WEBSOCKET",
+                                                            "caller_identifier": "+212611000000", "language": "fr-FR"})
+        assert resp.status_code == 201, resp.text
+        app.dependency_overrides.pop(get_security_context)
+        return resp.json()["session_id"], resp.json()["session_token"]
+    
+    
+    def test_voice_websocket_full_lifecycle():
+        unique_id = uuid.uuid4().hex
+        engine = create_async_engine(
+            f"sqlite+aiosqlite:///file:memdb_voice_ws_{unique_id}?mode=memory&cache=shared&uri=true",
+>           echo=False
+                 ^^^^^^
+        )
+
+tests\voice\test_voice_websocket_streaming.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\testclient.py:123: in __enter__
+    self._raise_on_close(message)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <starlette.testclient.WebSocketTestSession object at 0x00000204E499D400>
+message = {'type': 'websocket.close', 'code': 4401, 'reason': ''}
+
+    def _raise_on_close(self, message: Message) -> None:
+        if message["type"] == "websocket.close":
+>           raise WebSocketDisconnect(code=message.get("code", 1000), reason=message.get("reason", ""))
+E           starlette.websockets.WebSocketDisconnect
+
+..\..\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\testclient.py:152: WebSocketDisconnect
+_______________ test_voice_websocket_binary_audio_pcm_streaming _______________
+
+>   ???
+
+tests\voice\test_voice_websocket_streaming.py:120: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\testclient.py:123: in __enter__
+    self._raise_on_close(message)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <starlette.testclient.WebSocketTestSession object at 0x00000204E4A2E5D0>
+message = {'type': 'websocket.close', 'code': 4401, 'reason': ''}
+
+    def _raise_on_close(self, message: Message) -> None:
+        if message["type"] == "websocket.close":
+>           raise WebSocketDisconnect(code=message.get("code", 1000), reason=message.get("reason", ""))
+E           starlette.websockets.WebSocketDisconnect
+
+..\..\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\testclient.py:152: WebSocketDisconnect
+___________________ test_workflow_executions_api_lifecycle ____________________
+
+>   ???
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests\workflows\test_workflow_api_contract.py:82: AssertionError
+______________________ test_notifications_api_lifecycle _______________________
+
+                resp_list = await client.get("/api/v1/workflows/executions", headers=headers)
+                assert resp_list.status_code == 200
+                list_data = resp_list.json()
+                assert len(list_data) >= 1
+    
+                # 3. Get Execution Detail
+                resp_detail = await client.get(f"/api/v1/workflows/executions/{exec_id}", headers=headers)
+                assert resp_detail.status_code == 200
+                detail_data = resp_detail.json()
+                assert detail_data["id"] == exec_id
+                assert len(detail_data["step_logs"]) >= 1
+    
+                # 4. Trigger Crash Recovery
+                resp_rec = await client.post("/api/v1/workflows/recovery/resume", headers=headers)
+                assert resp_rec.status_code == 200
+                assert "resumed_count" in resp_rec.json()
+    
+    
+    @pytest.mark.asyncio
+    async def test_notifications_api_lifecycle():
+>       async with override_workflow_api_dependencies():
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests\workflows\test_workflow_api_contract.py:127: AssertionError
+____________________ test_integrations_and_n8n_barrier_api ____________________
+
+>   ???
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests\workflows\test_workflow_api_contract.py:163: AssertionError
+============================== warnings summary ===============================
+tests/e2e/test_step12_full_lifecycle_e2e.py::test_scenario_e_failure_recovery_and_compensation
+  C:\Users\omar\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-67 (_connection_worker_thread)
+  
+  Traceback (most recent call last):
+    File "C:\Users\omar\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\aiosqlite\core.py", line 66, in _connection_worker_thread
+      future.get_loop().call_soon_threadsafe(set_result, future, result)
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\omar\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 872, in call_soon_threadsafe
+      self._check_closed()
+      ~~~~~~~~~~~~~~~~~~^^
+    File "C:\Users\omar\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 550, in _check_closed
+      raise RuntimeError('Event loop is closed')
+  RuntimeError: Event loop is closed
+  
+  During handling of the above exception, another exception occurred:
+  
+  Traceback (most recent call last):
+    File "C:\Users\omar\AppData\Local\Python\pythoncore-3.14-64\Lib\threading.py", line 1082, in _bootstrap_inner
+      self._context.run(self.run)
+      ~~~~~~~~~~~~~~~~~^^^^^^^^^^
+    File "C:\Users\omar\AppData\Local\Python\pythoncore-3.14-64\Lib\threading.py", line 1024, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\omar\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\aiosqlite\core.py", line 75, in _connection_worker_thread
+      future.get_loop().call_soon_threadsafe(set_exception, future, e)
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\omar\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 872, in call_soon_threadsafe
+      self._check_closed()
+      ~~~~~~~~~~~~~~~~~~^^
+    File "C:\Users\omar\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 550, in _check_closed
+      raise RuntimeError('Event loop is closed')
+  RuntimeError: Event loop is closed
+  
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/ai/test_tool_gateway.py::test_tool_role_allowlist_enforcement - ...
+FAILED tests/ai/test_tool_gateway.py::test_deterministic_pricing_tool - src.a...
+FAILED tests/e2e/test_step12_full_lifecycle_e2e.py::test_scenario_d_manager_copilot_and_privileged_mfa
+FAILED tests/voice/test_manager_copilot_and_mfa.py::test_manager_copilot_high_risk_spoken_rejection_and_action_preview
+FAILED tests/voice/test_telephony_adapter_and_security.py::test_telephony_inbound_api_and_callbacks
+FAILED tests/voice/test_voice_api_contract.py::test_full_customer_voice_api_lifecycle
+FAILED tests/voice/test_voice_api_contract.py::test_manager_copilot_api_and_step_up_mfa_flow
+FAILED tests/voice/test_voice_websocket_streaming.py::test_voice_websocket_full_lifecycle
+FAILED tests/voice/test_voice_websocket_streaming.py::test_voice_websocket_binary_audio_pcm_streaming
+FAILED tests/workflows/test_workflow_api_contract.py::test_workflow_executions_api_lifecycle
+FAILED tests/workflows/test_workflow_api_contract.py::test_notifications_api_lifecycle
+FAILED tests/workflows/test_workflow_api_contract.py::test_integrations_and_n8n_barrier_api
+12 failed, 369 passed, 1 warning in 278.90s (0:04:38)

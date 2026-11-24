@@ -1,0 +1,2638 @@
+[
+ {
+  "path": "/health",
+  "methods": [
+   "GET"
+  ],
+  "auth": false,
+  "deps": []
+ },
+ {
+  "path": "/ready",
+  "methods": [
+   "GET"
+  ],
+  "auth": false,
+  "deps": []
+ },
+ {
+  "path": "/auth/login",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "get_correlation_id",
+   "get_db_session"
+  ]
+ },
+ {
+  "path": "/auth/mfa/verify",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "get_correlation_id",
+   "get_db_session"
+  ]
+ },
+ {
+  "path": "/auth/mfa/setup",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/auth/logout",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/tenants/current",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/tenants",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker",
+   "require_privileged_mfa"
+  ]
+ },
+ {
+  "path": "/tenants/switch",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/users/me",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/users",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/users",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/users/{user_id}/status",
+  "methods": [
+   "PUT"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker",
+   "require_privileged_mfa"
+  ]
+ },
+ {
+  "path": "/audit/logs",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/channels/webhooks/whatsapp/{tenant_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": false,
+  "deps": []
+ },
+ {
+  "path": "/channels/webhooks/whatsapp/{tenant_id}",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "get_db_session"
+  ]
+ },
+ {
+  "path": "/channels/webhooks/email/{tenant_id}",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "get_db_session"
+  ]
+ },
+ {
+  "path": "/channels/webhooks/voice/{tenant_id}",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "get_db_session"
+  ]
+ },
+ {
+  "path": "/channels/webchat/send",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "get_db_session"
+  ]
+ },
+ {
+  "path": "/inbox/conversations",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "_perm_dependency",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/inbox/conversations/{conversation_id}/timeline",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "_perm_dependency",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/inbox/conversations/{conversation_id}/handoff",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "_perm_dependency",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/inbox/conversations/{conversation_id}/release",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "_perm_dependency",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/inbox/conversations/{conversation_id}/reply",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "_perm_dependency",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/crm/accounts",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/crm/accounts",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/crm/accounts/{account_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/crm/leads",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/crm/leads",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/crm/leads/{lead_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/crm/leads/{lead_id}/convert",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/crm/opportunities",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/crm/opportunities",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/crm/opportunities/{opportunity_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/crm/opportunities/{opportunity_id}/stage",
+  "methods": [
+   "PATCH"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/crm/activities",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/crm/pipeline",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/catalog/products",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/catalog/products",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/catalog/products/{product_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/catalog/products/{product_id}/variants",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/catalog/pricelists",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/catalog/price-lists",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/catalog/pricelists/{price_list_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/catalog/price-lists/{price_list_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/catalog/pricelists/{price_list_id}/items",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/catalog/price-lists/{price_list_id}/items",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/quotes",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/quotes",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/quotes/{quote_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/quotes/{quote_id}/items",
+  "methods": [
+   "PUT"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/quotes/{quote_id}/issue",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/quotes/{quote_id}/send",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/quotes/{quote_id}/accept",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "get_db_session"
+  ]
+ },
+ {
+  "path": "/quotes/{quote_id}/reject",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "get_db_session"
+  ]
+ },
+ {
+  "path": "/quotes/{quote_id}/document",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/approvals/pending",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/approvals/{approval_id}/decide",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/inventory/warehouses",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/inventory/warehouses",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/inventory/items",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/inventory/items/{item_id}/adjust",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/inventory/items",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/inventory/reservations",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/inventory/reservations/{reservation_id}/release",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/inventory/expire-reservations",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/inventory/movements",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/orders",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/orders/from-quote",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/orders",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/orders/{order_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/orders/{order_id}/cancel",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/payments/intents",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/payments/intents/{intent_id}/confirm",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/payments/webhook",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "get_db_session"
+  ]
+ },
+ {
+  "path": "/payments/refunds",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/payments/refunds/{refund_id}/approve",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/payments/transactions",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/invoices/from-order",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/invoices",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/invoices/{invoice_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/invoices/credit-note",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/suppliers",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/suppliers",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/suppliers/{supplier_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/suppliers/{supplier_id}/products",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/suppliers/{supplier_id}/products",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/rfqs",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/rfqs",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/rfqs/{rfq_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/rfqs/{rfq_id}/send",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/purchase-orders",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/purchase-orders",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/purchase-orders/{po_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/purchase-orders/{po_id}/approve",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/purchase-orders/{po_id}/issue",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/goods-receipts",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/goods-receipts",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/goods-receipts/{receipt_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/transfers",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/transfers",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/transfers/{transfer_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/transfers/{transfer_id}/approve",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/transfers/{transfer_id}/ship",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/procurement/transfers/{transfer_id}/receive",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/logistics/shipments",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/logistics/shipments",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/logistics/shipments/{shipment_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/logistics/shipments/{shipment_id}/pick",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/logistics/shipments/{shipment_id}/pack",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/logistics/shipments/{shipment_id}/ship",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/logistics/shipments/{shipment_id}/delivery-proof",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/logistics/rates/quotes",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/logistics/webhooks/carrier/{carrier_code}",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "get_db_session"
+  ]
+ },
+ {
+  "path": "/support/tickets",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/support/tickets",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/support/tickets/{ticket_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/support/tickets/{ticket_id}/messages",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/support/tickets/{ticket_id}/status",
+  "methods": [
+   "PATCH"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/support/warranties/claims",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/support/warranties/claims/{claim_id}/validate",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/support/rmas",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/support/rmas",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/support/rmas/{rma_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/support/rmas/{rma_id}/authorize",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/support/rmas/{rma_id}/inspect",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/scheduling/appointments",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/scheduling/appointments",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/scheduling/appointments/{appointment_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/scheduling/appointments/{appointment_id}/status",
+  "methods": [
+   "PATCH"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/scheduling/appointments/{appointment_id}/reschedule",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/scheduling/availability/slots",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/voice/sessions",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/voice/sessions/{session_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/voice/sessions/{session_id}/verify-caller",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/voice/sessions/{session_id}/turn",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/voice/sessions/{session_id}/barge-in",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/voice/sessions/{session_id}/handoff",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/voice/sessions/{session_id}/end",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/voice/copilot/command",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/voice/copilot/confirm-action",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/voice/sessions/{session_id}/transcripts",
+  "methods": [
+   "GET"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/voice/ws/{session_id}",
+  "methods": [
+   "WS"
+  ],
+  "auth": false,
+  "deps": [
+   "get_db_session"
+  ]
+ },
+ {
+  "path": "/api/v1/voice/telephony/inbound",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "get_db_session"
+  ]
+ },
+ {
+  "path": "/api/v1/voice/telephony/status",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "get_db_session"
+  ]
+ },
+ {
+  "path": "/api/v1/voice/callbacks",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/voice/callbacks",
+  "methods": [
+   "GET"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/workflows/executions",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/workflows/executions",
+  "methods": [
+   "GET"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/workflows/executions/{execution_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/workflows/recovery/resume",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/workflows/automations/rules",
+  "methods": [
+   "GET"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/workflows/automations/rules",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/notifications/send",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/notifications/history",
+  "methods": [
+   "GET"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/notifications/templates",
+  "methods": [
+   "GET"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/notifications/templates",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/notifications/opt-out",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/integrations/status",
+  "methods": [
+   "GET"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/integrations/outbox/dlq",
+  "methods": [
+   "GET"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/integrations/outbox/dlq/{event_id}/retry",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_optional_security_context"
+  ]
+ },
+ {
+  "path": "/api/v1/integrations/n8n/dispatch",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": []
+ },
+ {
+  "path": "/api/v1/integrations/n8n/verify-barrier",
+  "methods": [
+   "POST"
+  ],
+  "auth": false,
+  "deps": []
+ },
+ {
+  "path": "/api/v1/ai/health",
+  "methods": [
+   "GET"
+  ],
+  "auth": false,
+  "deps": []
+ },
+ {
+  "path": "/api/v1/ai/generate",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/ai/route",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/ai/tools/execute",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/ai/rag/documents",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/ai/rag/documents",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/ai/rag/documents/{document_id}",
+  "methods": [
+   "DELETE"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/ai/rag/query",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/ai/guard/verify",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/ai/evaluations/run",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/agents",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/agents/{role_id}",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/agents/turn",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/agents/{role_id}/execute",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/agents/takeover",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/agents/copilot/brief",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/agents/copilot/approve",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/agents/operations/triage",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/api/v1/agents/activity",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context",
+   "permission_checker"
+  ]
+ },
+ {
+  "path": "/analytics/overview",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/analytics/sales",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/analytics/pipeline",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/analytics/commerce",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/analytics/forecast",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/analytics/aggregate",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/observability/health",
+  "methods": [
+   "GET"
+  ],
+  "auth": false,
+  "deps": []
+ },
+ {
+  "path": "/observability/ai-metrics",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/observability/voice-metrics",
+  "methods": [
+   "GET"
+  ],
+  "auth": false,
+  "deps": []
+ },
+ {
+  "path": "/observability/traces",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/observability/alerts",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/observability/alerts/{alert_id}/acknowledge",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/observability/alerts/{alert_id}/resolve",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/saas/subscription",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/saas/usage",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/saas/quotas",
+  "methods": [
+   "GET"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ },
+ {
+  "path": "/saas/quotas/adjust",
+  "methods": [
+   "POST"
+  ],
+  "auth": true,
+  "deps": [
+   "<fastapi.security.http.HTTPBearer object at 0x000001AF5391D2B0>",
+   "get_correlation_id",
+   "get_db_session",
+   "get_security_context"
+  ]
+ }
+]

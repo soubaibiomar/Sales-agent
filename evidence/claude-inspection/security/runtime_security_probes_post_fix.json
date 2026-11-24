@@ -1,0 +1,90 @@
+{
+ "generated_utc": "2026-11-24T16:55:40.276170+00:00",
+ "database": "throwaway SQLite (scratch)",
+ "results": [
+  {
+   "probe": "SEC-PROBE-01",
+   "title": "Unauthenticated read of tenant B notifications via X-Tenant-ID header",
+   "expected_secure_behaviour": "401 without bearer token",
+   "observed": "HTTP 401; tenant-B content returned=False",
+   "verdict": "DEFENDED"
+  },
+  {
+   "probe": "SEC-PROBE-02",
+   "title": "Unauthenticated notification dispatch inside tenant B",
+   "expected_secure_behaviour": "401 without bearer token",
+   "observed": "HTTP 401",
+   "verdict": "DEFENDED"
+  },
+  {
+   "probe": "SEC-PROBE-03",
+   "title": "Forged payment_intent.succeeded webhook signed with repository constant",
+   "expected_secure_behaviour": "Per-tenant provider secret from vault + provider reconciliation; forged event rejected",
+   "observed": "HTTP 401; order.payment_status=UNPAID",
+   "verdict": "DEFENDED"
+  },
+  {
+   "probe": "SEC-PROBE-04",
+   "title": "Refund approval with client 'X-MFA-Verified: true' header, no real MFA; 3x full refunds, same idempotency key, self-approved",
+   "expected_secure_behaviour": "Server-verified step-up MFA, cumulative refund <= captured amount, idempotency, 4-eyes",
+   "observed": "create=[400, 400, 400]; approve=[]; total_refunded_cents=0 vs captured=100000",
+   "verdict": "DEFENDED"
+  },
+  {
+   "probe": "SEC-PROBE-05",
+   "title": "Unauthenticated caller verifies identity with static OTP 123456 (no OTP issued)",
+   "expected_secure_behaviour": "Verification fails unless a server-issued OTP was delivered and matched",
+   "observed": "create=401; verify HTTP 401 verified=None",
+   "verdict": "DEFENDED"
+  },
+  {
+   "probe": "SEC-PROBE-06",
+   "title": "Manager high-risk voice action confirmed with non-numeric 'TOTP' abcdef",
+   "expected_secure_behaviour": "Cryptographic TOTP verification against enrolled seed",
+   "observed": "command HTTP 200; confirm HTTP 403; executed=None",
+   "verdict": "DEFENDED"
+  },
+  {
+   "probe": "SEC-PROBE-07",
+   "title": "Tenant B manager consumes tenant A action-preview token",
+   "expected_secure_behaviour": "Token bound to issuing tenant+user",
+   "observed": "HTTP 403; executed=None",
+   "verdict": "DEFENDED"
+  },
+  {
+   "probe": "SEC-PROBE-08",
+   "title": "Sales rep reads board-only RAG document by adding user_roles=['board_only'] to the request body",
+   "expected_secure_behaviour": "Roles taken only from server-side identity",
+   "observed": "ingest HTTP 200; without role -> None chunks; with self-asserted role -> None chunks",
+   "verdict": "DEFENDED"
+  },
+  {
+   "probe": "SEC-PROBE-09",
+   "title": "7-day refresh token presented as bearer access token",
+   "expected_secure_behaviour": "Rejected (token type != access)",
+   "observed": "HTTP 401",
+   "verdict": "DEFENDED"
+  },
+  {
+   "probe": "SEC-PROBE-10",
+   "title": "OutputGuard with no evidence envelope: paid/price/discount claims",
+   "expected_secure_behaviour": "Unverifiable commercial claims blocked (fail closed)",
+   "observed": "is_safe=False; violations=3",
+   "verdict": "DEFENDED"
+  },
+  {
+   "probe": "SEC-PROBE-11",
+   "title": "OutputGuard: wrong price written as 'MAD 999' / '999 dirhams'",
+   "expected_secure_behaviour": "Rejected as ungrounded",
+   "observed": "is_safe=False; violations=2",
+   "verdict": "DEFENDED"
+  },
+  {
+   "probe": "SEC-PROBE-12",
+   "title": "AI tool orders.get_status for a non-existent order",
+   "expected_secure_behaviour": "NOT_FOUND from domain service",
+   "observed": "rejected: DomainServiceRejectedError: No database session: authoritative data unavailable.",
+   "verdict": "DEFENDED"
+  }
+ ]
+}

@@ -1,0 +1,30 @@
+flowchart LR
+  subgraph Browser
+    UI["28 static HTML pages\n(hardcoded tenant + mock token)"]
+  end
+  subgraph Host["Single uvicorn process (FastAPI)"]
+    MW["SecurityHeaders + CORS\nCSP default-src 'self' (breaks own UI)"]
+    API["27 routers / 199 routes\n154 authenticated, 45 not"]
+    DOM["Domain services\nCRM, catalog, pricing, quotes, approvals,\norders, inventory, payments, invoicing,\nprocurement, logistics, support, scheduling"]
+    WF["WorkflowEngine + sagas\n(in-request, no worker)"]
+    OB["Outbox (leasing code, no relay)"]
+    AI["AI layer: router, supervisors,\nBaseAgent x18 roles, ToolGateway (fixtures),\nOutputGuard, RAG, ModelGateway"]
+    VO["Voice: WS endpoint, VAD, G.711,\nplaceholder STT/TTS, OTP/MFA guards (in-memory)"]
+    STATIC["StaticFiles /app"]
+  end
+  PG[("PostgreSQL 16\n84 tables, RLS forced on 79")]
+  RD[("Redis 7\n(barely used)")]
+  S3[("MinIO")]
+  OL["Ollama :11434\nqwen3.5:4b / 9b, embeddinggemma"]
+  UI --> MW --> API
+  API --> DOM --> PG
+  API --> WF --> DOM
+  API --> AI
+  AI -. "no real handlers" .-> DOM
+  AI --> OL
+  AI --> PG
+  API --> VO --> AI
+  DOM --> OB --> PG
+  STATIC --> UI
+  API -.-> RD
+  API -.-> S3

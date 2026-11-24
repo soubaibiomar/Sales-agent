@@ -1,0 +1,597 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\omar\Documents\Sales agent
+plugins: anyio-4.14.2, arize-phoenix-client-3.5.0, deepeval-4.2.5, asyncio-1.4.0, repeat-0.9.4, rerunfailures-16.7, xdist-3.8.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 381 items
+
+tests\adversarial_ai\test_adversarial_ai.py .....                        [  1%]
+tests\agents\test_agent_registry.py ......                               [  2%]
+tests\agents\test_background_agents.py ......                            [  4%]
+tests\agents\test_interactive_specialists.py .........                   [  6%]
+tests\agents\test_sales_copilot.py ...                                   [  7%]
+tests\agents\test_supervisors_and_handoffs.py .....                      [  8%]
+tests\ai\test_claim_verifier_and_guard.py ......                         [ 10%]
+tests\ai\test_model_gateway.py ....                                      [ 11%]
+tests\ai\test_rag_pipeline.py .....                                      [ 12%]
+tests\ai\test_router_and_supervisor.py .....                             [ 14%]
+tests\ai\test_tool_gateway.py .....                                      [ 15%]
+tests\analytics\test_18_agents_and_rag_evaluations.py ...                [ 16%]
+tests\analytics\test_forecasting_engine.py ....                          [ 17%]
+tests\analytics\test_observability_and_alerting.py .....                 [ 18%]
+tests\analytics\test_saas_metering_and_quotas.py ....                    [ 19%]
+tests\analytics\test_sales_and_commerce_analytics.py ....                [ 20%]
+tests\analytics\test_step11_real_postgres.py .                           [ 20%]
+tests\concurrency\test_approval_races.py ...                             [ 21%]
+tests\concurrency\test_conversation_races.py ....                        [ 22%]
+tests\concurrency\test_hot_sku_and_reservations.py ...                   [ 23%]
+tests\concurrency\test_order_and_quote_acceptance_races.py ...           [ 24%]
+tests\concurrency\test_procurement_and_booking_races.py ...              [ 25%]
+tests\contract\test_agent_apis.py .....                                  [ 26%]
+tests\contract\test_ai_governance_apis.py ......                         [ 28%]
+tests\contract\test_channel_adapters.py ........                         [ 30%]
+tests\contract\test_crm_and_catalog_apis.py ....                         [ 31%]
+tests\contract\test_inbox_and_channel_apis.py ....                       [ 32%]
+tests\contract\test_logistics_and_support_apis.py .....                  [ 33%]
+tests\contract\test_orders_and_invoices_apis.py .                        [ 33%]
+tests\contract\test_out_of_order_messages.py ...                         [ 34%]
+tests\contract\test_outbox_and_dlq.py .....                              [ 35%]
+tests\contract\test_quote_lifecycle_and_approvals.py ...                 [ 36%]
+tests\e2e\test_step12_full_lifecycle_e2e.py ......                       [ 38%]
+tests\integration\test_omnichannel_rls.py ..                             [ 38%]
+tests\integration\test_postgres_rls.py ..........                        [ 41%]
+tests\integration\test_step03_real_postgres.py .................         [ 45%]
+tests\integration\test_step04_real_postgres.py ....                      [ 46%]
+tests\integration\test_step05_real_postgres.py ...                       [ 47%]
+tests\integration\test_step06_real_postgres.py ....                      [ 48%]
+tests\integration\test_step07_real_postgres.py ...                       [ 49%]
+tests\integration\test_step08_real_postgres.py ...                       [ 50%]
+tests\integration\test_step09_real_postgres.py ..                        [ 50%]
+tests\integrations\test_n8n_restricted_security.py ....                  [ 51%]
+tests\notifications\test_notification_orchestrator.py .....              [ 53%]
+tests\security\test_ai_model_governance.py ........                      [ 55%]
+tests\security\test_auth_and_rbac.py ............                        [ 58%]
+tests\security\test_backup_restore.py ...                                [ 59%]
+tests\security\test_carrier_webhooks_and_logistics_security.py ...       [ 60%]
+tests\security\test_channel_security.py .............                    [ 63%]
+tests\security\test_payment_security_and_webhooks.py ...                 [ 64%]
+tests\security\test_quotation_security.py ....                           [ 65%]
+tests\security\test_tenant_isolation.py .....                            [ 66%]
+tests\step01\test_architecture_consistency.py ......                     [ 68%]
+tests\step01\test_repo_hygiene.py ....                                   [ 69%]
+tests\step01\test_requirements_traceability.py ......                    [ 70%]
+tests\step01\test_security_controls.py .....                             [ 72%]
+tests\unit\test_ai_concurrency_and_failures.py ....                      [ 73%]
+tests\unit\test_deterministic_stop.py ..................                 [ 77%]
+tests\unit\test_inventory_and_orders.py .....                            [ 79%]
+tests\unit\test_local_ai_constraints.py .......                          [ 81%]
+tests\unit\test_money_and_pricing.py .............                       [ 84%]
+tests\unit\test_multilingual_matrix.py .........                         [ 86%]
+tests\unit\test_procurement_and_logistics.py .....                       [ 88%]
+tests\voice\test_audio_pipeline_and_vad.py .....                         [ 89%]
+tests\voice\test_customer_voice_security.py .....                        [ 90%]
+tests\voice\test_manager_copilot_and_mfa.py ..                           [ 91%]
+tests\voice\test_manager_copilot_expanded_queries.py ...                 [ 92%]
+tests\voice\test_multilingual_voice_end_to_end.py .                      [ 92%]
+tests\voice\test_multilingual_voice_matrix.py ....                       [ 93%]
+tests\voice\test_telephony_adapter_and_security.py .....                 [ 94%]
+tests\voice\test_voice_agent_ecosystem_integration.py ...                [ 95%]
+tests\voice\test_voice_api_contract.py ..                                [ 96%]
+tests\voice\test_voice_real_postgres.py .                                [ 96%]
+tests\voice\test_voice_websocket_streaming.py ..                         [ 96%]
+tests\workflows\test_checkout_and_reservation_sagas.py ......            [ 98%]
+tests\workflows\test_workflow_api_contract.py ...                        [ 99%]
+tests\workflows\test_workflow_persistence_and_recovery.py ...            [100%]Running teardown with pytest sessionfinish...
+
+
+=================================== PASSES ====================================
+__________________ test_multilingual_direct_prompt_injection __________________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Adversarial prompt injection pattern detected: 'system override'\nWARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Adversarial prompt injection pattern detected: 'ignorez toutes les instructions'\nWARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Adversarial prompt injection pattern detected: '\u062a\u062c\u0627\u0647\u0644 \u062c\u0645\u064a\u0639 \u0627\u0644\u062a\u0639\u0644\u064a\u0645\u0627\u062a'\nWARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Adversarial prompt injection pattern detected: 'khdem lya admin mode'\nWARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Executable code or script payload detected: <\\s*script[^>]*>
+___________________ test_tool_privilege_escalation_attempt ____________________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.ToolGateway:tool_gateway.py:907 Unauthorized tool attempt: role 'customer' attempted to call 'support.create_ticket'
+WARNING  SalesAI.ToolGateway:tool_gateway.py:907 Unauthorized tool attempt: role 'discovery_specialist' attempted to call 'support.create_ticket'
+_________________ test_offline_model_evaluation_corpus_replay _________________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Adversarial prompt injection pattern detected: 'ignore previous instructions'\nWARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Adversarial prompt injection pattern detected: 'khdem lya admin mode'\nWARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Adversarial prompt injection pattern detected: '\u062a\u062c\u0627\u0647\u0644 \u062c\u0645\u064a\u0639 \u0627\u0644\u062a\u0639\u0644\u064a\u0645\u0627\u062a'\nWARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Executable code or script payload detected: <\\s*script[^>]*>\nWARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Adversarial prompt injection pattern detected: 'act as dan'\nWARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Adversarial prompt injection pattern detected: '[system message'\nWARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Adversarial prompt injection pattern detected: 'oublie ton prompt'
+______________________ test_sales_copilot_generate_brief ______________________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.ToolGateway:tool_gateway.py:907 Unauthorized tool attempt: role 'sales_copilot' attempted to call 'copilot.generate_brief'
+WARNING  SalesAI.BaseAgent:base.py:156 Tool invocation failed: Role 'sales_copilot' is not authorized to invoke tool 'copilot.generate_brief'.
+WARNING  SalesAI.ToolGateway:tool_gateway.py:907 Unauthorized tool attempt: role 'sales_copilot' attempted to call 'account.get_summary'
+WARNING  SalesAI.BaseAgent:base.py:156 Tool invocation failed: Role 'sales_copilot' is not authorized to invoke tool 'account.get_summary'.
+__________ test_sales_copilot_propose_action_requires_human_approval __________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.ToolGateway:tool_gateway.py:907 Unauthorized tool attempt: role 'sales_copilot' attempted to call 'copilot.generate_brief'
+WARNING  SalesAI.BaseAgent:base.py:156 Tool invocation failed: Role 'sales_copilot' is not authorized to invoke tool 'copilot.generate_brief'.
+__________________ test_sales_copilot_objection_suggestions ___________________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.ToolGateway:tool_gateway.py:907 Unauthorized tool attempt: role 'sales_copilot' attempted to call 'copilot.generate_brief'
+WARNING  SalesAI.BaseAgent:base.py:156 Tool invocation failed: Role 'sales_copilot' is not authorized to invoke tool 'copilot.generate_brief'.
+WARNING  SalesAI.ToolGateway:tool_gateway.py:907 Unauthorized tool attempt: role 'sales_copilot' attempted to call 'account.get_summary'
+WARNING  SalesAI.BaseAgent:base.py:156 Tool invocation failed: Role 'sales_copilot' is not authorized to invoke tool 'account.get_summary'.
+_______________ test_conversation_supervisor_stale_turn_fencing _______________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.ConversationSupervisor:conversation_supervisor.py:57 Stale turn rejected: conv=conv-fencing-01, expected=0, current=1
+____________________ test_output_guard_ungrounded_fallback ____________________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.OutputGuard:output_guard.py:229 OutputGuard detected 1 commercial claim violations: [VerificationViolation(violation_type='UNGROUNDED_PRICE', claim_text='400 MAD', detail="Claimed price 400.0 is not grounded in verified prices: {'SKU-SOLAR-01': 1250.0}")]
+___________________ test_model_gateway_fallback_simulation ____________________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.ModelGateway:model_gateway.py:227 Primary provider generation failed: Simulated primary provider timeout.
+____________________ test_adversarial_injection_risk_gate _____________________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Adversarial prompt injection pattern detected: 'disregard all policies'
+_____________________ test_supervisor_stale_turn_fencing ______________________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.Router:router.py:263 Stale turn detected for conversation conv-turn-test: expected 0, current 1
+____________________ test_tool_role_allowlist_enforcement _____________________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.ToolGateway:tool_gateway.py:907 Unauthorized tool attempt: role 'product_specialist' attempted to call 'support.create_ticket'
+________ test_server_issued_security_context_tenant_injection_defense _________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.ToolGateway:tool_gateway.py:924 Tenant injection attempt: param tenant 'tenant-attacker' != ctx tenant 'tenant-legit'
+_____________________ test_tool_schema_validation_failure _____________________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.ToolGateway:tool_gateway.py:919 Tool input schema validation failed: 2 validation errors for CreateSupportTicketInput
+idempotency_key
+  Field required [type=missing, input_value={'subject': 'Short'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/missing
+description
+  Field required [type=missing, input_value={'subject': 'Short'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/missing
+__________________ test_alerting_lifecycle_state_transitions __________________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.Alerting:alerting.py:93 Alert [WARNING] triggered for tenant t_alt_cc5f65: GPU VRAM High Utilization
+_____________________ test_api_copilot_brief_and_approval _____________________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.ToolGateway:tool_gateway.py:907 Unauthorized tool attempt: role 'sales_copilot' attempted to call 'copilot.generate_brief'
+WARNING  SalesAI.BaseAgent:base.py:156 Tool invocation failed: Role 'sales_copilot' is not authorized to invoke tool 'copilot.generate_brief'.
+WARNING  SalesAI.ToolGateway:tool_gateway.py:907 Unauthorized tool attempt: role 'sales_copilot' attempted to call 'account.get_summary'
+WARNING  SalesAI.BaseAgent:base.py:156 Tool invocation failed: Role 'sales_copilot' is not authorized to invoke tool 'account.get_summary'.
+________________ test_ai_tool_execution_endpoint_unauthorized _________________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.ToolGateway:tool_gateway.py:907 Unauthorized tool attempt: role 'customer' attempted to call 'support.create_ticket'
+________________________ test_ai_guard_verify_endpoint ________________________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.OutputGuard:output_guard.py:229 OutputGuard detected 2 commercial claim violations: [VerificationViolation(violation_type='UNGROUNDED_PRICE', claim_text='450 MAD', detail="Claimed price 450.0 is not grounded in verified prices: {'SKU-01': 1250.0}"), VerificationViolation(violation_type='UNAUTHORIZED_DISCOUNT', claim_text='40% de remise', detail='Claimed discount 40.0% was not authorized by pricing domain service.')]
+______________________ test_ai_evaluations_run_endpoint _______________________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Adversarial prompt injection pattern detected: 'ignore previous instructions'\nWARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Adversarial prompt injection pattern detected: 'khdem lya admin mode'\nWARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Adversarial prompt injection pattern detected: '\u062a\u062c\u0627\u0647\u0644 \u062c\u0645\u064a\u0639 \u0627\u0644\u062a\u0639\u0644\u064a\u0645\u0627\u062a'\nWARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Executable code or script payload detected: <\\s*script[^>]*>\nWARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Adversarial prompt injection pattern detected: 'act as dan'\nWARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Adversarial prompt injection pattern detected: '[system message'\nWARNING  SalesAI.Router:router.py:167 Adversarial attack intercepted by router: Adversarial prompt injection pattern detected: 'oublie ton prompt'
+___________________ test_enforce_4096_context_limit_for_9b ____________________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.OllamaProvider:ollama_provider.py:49 Requested context length 8192 exceeds 9B hardware cap (4096). Clamping to 4096 tokens to prevent VRAM overflow.
+________________ test_active_generation_lease_blocks_eviction _________________
+------------------------------ Captured log call ------------------------------
+ERROR    SalesAI.ModelLifecycle:model_lifecycle.py:195 Cannot evict model qwen3.5:4b: 1 active generation lease(s) in flight. Eviction blocked to prevent terminating active token stream.
+________________ test_streaming_holds_active_generation_lease _________________
+------------------------------ Captured log call ------------------------------
+ERROR    SalesAI.ModelLifecycle:model_lifecycle.py:195 Cannot evict model qwen3.5:4b: 1 active generation lease(s) in flight. Eviction blocked to prevent terminating active token stream.
+______________________ test_failed_eviction_fails_closed ______________________
+------------------------------ Captured log call ------------------------------
+ERROR    SalesAI.ModelLifecycle:model_lifecycle.py:218 CRITICAL: Failed to evict qwen3.5:4b; model still resident in VRAM. Aborting transition to prevent GPU OOM.
+___________ test_customer_voice_supervisor_turn_fencing_and_routing ___________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.ConversationSupervisor:conversation_supervisor.py:57 Stale turn rejected: conv=voice_fence_da5ce4a9, expected=0, current=1
+_____________________ test_voice_websocket_full_lifecycle _____________________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.VoiceAPI:voice.py:568 Voice WebSocket session ws_sess_8a61e08b ended: Cannot call "receive" once a disconnect message has been received.
+_______________ test_voice_websocket_binary_audio_pcm_streaming _______________
+------------------------------ Captured log call ------------------------------
+WARNING  SalesAI.VoiceAPI:voice.py:568 Voice WebSocket session ws_audio_50c09261 ended: Cannot call "receive" once a disconnect message has been received.
+- generated xml file: C:\Users\omar\Documents\Sales agent\evidence\claude-inspection\test-logs\full_suite_run2_junit.xml -
+============================ slowest 25 durations =============================
+16.32s call     tests/agents/test_background_agents.py::test_pricing_analyst_uses_reasoning_9b
+16.32s call     tests/security/test_ai_model_governance.py::test_enforce_4096_context_limit_for_9b
+9.74s call     tests/voice/test_voice_api_contract.py::test_full_customer_voice_api_lifecycle
+9.09s call     tests/contract/test_agent_apis.py::test_api_copilot_brief_and_approval
+9.05s call     tests/voice/test_voice_agent_ecosystem_integration.py::test_customer_voice_supervisor_turn_fencing_and_routing
+9.03s call     tests/contract/test_agent_apis.py::test_api_execute_conversation_turn
+9.03s call     tests/voice/test_voice_agent_ecosystem_integration.py::test_customer_voice_human_takeover_silencing
+8.29s call     tests/concurrency/test_conversation_races.py::test_monotonic_version_increments
+7.13s call     tests/agents/test_interactive_specialists.py::test_account_management_specialist
+7.10s call     tests/agents/test_interactive_specialists.py::test_quote_pricing_specialist
+7.09s call     tests/agents/test_background_agents.py::test_incident_responder_reversible_runbooks
+7.08s call     tests/agents/test_sales_copilot.py::test_sales_copilot_propose_action_requires_human_approval
+7.08s call     tests/agents/test_sales_copilot.py::test_sales_copilot_generate_brief
+7.08s call     tests/agents/test_supervisors_and_handoffs.py::test_conversation_supervisor_routes_to_specialist
+7.07s call     tests/agents/test_interactive_specialists.py::test_documents_specialist
+7.07s call     tests/agents/test_interactive_specialists.py::test_scheduling_specialist
+7.07s call     tests/agents/test_interactive_specialists.py::test_qualification_specialist
+7.07s call     tests/agents/test_background_agents.py::test_knowledge_curator_self_publish_prohibited
+7.07s call     tests/agents/test_interactive_specialists.py::test_product_specialist_grounded
+7.06s call     tests/agents/test_interactive_specialists.py::test_support_returns_specialist
+7.06s call     tests/agents/test_background_agents.py::test_outreach_agent_stop_optout_and_quiet_hours
+7.06s call     tests/agents/test_background_agents.py::test_research_agent_enrichment
+7.06s call     tests/agents/test_sales_copilot.py::test_sales_copilot_objection_suggestions
+7.05s call     tests/agents/test_background_agents.py::test_pipeline_coach_stale_deals
+7.05s call     tests/agents/test_supervisors_and_handoffs.py::test_operations_supervisor_triage
+=========================== short test summary info ===========================
+PASSED tests/adversarial_ai/test_adversarial_ai.py::test_multilingual_direct_prompt_injection
+PASSED tests/adversarial_ai/test_adversarial_ai.py::test_indirect_prompt_injection_via_rag
+PASSED tests/adversarial_ai/test_adversarial_ai.py::test_cross_tenant_rag_data_exfiltration
+PASSED tests/adversarial_ai/test_adversarial_ai.py::test_tool_privilege_escalation_attempt
+PASSED tests/adversarial_ai/test_adversarial_ai.py::test_offline_model_evaluation_corpus_replay
+PASSED tests/agents/test_agent_registry.py::test_catalog_has_all_18_roles
+PASSED tests/agents/test_agent_registry.py::test_role_group_filtering
+PASSED tests/agents/test_agent_registry.py::test_model_tier_allocations
+PASSED tests/agents/test_agent_registry.py::test_token_caps_within_hardware_budget
+PASSED tests/agents/test_agent_registry.py::test_allowed_tools_least_privilege
+PASSED tests/agents/test_agent_registry.py::test_unknown_role_raises_value_error
+PASSED tests/agents/test_background_agents.py::test_outreach_agent_stop_optout_and_quiet_hours
+PASSED tests/agents/test_background_agents.py::test_research_agent_enrichment
+PASSED tests/agents/test_background_agents.py::test_pipeline_coach_stale_deals
+PASSED tests/agents/test_background_agents.py::test_pricing_analyst_uses_reasoning_9b
+PASSED tests/agents/test_background_agents.py::test_knowledge_curator_self_publish_prohibited
+PASSED tests/agents/test_background_agents.py::test_incident_responder_reversible_runbooks
+PASSED tests/agents/test_interactive_specialists.py::test_qualification_specialist
+PASSED tests/agents/test_interactive_specialists.py::test_product_specialist_grounded
+PASSED tests/agents/test_interactive_specialists.py::test_quote_pricing_specialist
+PASSED tests/agents/test_interactive_specialists.py::test_order_payment_specialist
+PASSED tests/agents/test_interactive_specialists.py::test_scheduling_specialist
+PASSED tests/agents/test_interactive_specialists.py::test_negotiation_discount_ceiling
+PASSED tests/agents/test_interactive_specialists.py::test_support_returns_specialist
+PASSED tests/agents/test_interactive_specialists.py::test_account_management_specialist
+PASSED tests/agents/test_interactive_specialists.py::test_documents_specialist
+PASSED tests/agents/test_sales_copilot.py::test_sales_copilot_generate_brief
+PASSED tests/agents/test_sales_copilot.py::test_sales_copilot_propose_action_requires_human_approval
+PASSED tests/agents/test_sales_copilot.py::test_sales_copilot_objection_suggestions
+PASSED tests/agents/test_supervisors_and_handoffs.py::test_conversation_supervisor_routes_to_specialist
+PASSED tests/agents/test_supervisors_and_handoffs.py::test_conversation_supervisor_human_takeover_silencing
+PASSED tests/agents/test_supervisors_and_handoffs.py::test_conversation_supervisor_stale_turn_fencing
+PASSED tests/agents/test_supervisors_and_handoffs.py::test_conversation_supervisor_handoff
+PASSED tests/agents/test_supervisors_and_handoffs.py::test_operations_supervisor_triage
+PASSED tests/ai/test_claim_verifier_and_guard.py::test_claim_verifier_grounded_price
+PASSED tests/ai/test_claim_verifier_and_guard.py::test_claim_verifier_ungrounded_price_rejection
+PASSED tests/ai/test_claim_verifier_and_guard.py::test_claim_verifier_unauthorized_discount_rejection
+PASSED tests/ai/test_claim_verifier_and_guard.py::test_claim_verifier_unverified_stock_rejection
+PASSED tests/ai/test_claim_verifier_and_guard.py::test_output_guard_pii_redaction_and_ai_disclosure
+PASSED tests/ai/test_claim_verifier_and_guard.py::test_output_guard_ungrounded_fallback
+PASSED tests/ai/test_model_gateway.py::test_pii_redaction_moroccan_cin_and_cc
+PASSED tests/ai/test_model_gateway.py::test_model_gateway_happy_path
+PASSED tests/ai/test_model_gateway.py::test_model_gateway_fallback_simulation
+PASSED tests/ai/test_model_gateway.py::test_model_gateway_health_telemetry
+PASSED tests/ai/test_rag_pipeline.py::test_rag_ingest_and_clean_chunking
+PASSED tests/ai/test_rag_pipeline.py::test_rag_poisoning_detection_and_quarantine
+PASSED tests/ai/test_rag_pipeline.py::test_rag_tenant_isolation_boundary
+PASSED tests/ai/test_rag_pipeline.py::test_rag_acl_role_filtering
+PASSED tests/ai/test_rag_pipeline.py::test_rag_document_tombstoning
+PASSED tests/ai/test_router_and_supervisor.py::test_language_identification_matrix
+PASSED tests/ai/test_router_and_supervisor.py::test_intent_and_three_execution_classes
+PASSED tests/ai/test_router_and_supervisor.py::test_adversarial_injection_risk_gate
+PASSED tests/ai/test_router_and_supervisor.py::test_supervisor_human_takeover_silencing
+PASSED tests/ai/test_router_and_supervisor.py::test_supervisor_stale_turn_fencing
+PASSED tests/ai/test_tool_gateway.py::test_tool_role_allowlist_enforcement
+PASSED tests/ai/test_tool_gateway.py::test_server_issued_security_context_tenant_injection_defense
+PASSED tests/ai/test_tool_gateway.py::test_tool_schema_validation_failure
+PASSED tests/ai/test_tool_gateway.py::test_tool_deadline_timeout_enforcement
+PASSED tests/ai/test_tool_gateway.py::test_deterministic_pricing_tool
+PASSED tests/analytics/test_18_agents_and_rag_evaluations.py::test_18_role_agent_ecosystem_evaluation
+PASSED tests/analytics/test_18_agents_and_rag_evaluations.py::test_rag_retrieval_and_security_evaluation
+PASSED tests/analytics/test_18_agents_and_rag_evaluations.py::test_expanded_multilingual_voice_evaluation
+PASSED tests/analytics/test_forecasting_engine.py::test_holt_linear_trend_forecasting
+PASSED tests/analytics/test_forecasting_engine.py::test_moving_average_baseline_forecasting
+PASSED tests/analytics/test_forecasting_engine.py::test_forecast_backtesting_accuracy_metrics
+PASSED tests/analytics/test_forecasting_engine.py::test_forecasting_short_series_graceful_fallback
+PASSED tests/analytics/test_observability_and_alerting.py::test_trace_context_propagation
+PASSED tests/analytics/test_observability_and_alerting.py::test_structured_json_log_formatter
+PASSED tests/analytics/test_observability_and_alerting.py::test_metrics_collector_bounded_cardinality
+PASSED tests/analytics/test_observability_and_alerting.py::test_alert_rule_evaluation
+PASSED tests/analytics/test_observability_and_alerting.py::test_alerting_lifecycle_state_transitions
+PASSED tests/analytics/test_saas_metering_and_quotas.py::test_subscription_creation_and_defaults
+PASSED tests/analytics/test_saas_metering_and_quotas.py::test_record_usage_and_monthly_metering
+PASSED tests/analytics/test_saas_metering_and_quotas.py::test_quota_exhaustion_hard_cap
+PASSED tests/analytics/test_saas_metering_and_quotas.py::test_custom_quota_adjustment
+PASSED tests/analytics/test_sales_and_commerce_analytics.py::test_sales_analytics_gross_and_net_revenue
+PASSED tests/analytics/test_sales_and_commerce_analytics.py::test_sales_analytics_conversion_funnel
+PASSED tests/analytics/test_sales_and_commerce_analytics.py::test_sales_analytics_pipeline_breakdown
+PASSED tests/analytics/test_sales_and_commerce_analytics.py::test_commerce_analytics_order_and_fulfillment
+PASSED tests/analytics/test_step11_real_postgres.py::test_real_postgres_step11_tables_rls_isolation
+PASSED tests/concurrency/test_approval_races.py::test_concurrent_approval_decisions_one_use_only
+PASSED tests/concurrency/test_approval_races.py::test_terms_changed_invalidates_pending_approval
+PASSED tests/concurrency/test_approval_races.py::test_quote_optimistic_concurrency_conflict
+PASSED tests/concurrency/test_conversation_races.py::test_monotonic_version_increments
+PASSED tests/concurrency/test_conversation_races.py::test_stale_ai_turn_rejected_on_inbound_customer_message_race
+PASSED tests/concurrency/test_conversation_races.py::test_human_takeover_cancels_in_flight_ai_turn
+PASSED tests/concurrency/test_conversation_races.py::test_inbound_burst_handling
+PASSED tests/concurrency/test_hot_sku_and_reservations.py::test_concurrent_hot_sku_five_customers_three_units_zero_oversell
+PASSED tests/concurrency/test_hot_sku_and_reservations.py::test_reservation_expiry_frees_available_to_promise
+PASSED tests/concurrency/test_hot_sku_and_reservations.py::test_commit_reservation_appends_ledger_deduction
+PASSED tests/concurrency/test_order_and_quote_acceptance_races.py::test_duplicate_quote_acceptance_race_produces_exactly_one_order
+PASSED tests/concurrency/test_order_and_quote_acceptance_races.py::test_quote_version_conflict_fails_closed
+PASSED tests/concurrency/test_order_and_quote_acceptance_races.py::test_order_status_optimistic_concurrency_conflict
+PASSED tests/concurrency/test_procurement_and_booking_races.py::test_concurrent_goods_receipt_race_zero_over_receipt
+PASSED tests/concurrency/test_procurement_and_booking_races.py::test_concurrent_appointment_booking_race_single_winner
+PASSED tests/concurrency/test_procurement_and_booking_races.py::test_concurrent_inter_warehouse_transfer_contention
+PASSED tests/contract/test_agent_apis.py::test_api_list_agent_catalog
+PASSED tests/contract/test_agent_apis.py::test_api_get_agent_definition
+PASSED tests/contract/test_agent_apis.py::test_api_execute_conversation_turn
+PASSED tests/contract/test_agent_apis.py::test_api_human_takeover_and_release
+PASSED tests/contract/test_agent_apis.py::test_api_copilot_brief_and_approval
+PASSED tests/contract/test_ai_governance_apis.py::test_ai_health_endpoint
+PASSED tests/contract/test_ai_governance_apis.py::test_ai_route_endpoint
+PASSED tests/contract/test_ai_governance_apis.py::test_ai_tool_execution_endpoint_authorized
+PASSED tests/contract/test_ai_governance_apis.py::test_ai_tool_execution_endpoint_unauthorized
+PASSED tests/contract/test_ai_governance_apis.py::test_ai_guard_verify_endpoint
+PASSED tests/contract/test_ai_governance_apis.py::test_ai_evaluations_run_endpoint
+PASSED tests/contract/test_channel_adapters.py::test_whatsapp_signature_verification_valid
+PASSED tests/contract/test_channel_adapters.py::test_whatsapp_signature_verification_invalid
+PASSED tests/contract/test_channel_adapters.py::test_whatsapp_parse_inbound_text
+PASSED tests/contract/test_channel_adapters.py::test_whatsapp_parse_media_attachment
+PASSED tests/contract/test_channel_adapters.py::test_email_signature_and_xss_sanitization
+PASSED tests/contract/test_channel_adapters.py::test_email_parse_inbound_event
+PASSED tests/contract/test_channel_adapters.py::test_webchat_parse_inbound_event
+PASSED tests/contract/test_channel_adapters.py::test_voice_sip_event_ingestion_and_consent
+PASSED tests/contract/test_crm_and_catalog_apis.py::test_accounts_crud_and_validation
+PASSED tests/contract/test_crm_and_catalog_apis.py::test_leads_qualification_and_conversion
+PASSED tests/contract/test_crm_and_catalog_apis.py::test_opportunities_and_activities
+PASSED tests/contract/test_crm_and_catalog_apis.py::test_catalog_products_and_tier_pricing
+PASSED tests/contract/test_inbox_and_channel_apis.py::test_whatsapp_webhook_challenge
+PASSED tests/contract/test_inbox_and_channel_apis.py::test_whatsapp_webhook_signature_verification_and_ingestion
+PASSED tests/contract/test_inbox_and_channel_apis.py::test_webchat_send_endpoint
+PASSED tests/contract/test_inbox_and_channel_apis.py::test_unified_inbox_conversation_listing_and_timeline
+PASSED tests/contract/test_logistics_and_support_apis.py::test_procurement_po_and_over_receipt_api
+PASSED tests/contract/test_logistics_and_support_apis.py::test_stock_transfers_lifecycle_api
+PASSED tests/contract/test_logistics_and_support_apis.py::test_logistics_shipment_and_webhook_api
+PASSED tests/contract/test_logistics_and_support_apis.py::test_support_ticket_and_rma_api
+PASSED tests/contract/test_logistics_and_support_apis.py::test_scheduling_appointment_double_booking_api
+PASSED tests/contract/test_orders_and_invoices_apis.py::test_full_order_payment_and_invoice_api_lifecycle
+PASSED tests/contract/test_out_of_order_messages.py::test_out_of_order_message_timeline_sorting
+PASSED tests/contract/test_out_of_order_messages.py::test_stale_ai_turn_rejected_when_out_of_order_message_intervenes
+PASSED tests/contract/test_out_of_order_messages.py::test_out_of_order_stop_silences_conversation_and_cancels_ai
+PASSED tests/contract/test_outbox_and_dlq.py::test_enqueue_and_successful_dispatch
+PASSED tests/contract/test_outbox_and_dlq.py::test_retry_with_exponential_backoff
+PASSED tests/contract/test_outbox_and_dlq.py::test_dead_letter_queue_and_audit_emission
+PASSED tests/contract/test_outbox_and_dlq.py::test_high_priority_safety_bypass
+PASSED tests/contract/test_outbox_and_dlq.py::test_manual_redrive_from_dead_letter
+PASSED tests/contract/test_quote_lifecycle_and_approvals.py::test_quote_standard_lifecycle
+PASSED tests/contract/test_quote_lifecycle_and_approvals.py::test_quote_manager_approval_workflow
+PASSED tests/contract/test_quote_lifecycle_and_approvals.py::test_quote_expiration_rejection
+PASSED tests/e2e/test_step12_full_lifecycle_e2e.py::test_scenario_a_lead_to_sale_and_fulfillment
+PASSED tests/e2e/test_step12_full_lifecycle_e2e.py::test_scenario_b_ai_sales_conversation_and_grounding
+PASSED tests/e2e/test_step12_full_lifecycle_e2e.py::test_scenario_c_customer_support_warranty_and_rma
+PASSED tests/e2e/test_step12_full_lifecycle_e2e.py::test_scenario_d_manager_copilot_and_privileged_mfa
+PASSED tests/e2e/test_step12_full_lifecycle_e2e.py::test_scenario_e_failure_recovery_and_compensation
+PASSED tests/e2e/test_step12_full_lifecycle_e2e.py::test_scenario_f_cross_tenant_isolation_all_domains
+PASSED tests/integration/test_omnichannel_rls.py::test_omnichannel_missing_tenant_context_fails_closed
+PASSED tests/integration/test_omnichannel_rls.py::test_omnichannel_cross_tenant_isolation
+PASSED tests/integration/test_postgres_rls.py::test_rls_enabled_and_forced_on_all_tenant_tables
+PASSED tests/integration/test_postgres_rls.py::test_application_role_cannot_bypass_rls
+PASSED tests/integration/test_postgres_rls.py::test_missing_tenant_context_fails_closed
+PASSED tests/integration/test_postgres_rls.py::test_tenant_cross_select_denial
+PASSED tests/integration/test_postgres_rls.py::test_tenant_cross_dml_denial
+PASSED tests/integration/test_postgres_rls.py::test_connection_pool_reuse_resets_tenant_context
+PASSED tests/integration/test_postgres_rls.py::test_transaction_rollback_cleans_tenant_context
+PASSED tests/integration/test_postgres_rls.py::test_concurrent_tenant_isolation
+PASSED tests/integration/test_postgres_rls.py::test_foreign_key_cross_tenant_prevention
+PASSED tests/integration/test_postgres_rls.py::test_rls_persists_across_migrations_and_reconnects
+PASSED tests/integration/test_step03_real_postgres.py::test_real_pg_webhook_ingest_rls_success_and_duplicates
+PASSED tests/integration/test_step03_real_postgres.py::test_real_pg_domain_operations_without_refresh_crash
+PASSED tests/integration/test_step03_real_postgres.py::test_real_pg_outbox_skip_locked_concurrency
+PASSED tests/integration/test_step03_real_postgres.py::test_real_pg_outbox_stale_claim_recovery
+PASSED tests/integration/test_step03_real_postgres.py::test_real_pg_stop_cancels_pre_queued_marketing_outbox
+PASSED tests/integration/test_step03_real_postgres.py::test_real_pg_outbox_pre_dispatch_opt_out_suppression
+PASSED tests/integration/test_step03_real_postgres.py::test_real_pg_concurrent_inbound_bursts_version_serialization
+PASSED tests/integration/test_step03_real_postgres.py::test_real_pg_inbox_rbac_enforcement
+PASSED tests/integration/test_step03_real_postgres.py::test_real_pg_standing_outbox_worker_daemon
+PASSED tests/integration/test_step03_real_postgres.py::test_real_pg_crit01_cross_tenant_url_swap_rejected_403
+PASSED tests/integration/test_step03_real_postgres.py::test_real_pg_crit01_unknown_provider_asset_rejected_404
+PASSED tests/integration/test_step03_real_postgres.py::test_real_pg_crit01_deactivated_integration_rejected_403
+PASSED tests/integration/test_step03_real_postgres.py::test_real_pg_crit02_connection_pool_zero_leakage_after_webhook
+PASSED tests/integration/test_step03_real_postgres.py::test_real_pg_high01_stop_cancels_only_marketing_preserves_transactional
+PASSED tests/integration/test_step03_real_postgres.py::test_real_pg_med01_outbox_three_phase_claim_commit_before_network_io
+PASSED tests/integration/test_step03_real_postgres.py::test_real_pg_med01_stale_worker_fencing_token_rejection
+PASSED tests/integration/test_step03_real_postgres.py::test_real_pg_med02_domain_service_composable_transaction_rollback
+PASSED tests/integration/test_step04_real_postgres.py::test_real_postgres_step04_rls_isolation_all_12_tables
+PASSED tests/integration/test_step04_real_postgres.py::test_real_postgres_pessimistic_row_locking
+PASSED tests/integration/test_step04_real_postgres.py::test_real_postgres_multistep_rollback_leaves_no_orphans
+PASSED tests/integration/test_step04_real_postgres.py::test_real_postgres_lead_conversion_atomic_transaction
+PASSED tests/integration/test_step05_real_postgres.py::test_real_postgres_step05_rls_isolation_all_11_tables
+PASSED tests/integration/test_step05_real_postgres.py::test_real_postgres_step05_missing_tenant_fails_closed
+PASSED tests/integration/test_step05_real_postgres.py::test_real_postgres_live_inventory_order_payment_lifecycle
+PASSED tests/integration/test_step06_real_postgres.py::test_real_postgres_step06_rls_isolation_all_20_tables
+PASSED tests/integration/test_step06_real_postgres.py::test_real_postgres_step06_missing_tenant_fails_closed
+PASSED tests/integration/test_step06_real_postgres.py::test_real_postgres_live_procurement_and_over_receipt
+PASSED tests/integration/test_step06_real_postgres.py::test_real_postgres_live_logistics_monotonic_progression
+PASSED tests/integration/test_step07_real_postgres.py::test_real_postgres_step07_rls_isolation_all_5_tables
+PASSED tests/integration/test_step07_real_postgres.py::test_real_postgres_step07_unscoped_queries_return_zero_rows
+PASSED tests/integration/test_step07_real_postgres.py::test_real_postgres_workflow_execution_live
+PASSED tests/integration/test_step08_real_postgres.py::test_real_postgres_force_rls_active_step08
+PASSED tests/integration/test_step08_real_postgres.py::test_real_postgres_rls_tenant_isolation_step08
+PASSED tests/integration/test_step08_real_postgres.py::test_real_postgres_rag_service_live
+PASSED tests/integration/test_step09_real_postgres.py::test_step09_tables_have_force_rls_enabled
+PASSED tests/integration/test_step09_real_postgres.py::test_step09_rls_tenant_isolation
+PASSED tests/integrations/test_n8n_restricted_security.py::test_n8n_cannot_mutate_commercial_state
+PASSED tests/integrations/test_n8n_restricted_security.py::test_n8n_allows_legitimate_peripheral_actions
+PASSED tests/integrations/test_n8n_restricted_security.py::test_internal_admin_can_execute_actions
+PASSED tests/integrations/test_n8n_restricted_security.py::test_hmac_webhook_signature_and_replay_protection
+PASSED tests/notifications/test_notification_orchestrator.py::test_template_variable_substitution
+PASSED tests/notifications/test_notification_orchestrator.py::test_moroccan_quiet_hours_detection
+PASSED tests/notifications/test_notification_orchestrator.py::test_multiscript_stop_opt_out_keywords
+PASSED tests/notifications/test_notification_orchestrator.py::test_marketing_suppressed_by_opt_out
+PASSED tests/notifications/test_notification_orchestrator.py::test_frequency_capping_suppresses_rapid_marketing
+PASSED tests/security/test_ai_model_governance.py::test_cross_process_file_lock_synchronization
+PASSED tests/security/test_ai_model_governance.py::test_prevent_synchronous_9b_during_voice_calls
+PASSED tests/security/test_ai_model_governance.py::test_enforce_4096_context_limit_for_9b
+PASSED tests/security/test_ai_model_governance.py::test_voice_channel_guard_in_provider
+PASSED tests/security/test_ai_model_governance.py::test_mutual_exclusion_cycle_preservation
+PASSED tests/security/test_ai_model_governance.py::test_active_generation_lease_blocks_eviction
+PASSED tests/security/test_ai_model_governance.py::test_active_generation_lease_blocks_model_switching
+PASSED tests/security/test_ai_model_governance.py::test_streaming_holds_active_generation_lease
+PASSED tests/security/test_auth_and_rbac.py::test_password_hashing_pbkdf2
+PASSED tests/security/test_auth_and_rbac.py::test_totp_rfc6238_generation_and_drift_verification
+PASSED tests/security/test_auth_and_rbac.py::test_auth_missing_or_malformed_header
+PASSED tests/security/test_auth_and_rbac.py::test_auth_expired_token
+PASSED tests/security/test_auth_and_rbac.py::test_immediate_session_revocation_on_logout
+PASSED tests/security/test_auth_and_rbac.py::test_disabled_user_and_inactive_tenant_denied
+PASSED tests/security/test_auth_and_rbac.py::test_privileged_role_creation_requires_mfa
+PASSED tests/security/test_auth_and_rbac.py::test_rbac_least_privilege_enforcement
+PASSED tests/security/test_auth_and_rbac.py::test_mfa_secret_encryption_at_rest_and_rotation
+PASSED tests/security/test_auth_and_rbac.py::test_account_enumeration_timing_defense
+PASSED tests/security/test_auth_and_rbac.py::test_account_lockout_after_five_failed_attempts
+PASSED tests/security/test_auth_and_rbac.py::test_privileged_actions_require_step_up_mfa
+PASSED tests/security/test_backup_restore.py::test_backup_and_restore_cycle_integrity
+PASSED tests/security/test_backup_restore.py::test_restore_fails_on_tampered_checksum
+PASSED tests/security/test_backup_restore.py::test_restore_fails_on_incorrect_key
+PASSED tests/security/test_carrier_webhooks_and_logistics_security.py::test_carrier_webhook_tampered_signature_rejected
+PASSED tests/security/test_carrier_webhooks_and_logistics_security.py::test_carrier_webhook_out_of_order_replay_does_not_regress_delivered
+PASSED tests/security/test_carrier_webhooks_and_logistics_security.py::test_cross_tenant_idor_procurement_and_logistics
+PASSED tests/security/test_channel_security.py::test_webhook_replay_deduplication
+PASSED tests/security/test_channel_security.py::test_anti_ssrf_media_url_protection[http://127.0.0.1/admin]
+PASSED tests/security/test_channel_security.py::test_anti_ssrf_media_url_protection[http://localhost:8000/internal]
+PASSED tests/security/test_channel_security.py::test_anti_ssrf_media_url_protection[http://169.254.169.254/latest/meta-data]
+PASSED tests/security/test_channel_security.py::test_anti_ssrf_media_url_protection[http://10.0.0.1/secrets]
+PASSED tests/security/test_channel_security.py::test_anti_ssrf_media_url_protection[http://192.168.1.1/gateway]
+PASSED tests/security/test_channel_security.py::test_anti_ssrf_media_url_protection[http://172.16.0.5/api]
+PASSED tests/security/test_channel_security.py::test_anti_ssrf_media_url_protection[file:///etc/passwd]
+PASSED tests/security/test_channel_security.py::test_anti_ssrf_media_url_protection[gopher://127.0.0.1:6379/_flushall]
+PASSED tests/security/test_channel_security.py::test_anti_ssrf_media_url_protection[ftp://internal.server/data]
+PASSED tests/security/test_channel_security.py::test_anti_ssrf_accepts_valid_public_url
+PASSED tests/security/test_channel_security.py::test_insecure_file_upload_validation
+PASSED tests/security/test_channel_security.py::test_sensitive_data_and_pii_redaction
+PASSED tests/security/test_payment_security_and_webhooks.py::test_webhook_cryptographic_hmac_signature_verification
+PASSED tests/security/test_payment_security_and_webhooks.py::test_webhook_replay_deduplication
+PASSED tests/security/test_payment_security_and_webhooks.py::test_financial_refund_requires_step_up_mfa_and_bounds_check
+PASSED tests/security/test_quotation_security.py::test_anti_self_approval_strict_enforcement
+PASSED tests/security/test_quotation_security.py::test_step_up_mfa_mandatory_for_privileged_approvals
+PASSED tests/security/test_quotation_security.py::test_bola_idor_cross_tenant_isolation
+PASSED tests/security/test_quotation_security.py::test_float_money_and_pricing_tampering_blocked
+PASSED tests/security/test_tenant_isolation.py::test_connection_pool_tenant_context_leakage_prevention
+PASSED tests/security/test_tenant_isolation.py::test_client_header_tenant_spoofing_rejection
+PASSED tests/security/test_tenant_isolation.py::test_cross_tenant_user_access_isolation
+PASSED tests/security/test_tenant_isolation.py::test_unauthorized_cross_tenant_switch_rejected
+PASSED tests/security/test_tenant_isolation.py::test_concurrent_tenant_contextvars_isolation
+PASSED tests/step01/test_architecture_consistency.py::test_all_10_adrs_exist_and_accepted
+PASSED tests/step01/test_architecture_consistency.py::test_c4_mermaid_diagrams_exist
+PASSED tests/step01/test_architecture_consistency.py::test_c4_container_diagram_includes_key_containers
+PASSED tests/step01/test_architecture_consistency.py::test_trust_boundaries_diagram_covers_all_8_threat_domains
+PASSED tests/step01/test_architecture_consistency.py::test_hardware_model_budget_specification_exists
+PASSED tests/step01/test_architecture_consistency.py::test_risk_register_covers_stride_and_launch_blockers
+PASSED tests/step01/test_repo_hygiene.py::test_gitignore_exists_and_contains_critical_patterns
+PASSED tests/step01/test_repo_hygiene.py::test_env_example_has_no_real_secrets
+PASSED tests/step01/test_repo_hygiene.py::test_agents_instructions_completeness
+PASSED tests/step01/test_repo_hygiene.py::test_no_hardcoded_private_keys_in_repo
+PASSED tests/step01/test_requirements_traceability.py::test_requirements_file_exists
+PASSED tests/step01/test_requirements_traceability.py::test_actors_coverage
+PASSED tests/step01/test_requirements_traceability.py::test_core_user_journeys_coverage
+PASSED tests/step01/test_requirements_traceability.py::test_voice_modes_explicit_requirements
+PASSED tests/step01/test_requirements_traceability.py::test_all_requirements_have_service_owners_apis_tests
+PASSED tests/step01/test_requirements_traceability.py::test_major_business_domains_covered
+PASSED tests/step01/test_security_controls.py::test_control_mapping_file_exists
+PASSED tests/step01/test_security_controls.py::test_excel_workbook_integrity
+PASSED tests/step01/test_security_controls.py::test_baseline_controls_traceability_in_mapping
+PASSED tests/step01/test_security_controls.py::test_sai_extension_controls_traceability
+PASSED tests/step01/test_security_controls.py::test_priority_reclassifications_for_sales_ai
+PASSED tests/unit/test_ai_concurrency_and_failures.py::test_overlapping_requests_same_model
+PASSED tests/unit/test_ai_concurrency_and_failures.py::test_failed_eviction_fails_closed
+PASSED tests/unit/test_ai_concurrency_and_failures.py::test_concurrent_switching_serialized_by_lock
+PASSED tests/unit/test_ai_concurrency_and_failures.py::test_co_residency_violation_flag
+PASSED tests/unit/test_deterministic_stop.py::test_multilingual_stop_regex_matrix[STOP-True]
+PASSED tests/unit/test_deterministic_stop.py::test_multilingual_stop_regex_matrix[stop-True]
+PASSED tests/unit/test_deterministic_stop.py::test_multilingual_stop_regex_matrix[Please unsubscribe me from updates-True]
+PASSED tests/unit/test_deterministic_stop.py::test_multilingual_stop_regex_matrix[QUIT-True]
+PASSED tests/unit/test_deterministic_stop.py::test_multilingual_stop_regex_matrix[CANCEL-True]
+PASSED tests/unit/test_deterministic_stop.py::test_multilingual_stop_regex_matrix[Arret des messages-True]
+PASSED tests/unit/test_deterministic_stop.py::test_multilingual_stop_regex_matrix[Je souhaite me desabonner-True]
+PASSED tests/unit/test_deterministic_stop.py::test_multilingual_stop_regex_matrix[\u062d\u0628\u0633-True]
+PASSED tests/unit/test_deterministic_stop.py::test_multilingual_stop_regex_matrix[\u0648\u0642\u0641 \u0627\u0644\u0631\u0633\u0627\u0626\u0644-True]
+PASSED tests/unit/test_deterministic_stop.py::test_multilingual_stop_regex_matrix[\u0625\u0644\u063a\u0627\u0621 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643-True]
+PASSED tests/unit/test_deterministic_stop.py::test_multilingual_stop_regex_matrix[baraka-True]
+PASSED tests/unit/test_deterministic_stop.py::test_multilingual_stop_regex_matrix[safii baraka-True]
+PASSED tests/unit/test_deterministic_stop.py::test_multilingual_stop_regex_matrix[stoppi 3afak-True]
+PASSED tests/unit/test_deterministic_stop.py::test_multilingual_stop_regex_matrix[7bes-True]
+PASSED tests/unit/test_deterministic_stop.py::test_multilingual_stop_regex_matrix[Bonjour, je souhaite acheter un serveur-False]
+PASSED tests/unit/test_deterministic_stop.py::test_multilingual_stop_regex_matrix[What are the product specs?-False]
+PASSED tests/unit/test_deterministic_stop.py::test_multilingual_stop_regex_matrix[Chhal taman dyal hed l-produit?-False]
+PASSED tests/unit/test_deterministic_stop.py::test_stop_directive_sets_channel_opt_out_and_silences_ai
+PASSED tests/unit/test_inventory_and_orders.py::test_inventory_atp_property
+PASSED tests/unit/test_inventory_and_orders.py::test_money_minor_unit_financial_precision
+PASSED tests/unit/test_inventory_and_orders.py::test_tax_and_discount_deterministic_rounding
+PASSED tests/unit/test_inventory_and_orders.py::test_invoice_canonical_hash_stability
+PASSED tests/unit/test_inventory_and_orders.py::test_invoice_canonical_hash_tamper_detection
+PASSED tests/unit/test_local_ai_constraints.py::test_model_architecture_configuration
+PASSED tests/unit/test_local_ai_constraints.py::test_device_allocations_keep_auxiliaries_on_cpu
+PASSED tests/unit/test_local_ai_constraints.py::test_vram_mutual_exclusion_invariant
+PASSED tests/unit/test_local_ai_constraints.py::test_unjustified_9b_request_downgraded_to_4b
+PASSED tests/unit/test_local_ai_constraints.py::test_on_demand_darija_tools_lifecycle
+PASSED tests/unit/test_local_ai_constraints.py::test_hardware_telemetry_reads_ram_and_vram
+PASSED tests/unit/test_local_ai_constraints.py::test_inference_tracker_throughput_and_ttft
+PASSED tests/unit/test_money_and_pricing.py::test_money_initialization_and_properties
+PASSED tests/unit/test_money_and_pricing.py::test_money_from_major
+PASSED tests/unit/test_money_and_pricing.py::test_money_zero
+PASSED tests/unit/test_money_and_pricing.py::test_money_addition_and_subtraction
+PASSED tests/unit/test_money_and_pricing.py::test_money_currency_mismatch_rejected
+PASSED tests/unit/test_money_and_pricing.py::test_money_multiplication_precision
+PASSED tests/unit/test_money_and_pricing.py::test_money_strictly_forbids_float_multiplication
+PASSED tests/unit/test_money_and_pricing.py::test_money_percentage_calculation
+PASSED tests/unit/test_money_and_pricing.py::test_money_comparisons
+PASSED tests/unit/test_money_and_pricing.py::test_calculate_tax_rounding
+PASSED tests/unit/test_money_and_pricing.py::test_calculate_discount_rounding
+PASSED tests/unit/test_money_and_pricing.py::test_calculate_margin_percent
+PASSED tests/unit/test_money_and_pricing.py::test_deterministic_terms_hash_stability
+PASSED tests/unit/test_multilingual_matrix.py::test_language_detection_french
+PASSED tests/unit/test_multilingual_matrix.py::test_language_detection_english
+PASSED tests/unit/test_multilingual_matrix.py::test_language_detection_arabic_standard
+PASSED tests/unit/test_multilingual_matrix.py::test_language_detection_darija_arabic_script
+PASSED tests/unit/test_multilingual_matrix.py::test_language_detection_darija_arabizi
+PASSED tests/unit/test_multilingual_matrix.py::test_arabizi_normalization
+PASSED tests/unit/test_multilingual_matrix.py::test_tts_routing_french_and_english_to_kokoro_cpu
+PASSED tests/unit/test_multilingual_matrix.py::test_tts_routing_arabic_and_darija_to_piper_cpu
+PASSED tests/unit/test_multilingual_matrix.py::test_asr_routing_darija_on_demand
+PASSED tests/unit/test_procurement_and_logistics.py::test_procurement_po_lifecycle_and_over_receipt_rejection
+PASSED tests/unit/test_procurement_and_logistics.py::test_inter_warehouse_transfer_ledger_balance
+PASSED tests/unit/test_procurement_and_logistics.py::test_logistics_monotonic_status_progression
+PASSED tests/unit/test_procurement_and_logistics.py::test_support_warranty_expiry_and_rma_inspection
+PASSED tests/unit/test_procurement_and_logistics.py::test_scheduling_double_booking_conflict_rejection
+PASSED tests/voice/test_audio_pipeline_and_vad.py::test_audio_chunk_wav_conversion_and_rms
+PASSED tests/voice/test_audio_pipeline_and_vad.py::test_silence_chunk_properties
+PASSED tests/voice/test_audio_pipeline_and_vad.py::test_vad_speech_detection_and_turn_completion
+PASSED tests/voice/test_audio_pipeline_and_vad.py::test_barge_in_interruption_triggers_cancellation
+PASSED tests/voice/test_audio_pipeline_and_vad.py::test_barge_in_manual_abort
+PASSED tests/voice/test_customer_voice_security.py::test_pii_redaction_credit_card_cin_and_pins
+PASSED tests/voice/test_customer_voice_security.py::test_prompt_injection_detection_in_transcripts
+PASSED tests/voice/test_customer_voice_security.py::test_customer_voice_caller_id_anti_spoofing_gate
+PASSED tests/voice/test_customer_voice_security.py::test_customer_voice_human_escalation_handoff
+PASSED tests/voice/test_customer_voice_security.py::test_customer_voice_prompt_injection_rejection
+PASSED tests/voice/test_manager_copilot_and_mfa.py::test_manager_copilot_safe_sales_and_approval_insights
+PASSED tests/voice/test_manager_copilot_and_mfa.py::test_manager_copilot_high_risk_spoken_rejection_and_action_preview
+PASSED tests/voice/test_manager_copilot_expanded_queries.py::test_manager_pipeline_and_shipments_telemetry
+PASSED tests/voice/test_manager_copilot_expanded_queries.py::test_manager_agent_health_and_po_telemetry
+PASSED tests/voice/test_manager_copilot_expanded_queries.py::test_manager_high_risk_order_cancellation_and_bulk_mutation_guard
+PASSED tests/voice/test_multilingual_voice_end_to_end.py::test_multilingual_voice_matrix_evaluation_benchmark
+PASSED tests/voice/test_multilingual_voice_matrix.py::test_multilingual_matrix_classification
+PASSED tests/voice/test_multilingual_voice_matrix.py::test_code_switching_detection_darija_french
+PASSED tests/voice/test_multilingual_voice_matrix.py::test_speech_synthesis_profiles_and_durations
+PASSED tests/voice/test_multilingual_voice_matrix.py::test_transcribe_audio_chunk_empty_vs_valid
+PASSED tests/voice/test_telephony_adapter_and_security.py::test_g711_mulaw_codec_and_resampling
+PASSED tests/voice/test_telephony_adapter_and_security.py::test_telephony_signature_and_replay_protection
+PASSED tests/voice/test_telephony_adapter_and_security.py::test_voice_call_flood_rate_limiter
+PASSED tests/voice/test_telephony_adapter_and_security.py::test_voice_callback_queue
+PASSED tests/voice/test_telephony_adapter_and_security.py::test_telephony_inbound_api_and_callbacks
+PASSED tests/voice/test_voice_agent_ecosystem_integration.py::test_customer_voice_human_takeover_silencing
+PASSED tests/voice/test_voice_agent_ecosystem_integration.py::test_customer_voice_supervisor_turn_fencing_and_routing
+PASSED tests/voice/test_voice_agent_ecosystem_integration.py::test_verified_customer_order_lookup_provenance
+PASSED tests/voice/test_voice_api_contract.py::test_full_customer_voice_api_lifecycle
+PASSED tests/voice/test_voice_api_contract.py::test_manager_copilot_api_and_step_up_mfa_flow
+PASSED tests/voice/test_voice_real_postgres.py::test_real_postgres_voice_tables_rls_isolation
+PASSED tests/voice/test_voice_websocket_streaming.py::test_voice_websocket_full_lifecycle
+PASSED tests/voice/test_voice_websocket_streaming.py::test_voice_websocket_binary_audio_pcm_streaming
+PASSED tests/workflows/test_checkout_and_reservation_sagas.py::test_checkout_saga_happy_path
+PASSED tests/workflows/test_checkout_and_reservation_sagas.py::test_checkout_saga_failure_and_reverse_compensation
+PASSED tests/workflows/test_checkout_and_reservation_sagas.py::test_stock_expiry_saga
+PASSED tests/workflows/test_checkout_and_reservation_sagas.py::test_quote_approval_escalation_saga
+PASSED tests/workflows/test_checkout_and_reservation_sagas.py::test_rma_triage_saga
+PASSED tests/workflows/test_checkout_and_reservation_sagas.py::test_daily_reconciliation_saga
+PASSED tests/workflows/test_workflow_api_contract.py::test_workflow_executions_api_lifecycle
+PASSED tests/workflows/test_workflow_api_contract.py::test_notifications_api_lifecycle
+PASSED tests/workflows/test_workflow_api_contract.py::test_integrations_and_n8n_barrier_api
+PASSED tests/workflows/test_workflow_persistence_and_recovery.py::test_workflow_execution_idempotency
+PASSED tests/workflows/test_workflow_persistence_and_recovery.py::test_crash_recovery_resumes_interrupted_workflows
+PASSED tests/workflows/test_workflow_persistence_and_recovery.py::test_workflow_step_logging_durations
+======================= 381 passed in 326.44s (0:05:26) =======================
+
+real	5m58.317s
+user	0m0.000s
+sys	0m0.031s
+exit=0
