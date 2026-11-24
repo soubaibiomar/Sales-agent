@@ -13,7 +13,7 @@ def test_multilingual_matrix_classification():
     fr_res = MultilingualVoiceEngine.identify_language_and_dialect("Bonjour, quel est le prix de votre devis pour la livraison ?")
     assert fr_res["language_code"] == "fr-FR"
     assert fr_res["is_verified_support"] is True
-    assert "Kokoro-82M" in fr_res["tts_profile"]
+    assert "Piper" in fr_res["tts_profile"]
 
     # 2. English
     en_res = MultilingualVoiceEngine.identify_language_and_dialect("Hello, can you give me the status of our commercial invoice?")
@@ -51,7 +51,8 @@ def test_speech_synthesis_profiles_and_durations():
     chunk_fr, meta_fr = MultilingualVoiceEngine.synthesize_speech("Merci pour votre commande", language="fr-FR")
     assert chunk_fr.duration_ms >= 400
     assert meta_fr["language"] == "fr-FR"
-    assert "Kokoro" in meta_fr["tts_engine"]
+    assert "Piper" in meta_fr["tts_engine"]  # real local voice (no sine-wave placeholder)
+    assert chunk_fr.rms_energy > 300.0
 
     # Arabic
     chunk_ar, meta_ar = MultilingualVoiceEngine.synthesize_speech("شكرا لك على اتصالك بنا", language="ar-MA")
@@ -71,9 +72,18 @@ def test_transcribe_audio_chunk_empty_vs_valid():
     assert res_silence["is_empty"] is True
     assert res_silence["text"] == ""
 
-    # 2. Valid speech-like waveform
-    speech = SyntheticAudioGenerator.generate_speech_like_waveform(duration_ms=800, amplitude=9000.0)
+    # 2. Real speech round trip: Piper synthesizes French, faster-whisper transcribes it.
+    # (Exact-word recognition is not guaranteed - e.g. "devis" was heard as "de vie" -
+    # accuracy is measured as WER in evidence/claude-inspection/benchmarks, not asserted here.)
+    speech, _ = MultilingualVoiceEngine.synthesize_speech("Bonjour, quel est le délai de livraison à Casablanca ?", language="fr-FR")
     res_speech = MultilingualVoiceEngine.transcribe_audio_chunk(speech, hint_language="fr-FR")
     assert res_speech["is_empty"] is False
-    assert len(res_speech["text"]) > 0
+    assert res_speech["engine"] == "faster-whisper"
+    heard = res_speech["text"].lower()
+    assert "livraison" in heard and "casablanca" in heard
     assert res_speech["language"] == "fr-FR"
+
+    # 3. A pure synthetic tone is NOT turned into invented words any more
+    tone = SyntheticAudioGenerator.generate_speech_like_waveform(duration_ms=800, amplitude=9000.0)
+    res_tone = MultilingualVoiceEngine.transcribe_audio_chunk(tone, hint_language="fr-FR")
+    assert "audio utterance processed" not in res_tone["text"].lower()

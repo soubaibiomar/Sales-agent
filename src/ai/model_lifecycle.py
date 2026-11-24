@@ -255,20 +255,35 @@ class ModelLifecycleManager:
                         logger.info("Unjustified 9B request downscaled to primary 4B model.")
                         target_model = ai_config.primary_llm
 
-                # Enforce mutual exclusion
-                if not self.can_load_gpu_model(target_model):
-                    if self.active_gpu_model:
-                        active_leases = self.get_active_lease_count(self.active_gpu_model)
-                        if active_leases > 0:
-                            raise VRAMEvictionConflictError(
-                                f"Cannot switch to {target_model}: active model {self.active_gpu_model} "
-                                f"has {active_leases} active generation lease(s) in flight."
-                            )
-                        logger.info(f"Evicting active model {self.active_gpu_model} to load {target_model}...")
-                        self.evict_gpu_model(self.active_gpu_model, verify=True)
+                # Enforce mutual exclusion (F-27): decide from what Ollama ACTUALLY has
+                # resident (/api/ps), not only from this process's memory, so a model
+                # loaded by another worker or client is also evicted before switching.
+                resident = {m.get("name") or m.get("model") for m in self.get_running_ollama_models()}
+                if self.active_gpu_model:
+                    resident.add(self.active_gpu_model)
+                conflicting = sorted(
+                    m for m in resident
+                    if m and m != target_model and self._is_exclusive_llm(m) and self._is_exclusive_llm(target_model)
+                )
+                for model_name in conflicting:
+                    active_leases = self.get_active_lease_count(model_name)
+                    if active_leases > 0:
+                        raise VRAMEvictionConflictError(
+                            f"Cannot switch to {target_model}: resident model {model_name} "
+                            f"has {active_leases} active generation lease(s) in flight."
+                        )
+                    logger.info(f"Evicting resident model {model_name} to load {target_model}...")
+                    self.evict_gpu_model(model_name, verify=True)
 
                 self.active_gpu_model = target_model
                 return target_model
+
+    @staticmethod
+    def _is_exclusive_llm(model_name: str) -> bool:
+        """The 4B and 9B generation models must never share the 8 GB GPU."""
+        name = model_name.lower()
+        primary, reasoning = ai_config.primary_llm.lower(), ai_config.reasoning_llm.lower()
+        return name in (primary, reasoning) or name.startswith(primary.split(":")[0] + ":")
 
     def load_optional_darija_tool(self, tool_name: str) -> bool:
         """Loads optional Moroccan Darija / Arabizi models into host RAM on demand."""

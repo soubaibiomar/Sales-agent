@@ -39,12 +39,12 @@ def test_arabizi_normalization():
 
 def test_tts_routing_french_and_english_to_kokoro_cpu():
     tts_fr = MultilingualProcessor.prepare_for_tts("Merci beaucoup", "fr-FR")
-    assert tts_fr["synthesizer"] == "Kokoro-82M"
+    assert tts_fr["synthesizer"] == "Piper-fr_FR/en_US"
     assert tts_fr["voice"] == "fr"
     assert tts_fr["device"] == "cpu"
 
     tts_en = MultilingualProcessor.prepare_for_tts("Thank you very much", "en-US")
-    assert tts_en["synthesizer"] == "Kokoro-82M"
+    assert tts_en["synthesizer"] == "Piper-fr_FR/en_US"
     assert tts_en["voice"] == "en"
     assert tts_en["device"] == "cpu"
 

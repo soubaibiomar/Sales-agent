@@ -116,7 +116,7 @@ class MultilingualProcessor:
         """Directs synthesized speech to the optimal TTS synthesizer."""
         if detected_lang in ["fr-FR", "en-US"]:
             return {
-                "synthesizer": "Kokoro-82M",
+                "synthesizer": "Piper-fr_FR/en_US",
                 "voice": "fr" if detected_lang == "fr-FR" else "en",
                 "device": "cpu"
             }

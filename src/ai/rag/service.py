@@ -14,7 +14,7 @@ import math
 import uuid
 import hashlib
 import logging
-from typing import List, Dict, Any, Optional
+from typing import Tuple, List, Dict, Any, Optional
 from sqlalchemy import select, and_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,6 +26,8 @@ from src.ai.rag.models import (
     RAGChunkResult
 )
 from src.ai.rag.poison_detector import PoisonDetector
+
+from src.ai.config import ai_config
 
 logger = logging.getLogger("SalesAI.RAGService")
 
@@ -66,28 +68,43 @@ def cosine_similarity(v1: List[float], v2: List[float]) -> float:
     return max(0.0, min(1.0, dot))
 
 
-async def compute_embedding(text: str, dim: int = 768) -> List[float]:
+class EmbeddingUnavailableError(RuntimeError):
+    """The configured embedding backend could not produce a vector (F-18: no silent fallback)."""
+
+
+OLLAMA_EMBEDDING_MODEL = "embeddinggemma:latest"
+HASHING_EMBEDDING_ID = "hashing-bow-768-v1"
+
+
+def embedding_backend() -> str:
+    """'ollama' (default, real semantic model) or 'hashing' (explicit lexical test/offline mode)."""
+    import os
+    return os.environ.get("RAG_EMBEDDING_BACKEND", "ollama").strip().lower()
+
+
+async def compute_embedding(text: str, dim: int = 768) -> Tuple[List[float], str]:
     """
-    Computes embedding using local Ollama neural model (embeddinggemma:latest) if available;
-    falls back cleanly to deterministic_embedding.
+    Returns (unit vector, embedding model id).
+    F-18: previously a 1.5 s timeout silently fell back to MD5 bag-of-words vectors, so
+    chunks and queries could be embedded in different spaces. Now the backend is explicit
+    and failures raise EmbeddingUnavailableError; every chunk records its model id and
+    retrieval only compares vectors from the same model.
     """
+    if embedding_backend() == "hashing":
+        return deterministic_embedding(text, dim=dim), HASHING_EMBEDDING_ID
     try:
         import httpx
-        async with httpx.AsyncClient(timeout=1.5) as client:
-            resp = await client.post(
-                "http://127.0.0.1:11434/api/embeddings",
-                json={"model": "embeddinggemma:latest", "prompt": text}
-            )
-            if resp.status_code == 200:
-                emb = resp.json().get("embedding")
-                if emb and len(emb) == dim:
-                    norm = math.sqrt(sum(x * x for x in emb))
-                    if norm > 0.0:
-                        return [round(x / norm, 6) for x in emb]
-                    return emb
-    except Exception:
-        pass
-    return deterministic_embedding(text, dim=dim)
+        async with httpx.AsyncClient(timeout=httpx.Timeout(60.0, connect=5.0)) as client:
+            resp = await client.post(f"{ai_config.ollama_base_url.rstrip('/')}/api/embed",
+                                     json={"model": OLLAMA_EMBEDDING_MODEL, "input": text})
+            resp.raise_for_status()
+            emb = (resp.json().get("embeddings") or [None])[0]
+    except Exception as exc:  # noqa: BLE001
+        raise EmbeddingUnavailableError(f"Embedding model {OLLAMA_EMBEDDING_MODEL} unavailable: {exc}") from exc
+    if not emb:
+        raise EmbeddingUnavailableError(f"Embedding model {OLLAMA_EMBEDDING_MODEL} returned no vector.")
+    norm = math.sqrt(sum(x * x for x in emb))
+    return ([round(x / norm, 6) for x in emb] if norm > 0 else emb), OLLAMA_EMBEDDING_MODEL
 
 
 class KnowledgeService:
@@ -148,8 +165,15 @@ class KnowledgeService:
             if not chunks:
                 chunks = [sanitized_full]
 
-            for idx, chunk_text in enumerate(chunks):
-                emb = await compute_embedding(chunk_text)
+            try:
+                embedded = [await compute_embedding(t) for t in chunks]
+            except EmbeddingUnavailableError as exc:
+                # Keep the approved document, but do not index it with a fake vector.
+                logger.error(f"Embedding unavailable for document {doc_id}: {exc}")
+                doc.status = "PENDING_EMBEDDING"
+                status = doc.status
+                chunks, embedded = [], []
+            for idx, (chunk_text, (emb, model_id)) in enumerate(zip(chunks, embedded)):
                 chunk_entity = KnowledgeChunk(
                     id=str(uuid.uuid4()),
                     tenant_id=tenant_id,
@@ -159,6 +183,7 @@ class KnowledgeService:
                     sanitized_content=chunk_text,
                     token_count=len(chunk_text.split()),
                     embedding_vector=emb,
+                    embedding_model=model_id,
                     metadata_json={
                         "chunk_index": idx,
                         "title": req.title,
@@ -200,7 +225,7 @@ class KnowledgeService:
         and filtered by user_roles against document acl_roles.
         """
         # Step 1: Compute query embedding
-        q_emb = await compute_embedding(req.query)
+        q_emb, q_model = await compute_embedding(req.query)
 
         # Step 2: Query candidate documents and chunks for this tenant
         stmt = (
@@ -210,7 +235,8 @@ class KnowledgeService:
                 and_(
                     KnowledgeDocument.tenant_id == tenant_id,
                     KnowledgeChunk.tenant_id == tenant_id,
-                    KnowledgeDocument.status == "INDEXED"
+                    KnowledgeDocument.status == "INDEXED",
+                    KnowledgeChunk.embedding_model == q_model  # never compare across vector spaces
                 )
             )
         )

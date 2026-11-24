@@ -93,7 +93,8 @@ async def handle_conversation_turn(
         tenant_id=ctx.tenant_id,
         user_id=ctx.user_id,
         role="customer" if "customer" in ctx.roles else "sales_rep",
-        permissions=ctx.permissions
+        permissions=ctx.permissions,
+        end_user_roles=list(ctx.roles)
     )
 
     agent_in = AgentInput(
@@ -130,7 +131,8 @@ async def execute_agent_directly(
         tenant_id=ctx.tenant_id,
         user_id=ctx.user_id,
         role=role_id,
-        permissions=ctx.permissions
+        permissions=ctx.permissions,
+        end_user_roles=list(ctx.roles)
     )
 
     agent_in = AgentInput(
@@ -173,7 +175,8 @@ async def generate_copilot_brief(
         tenant_id=ctx.tenant_id,
         user_id=ctx.user_id,
         role="sales_copilot",
-        permissions=ctx.permissions
+        permissions=ctx.permissions,
+        end_user_roles=list(ctx.roles)
     )
 
     return await sales_copilot.generate_deal_brief(
@@ -196,7 +199,8 @@ async def approve_copilot_proposal(
         tenant_id=ctx.tenant_id,
         user_id=ctx.user_id,
         role="sales_rep",
-        permissions=ctx.permissions
+        permissions=ctx.permissions,
+        end_user_roles=list(ctx.roles)
     )
 
     return await sales_copilot.approve_action_proposal(
@@ -218,7 +222,8 @@ async def execute_operations_triage(
         tenant_id=ctx.tenant_id,
         user_id=ctx.user_id,
         role="operations_supervisor",
-        permissions=ctx.permissions
+        permissions=ctx.permissions,
+        end_user_roles=list(ctx.roles)
     )
     return await operations_supervisor.run_operational_triage(
         tenant_id=ctx.tenant_id,

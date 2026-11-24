@@ -1538,6 +1538,7 @@ class KnowledgeChunk(Base):
     sanitized_content = Column(Text, nullable=False)
     token_count = Column(Integer, default=0, nullable=False)
     embedding_vector = Column(ARRAY(Float).with_variant(JSON, "sqlite"), default=list, nullable=False)
+    embedding_model = Column(String(100), nullable=True, index=True)  # vector space id (F-18, migration 017)
     metadata_json = Column("metadata", JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 

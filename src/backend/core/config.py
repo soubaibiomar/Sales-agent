@@ -85,6 +85,12 @@ class Settings(BaseSettings):
     # Development-only fallback for carrier webhooks; tenants register their own secret (CARRIER_<CODE>).
     carrier_webhook_secret: str = "dev_carrier_webhook_secret_change_in_prod"
 
+    # Local speech engines (F-15): faster-whisper on CPU and Piper voices stored outside the repo.
+    stt_model_size: str = "small"
+    stt_compute_type: str = "int8"
+    piper_voices_dir: str = Field(default_factory=lambda: __import__("os").path.join(
+        __import__("os").environ.get("LOCALAPPDATA", __import__("os").path.expanduser("~/.local/share")), "sales-ai", "piper-voices"))
+
     # Signs public quote acceptance/rejection links (F-14).
     quote_link_secret: str = Field(default="dev_quote_link_signing_secret_change_in_prod_32b", min_length=32)
     quote_link_ttl_days: int = 45

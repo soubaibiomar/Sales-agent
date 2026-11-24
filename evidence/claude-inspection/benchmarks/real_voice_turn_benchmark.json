@@ -1,0 +1,117 @@
+{
+ "generated_utc": "2026-11-24T21:04:58.050093+00:00",
+ "hardware": "i7-13620H, RTX 4060 Laptop 8 GB (LLM on GPU), ASR/TTS on CPU, 16 GB RAM",
+ "engines": {
+  "asr": "faster-whisper small int8 (CPU)",
+  "llm": "qwen3.5:4b via Ollama (warm)",
+  "tts": "Piper medium voices (CPU)"
+ },
+ "caveat": "Caller audio is Piper-synthesized, not consented human recordings: WER is optimistic and not a production accuracy claim. Measured end-to-end in one process; no network/telephony latency included.",
+ "target_turn_latency_ms": 600,
+ "summary": {
+  "turns": 6,
+  "total_turn_ms_median": 6859.4,
+  "total_turn_ms_max": 7596.3,
+  "asr_ms_median": 1591.0,
+  "llm_ms_median": 4878.6,
+  "tts_ms_median": 193.6,
+  "wer_by_language": {
+   "ar-MA": 0.369,
+   "en-US": 0.0,
+   "fr-FR": 0.375
+  },
+  "meets_600ms_target": false
+ },
+ "runs": [
+  {
+   "language": "fr-FR",
+   "reference_text": "Bonjour, quel est le délai de livraison à Casablanca ?",
+   "transcript": "Bonjour, quel est le délai de livraison à Casablanca ?",
+   "wer": 0.0,
+   "caller_audio_s": 3.05,
+   "asr_ms": 1579.8,
+   "llm_ms": 4632.4,
+   "llm_ttft_ms": 2581.51,
+   "tts_ms": 136.1,
+   "total_turn_ms": 6348.2,
+   "reply_audio_s": 5.91,
+   "tts_engine": "Piper (fr_FR-siwis-medium)",
+   "reply_text": "Le délai de livraison à Casablanca dépend du produit et se situe généralement entre 3 et 7 jours ouvrés."
+  },
+  {
+   "language": "fr-FR",
+   "reference_text": "Je voudrais un devis pour dix ordinateurs portables.",
+   "transcript": "Je voudrais en deux vies pour Dys, ordinateur portable.",
+   "wer": 0.75,
+   "caller_audio_s": 2.9,
+   "asr_ms": 1602.3,
+   "llm_ms": 5805.0,
+   "llm_ttft_ms": 3781.35,
+   "tts_ms": 189.1,
+   "total_turn_ms": 7596.3,
+   "reply_audio_s": 8.12,
+   "tts_engine": "Piper (fr_FR-siwis-medium)",
+   "reply_text": "Je ne peux pas répondre à cette demande car je n'ai aucun produit « deux vies » ni aucune information sur des ordinateurs portables spécifiques vendus par votre entreprise."
+  },
+  {
+   "language": "en-US",
+   "reference_text": "Hello, can you give me an update on my order status?",
+   "transcript": "Hello, can you give me an update on my order status?",
+   "wer": 0.0,
+   "caller_audio_s": 3.36,
+   "asr_ms": 1566.7,
+   "llm_ms": 5059.3,
+   "llm_ttft_ms": 3038.2,
+   "tts_ms": 170.0,
+   "total_turn_ms": 6796.0,
+   "reply_audio_s": 6.82,
+   "tts_engine": "Piper (en_US-lessac-medium)",
+   "reply_text": "Hello! I'd be happy to check the status of your order for you; could you please provide your order number so I can look it up right away?"
+  },
+  {
+   "language": "en-US",
+   "reference_text": "Do you have solar panels in stock this week?",
+   "transcript": "Do you have solar panels in stock this week?",
+   "wer": 0.0,
+   "caller_audio_s": 2.3,
+   "asr_ms": 1495.4,
+   "llm_ms": 5229.4,
+   "llm_ttft_ms": 3159.15,
+   "tts_ms": 198.1,
+   "total_turn_ms": 6922.9,
+   "reply_audio_s": 8.46,
+   "tts_engine": "Piper (en_US-lessac-medium)",
+   "reply_text": "Yes, we currently have solar panels available for delivery within the coming days. Would you like to know which models are in stock and what their specifications are?"
+  },
+  {
+   "language": "ar-MA",
+   "reference_text": "مرحبا، أريد معرفة موعد توصيل طلبي.",
+   "transcript": "مرحبا أريد معرفة موعيد توصيل طلبي",
+   "wer": 0.167,
+   "caller_audio_s": 4.26,
+   "asr_ms": 1742.6,
+   "llm_ms": 4698.0,
+   "llm_ttft_ms": 2677.4,
+   "tts_ms": 582.9,
+   "total_turn_ms": 7023.5,
+   "reply_audio_s": 11.19,
+   "tts_engine": "Piper (ar_JO-kareem-medium)",
+   "reply_text": "مرحباً، يرجى تزويدي برقم الطلب أو التاريخ لتتمكني من التحقق معك بدقة بشأن مواعيد التوصيل."
+  },
+  {
+   "language": "ar-MA",
+   "reference_text": "هل لديكم ألواح شمسية متوفرة في المخزن؟",
+   "transcript": "هلديكم الواحن شنسية متوفرة في المخزن؟",
+   "wer": 0.571,
+   "caller_audio_s": 4.89,
+   "asr_ms": 1762.0,
+   "llm_ms": 4500.1,
+   "llm_ttft_ms": 2459.86,
+   "tts_ms": 443.9,
+   "total_turn_ms": 6706.0,
+   "reply_audio_s": 5.62,
+   "tts_engine": "Piper (ar_JO-kareem-medium)",
+   "reply_text": "نعم، الوان شنسية متوفرة حالياً في مخزنتنا."
+  }
+ ]
+}

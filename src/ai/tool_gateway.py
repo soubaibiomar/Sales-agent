@@ -61,6 +61,9 @@ class ServerSecurityContext(BaseModel):
     user_id: Optional[str] = None
     role: str = "customer"
     permissions: List[str] = Field(default_factory=list)
+    # Roles of the human the agent acts for (server-issued). Agents retrieve documents with
+    # these roles, never with their own catalog roles (F-17/F-18: no confused deputy).
+    end_user_roles: List[str] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

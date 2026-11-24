@@ -43,8 +43,8 @@ class AIModelConfig(BaseSettings):
         description="Moroccan Darija fine-tuned ASR model"
     )
     tts_fr_en: str = Field(
-        default="Kokoro-82M",
-        description="French and English TTS synthesizer"
+        default="Piper-fr_FR/en_US",
+        description="French and English TTS synthesizer (Piper voices fr_FR-siwis-medium / en_US-lessac-medium)"
     )
     tts_ar: str = Field(
         default="Piper-ar_JO",

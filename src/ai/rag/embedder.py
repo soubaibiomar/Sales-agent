@@ -8,7 +8,7 @@ from src.ai.rag.service import deterministic_embedding, cosine_similarity
 
 
 class CPUTextEmbedder:
-    """CPU-bound text embedder for semantic search, scoring, and evaluations."""
+    """Lexical hashing embedder for offline evaluation only (NOT the production semantic model, F-18)."""
 
     def __init__(self, dimension: int = 768):
         self.dimension = dimension

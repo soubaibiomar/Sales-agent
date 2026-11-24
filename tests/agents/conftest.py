@@ -27,6 +27,9 @@ class DeterministicAgentTestProvider:
         self.reply = reply
         self.calls = []
 
+    async def plan_tool_calls(self, prompt, tools, system_prompt=None, model=None, timeout=None, channel=None):
+        return []
+
     async def generate(self, prompt, system_prompt=None, model=None, max_tokens=1024,
                        temperature=0.2, timeout=None, **kwargs):
         self.calls.append({"model": model, "prompt": prompt})

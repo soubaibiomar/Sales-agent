@@ -20,7 +20,7 @@ from src.ai.rag.models import (
     RAGQueryRequest,
     RAGChunkResult
 )
-from src.ai.rag.service import KnowledgeService
+from src.ai.rag.service import KnowledgeService, EmbeddingUnavailableError
 from src.ai.router import ConversationRouter, RoutingDecision
 from src.ai.tool_gateway import (
     tool_gateway,
@@ -99,7 +99,8 @@ async def execute_agent_tool(
         tenant_id=ctx.tenant_id,
         user_id=ctx.user_id,
         role=primary_role,
-        permissions=ctx.permissions
+        permissions=ctx.permissions,
+        end_user_roles=list(ctx.roles)
     )
 
     try:
@@ -171,10 +172,13 @@ async def query_knowledge_base(
     and document ACL roles.
     """
     service = KnowledgeService(db)
-    # Ensure user_roles includes the authenticated caller's roles
-    effective_roles = list(set(req.user_roles + ctx.roles))
-    req.user_roles = effective_roles
-    return await service.retrieve_context(tenant_id=ctx.tenant_id, req=req)
+    # F-18: document ACL roles come ONLY from the verified identity; client-supplied
+    # user_roles are ignored (they previously let a caller self-assign e.g. "board_only").
+    req.user_roles = list(ctx.roles)
+    try:
+        return await service.retrieve_context(tenant_id=ctx.tenant_id, req=req)
+    except EmbeddingUnavailableError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
 
 
 @router.post("/guard/verify", response_model=OutputGuardResult)

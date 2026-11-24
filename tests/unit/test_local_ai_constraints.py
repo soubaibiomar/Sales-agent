@@ -13,7 +13,7 @@ def test_model_architecture_configuration():
     assert ai_config.reranker_model == "Qwen3-Reranker-0.6B"
     assert ai_config.asr_model == "faster-whisper-small-int8"
     assert ai_config.darija_asr_candidate == "atlasia/moulsot.v0.3"
-    assert ai_config.tts_fr_en == "Kokoro-82M"
+    assert ai_config.tts_fr_en == "Piper-fr_FR/en_US"
     assert ai_config.tts_ar == "Piper-ar_JO"
     assert ai_config.darija_lid == "atlasia/DarijaLID"
     assert ai_config.arabizi_model == "atlasia/Transliteration-Moroccan-Darija"

@@ -1,0 +1,54 @@
+{
+ "model": "qwen3.5:4b (live, non-deterministic)",
+ "results": [
+  {
+   "agent": "order_payment",
+   "prompt": "Bonjour, quel est le statut de ma commande SO-778 ?",
+   "latency_ms": 81531,
+   "status": "SUCCESS",
+   "tools_called": [],
+   "response": "Bonjour ! Je suis votre **Spécialiste des Commandes et Paiements**.\n\nPour vérifier le statut exact de votre commande **SO-778**, j'ai besoin d'une information supplémentaire pour vous garantir une réponse précise :\n\n1.  Quel est l'**email** utilisé lors du passage en caisse ?\n2. Ou, si possible, que"
+  },
+  {
+   "agent": "order_payment",
+   "prompt": "Where is my order SO-999?",
+   "latency_ms": 39641,
+   "status": "SUCCESS",
+   "tools_called": [
+    {
+     "tool": "orders.get_status",
+     "params": {
+      "order_id": "SO-999"
+     },
+     "error": "Order 'SO-999' not found.",
+     "ok": false
+    }
+   ],
+   "response": "Hello! I'm your **Order & Payment Specialist**. Thank you for reaching out regarding order **SO-999**.\n\nTo provide you with the most accurate tracking information, could you please confirm which shipping address was used for this order? Alternatively, if you have a confirmation email or receipt hand"
+  },
+  {
+   "agent": "product_knowledge",
+   "prompt": "Est-ce que le SKU PANEL-400 est disponible en stock ?",
+   "latency_ms": 19175,
+   "status": "SUCCESS",
+   "tools_called": [
+    {
+     "tool": "inventory.check_atp",
+     "params": {
+      "sku": "PANEL-400"
+     },
+     "ok": true
+    }
+   ],
+   "response": "Oui, le produit **SKU PANEL-400** est actuellement disponible en stock.\n\nVoici les détails de votre commande :\n*   **Disponibilité :** 10 unités disponibles\n*   **Devise :** MAD (Dirhams marocains)\n*   **Source des données :** Registre d'inventaire vérifié\n\n🤖 [Assistant IA Commercial — Sales AI Mana"
+  },
+  {
+   "agent": "product_knowledge",
+   "prompt": "Bonjour, merci pour votre aide.",
+   "latency_ms": 16957,
+   "status": "SUCCESS",
+   "tools_called": [],
+   "response": "Bonjour ! Je suis ravi de vous aider en tant que Spécialiste Produit et Catalogue.\n\nComment puis-je vous assister aujourd'hui ? Par exemple :\n*   Trouver des informations précises sur les **spécifications techniques** d'un produit spécifique.\n*   Vérifier la **disponibilité du stock** pour un articl"
+  }
+ ]
+}

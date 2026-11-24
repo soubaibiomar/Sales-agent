@@ -326,5 +326,21 @@ class ModelGateway:
         )
 
 
+    async def plan_tool_calls(self, prompt: str, tools: List[Dict[str, Any]], system_prompt: Optional[str] = None,
+                              model: Optional[str] = None, channel: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Model-proposed tool calls (F-17). Never raises: if the model cannot plan, the turn
+        simply has no tool evidence, and the OutputGuard then blocks any commercial claim.
+        """
+        planner = getattr(self.local_provider, "plan_tool_calls", None)
+        if not planner or not tools:
+            return []
+        try:
+            return await planner(prompt=prompt, tools=tools, system_prompt=system_prompt, model=model, channel=channel)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"Tool planning unavailable: {exc}")
+            return []
+
+
 # Global singleton instance
 model_gateway = ModelGateway()

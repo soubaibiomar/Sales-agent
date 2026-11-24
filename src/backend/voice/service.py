@@ -5,7 +5,10 @@ audio persistence, and transcript redaction with PostgreSQL RLS.
 Step 07: Dual-Mode Customer & Manager Voice AI
 (Controls 04-07, 28, 35, 39-40, 48-49, 55, 63-67, 70; SAI-01 to SAI-05, SAI-09 to SAI-12)
 """
+import asyncio
 import uuid
+import logging
+logger = logging.getLogger('SalesAI.VoiceService')
 import time
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any
@@ -185,8 +188,16 @@ class VoiceSessionService:
         if input_text:
             user_utterance = input_text
         elif audio_chunk:
-            asr_res = MultilingualVoiceEngine.transcribe_audio_chunk(audio_chunk, hint_language=session.language)
-            user_utterance = asr_res["text"]
+            # F-15: real CPU speech recognition, off the event loop.
+            from src.backend.voice.speech_engines import SpeechEngineUnavailableError
+            try:
+                asr_res = await asyncio.to_thread(
+                    MultilingualVoiceEngine.transcribe_audio_chunk, audio_chunk, session.language
+                )
+                user_utterance = asr_res["text"]
+            except SpeechEngineUnavailableError as exc:
+                logger.error(f"ASR unavailable for session {session_id}: {exc}")
+                user_utterance = ""
         else:
             user_utterance = "Bonjour"
 
@@ -222,10 +233,16 @@ class VoiceSessionService:
                 session.status = "TRANSFERRED"
 
         # 4. Synthesize speech (TTS)
-        tts_audio, tts_meta = MultilingualVoiceEngine.synthesize_speech(
-            text=agent_response_text,
-            language=detected_lang
-        )
+        # F-15: real speech synthesis, off the event loop. If TTS is unavailable the
+        # turn still returns its text (audio_base64 = None) instead of fake audio.
+        from src.backend.voice.speech_engines import SpeechEngineUnavailableError
+        try:
+            tts_audio, tts_meta = await asyncio.to_thread(
+                MultilingualVoiceEngine.synthesize_speech, agent_response_text, detected_lang
+            )
+        except SpeechEngineUnavailableError as exc:
+            logger.error(f"TTS unavailable for session {session_id}: {exc}")
+            tts_audio, tts_meta = None, {"tts_engine": "UNAVAILABLE", "duration_ms": 0}
 
         latency_ms = int((time.time() - start_time) * 1000)
 
@@ -256,7 +273,7 @@ class VoiceSessionService:
             "user_transcript": user_utterance,
             "redacted_transcript": redacted_transcript,
             "agent_response_text": agent_response_text,
-            "audio_base64": tts_audio.to_base64_wav(),
+            "audio_base64": tts_audio.to_base64_wav() if tts_audio is not None else None,
             "latency_ms": latency_ms,
             "executed_tools": executed_tools,
             "handoff_triggered": handoff_triggered,

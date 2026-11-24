@@ -114,6 +114,48 @@ class OllamaProvider(BaseModelProvider):
                 except Exception as evict_err:  # noqa: BLE001
                     logger.warning(f"Post-reasoning eviction of {actual_model} failed: {evict_err}")
 
+    async def plan_tool_calls(
+        self,
+        prompt: str,
+        tools: List[Dict[str, Any]],
+        system_prompt: Optional[str] = None,
+        model: Optional[str] = None,
+        timeout: Optional[float] = None,
+        channel: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Asks the model which typed tools to call (Ollama native tool calling, /api/chat).
+        Returns [{"name": str, "arguments": dict}]. The caller must still authorize and
+        schema-validate every call; this only proposes (F-17).
+        """
+        target_model = model or ai_config.primary_llm
+        actual_model = lifecycle_manager.prepare_for_inference(target_model, channel=channel)
+        messages = ([{"role": "system", "content": system_prompt}] if system_prompt else []) + [{"role": "user", "content": prompt}]
+        limit = float(timeout) if timeout else DEFAULT_GENERATION_TIMEOUT_S
+        try:
+            with lifecycle_manager.generation_lease(actual_model):
+                async with httpx.AsyncClient(timeout=httpx.Timeout(limit, connect=5.0)) as client:
+                    resp = await client.post(f"{self.base_url}/api/chat", json={
+                        "model": actual_model, "messages": messages, "tools": tools, "stream": False,
+                        "think": False, "options": {"temperature": 0.0, "num_ctx": 4096}
+                    })
+                    resp.raise_for_status()
+                    message = resp.json().get("message") or {}
+        except Exception as exc:  # noqa: BLE001
+            raise ModelUnavailableError(f"Tool planning failed for {actual_model}: {exc}") from exc
+        calls = []
+        for call in message.get("tool_calls") or []:
+            fn = call.get("function") or {}
+            args = fn.get("arguments") or {}
+            if isinstance(args, str):
+                try:
+                    args = json.loads(args)
+                except ValueError:
+                    args = {}
+            if fn.get("name"):
+                calls.append({"name": fn["name"], "arguments": args if isinstance(args, dict) else {}})
+        return calls
+
     async def stream(
         self,
         prompt: str,

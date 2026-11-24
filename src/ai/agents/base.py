@@ -54,9 +54,25 @@ class AgentOutput(BaseModel):
 class BaseAgent:
     """Base implementation providing bounded execution and invariant governance."""
 
+    MAX_TOOL_CALLS = 3
+
     def __init__(self, role_id: str):
         self.role_def: AgentRoleDefinition = AgentRegistry.get_role(role_id)
         self.role_id: str = role_id
+
+    def _tool_specs(self) -> List[Dict[str, Any]]:
+        """JSON-schema tool definitions for this role's allowlisted tools (Ollama/OpenAI format)."""
+        specs = []
+        for name in self.role_def.allowed_tools:
+            tool_def = tool_gateway._schemas.get(name)
+            if not tool_def or not tool_gateway.is_tool_allowed(self.role_id, name):
+                continue
+            specs.append({"type": "function", "function": {
+                "name": name,
+                "description": tool_def.description,
+                "parameters": tool_def.input_schema.model_json_schema(),
+            }})
+        return specs
 
     async def execute(
         self,
@@ -83,10 +99,14 @@ class BaseAgent:
         if db_session and self.role_def.retrieval_roles:
             try:
                 rag_service = KnowledgeService(db_session)
+                # The agent may only see what BOTH its role scope and the end user allow;
+                # anonymous/customer callers get public documents only.
+                user_roles = set(security_context.end_user_roles or [])
+                scoped = [r for r in self.role_def.retrieval_roles if r == "public" or r in user_roles]
                 rag_req = RAGQueryRequest(
                     query=input_data.user_prompt,
                     limit=2,
-                    user_roles=self.role_def.retrieval_roles
+                    user_roles=scoped or ["public"]
                 )
                 chunks = await rag_service.retrieve_context(
                     tenant_id=security_context.tenant_id,
@@ -96,48 +116,34 @@ class BaseAgent:
             except Exception as e:
                 logger.warning(f"RAG context retrieval failed non-critically for {self.role_id}: {e}")
 
-        # Step 3: Tool Execution Preparation
-        # Check if user prompt requests a specific tool action allowed for this agent
+        # Step 3: Model-driven typed tool calls (F-17).
+        # Previously tools fired on keywords with hardcoded fixture identifiers.
+        # Now the model proposes calls from the role's allowlisted
+        # tool schemas; every proposal is re-authorized and schema-validated by the
+        # gateway, limited to MAX_TOOL_CALLS per turn, and identifiers must come from
+        # the user's own message (enforced by instruction + domain lookups that fail
+        # closed on unknown ids).
         tool_results_for_prompt = []
-        for tool_name in self.role_def.allowed_tools:
-            # Simple keyword matching to decide if a tool should be executed proactively
-            should_invoke = False
-            tool_params = {}
-            if tool_name == "catalog.search" and any(k in input_data.user_prompt.lower() for k in ["panneau", "onduleur", "produit", "catalogue", "solar"]):
-                should_invoke = True
-                tool_params = {"query": "solaire", "limit": 2}
-            elif tool_name == "inventory.check_atp" and any(k in input_data.user_prompt.lower() for k in ["stock", "disponible", "dispo"]):
-                should_invoke = True
-                tool_params = {"sku": "SKU-SOLAR-01"}
-            elif tool_name == "pricing.calculate_quote" and any(k in input_data.user_prompt.lower() for k in ["devis", "prix", "chhal", "combien"]):
-                should_invoke = True
-                tool_params = {"items": [{"sku": "SKU-SOLAR-01", "quantity": 1}], "customer_tier": "standard"}
-            elif tool_name == "orders.get_status" and any(k in input_data.user_prompt.lower() for k in ["commande", "suivi", "tracking"]):
-                should_invoke = True
-                tool_params = {"order_id": "ORD-2026-99182"}
-            elif tool_name == "scheduling.get_slots" and any(k in input_data.user_prompt.lower() for k in ["rdv", "rendez-vous", "reunion"]):
-                should_invoke = True
-                tool_params = {"date": "2026-11-20"}
-            elif tool_name == "account.get_summary" and any(k in input_data.user_prompt.lower() for k in ["compte", "account", "client"]):
-                should_invoke = True
-                tool_params = {"account_id": "ACC-9921"}
-            elif tool_name == "documents.get_invoice" and any(k in input_data.user_prompt.lower() for k in ["facture", "invoice"]):
-                should_invoke = True
-                tool_params = {"invoice_id": "INV-00442"}
-            elif tool_name == "pipeline.analyze_stale_deals" and self.role_id == "pipeline_coach":
-                should_invoke = True
-                tool_params = {"max_days_in_stage": 14}
-            elif tool_name == "analytics.get_kpi_summary" and self.role_id == "analyst":
-                should_invoke = True
-                tool_params = {"period": "CURRENT_MONTH"}
-            elif tool_name == "incident.diagnose_system" and self.role_id == "incident_responder":
-                should_invoke = True
-                tool_params = {"scope": "ALL"}
-            elif tool_name == "copilot.generate_brief" and self.role_id == "sales_copilot":
-                should_invoke = True
-                tool_params = {"conversation_id": input_data.conversation_id or "CONV-001"}
-
-            if should_invoke:
+        tool_specs = self._tool_specs()
+        planned = await model_gateway.plan_tool_calls(
+            prompt=input_data.user_prompt,
+            tools=tool_specs,
+            system_prompt=(
+                f"You are the {self.role_def.display_name} of a B2B sales platform. Call a tool only when "
+                "verified business data is needed to answer. Use only identifiers (order numbers, SKUs, "
+                "account ids, dates) that appear in the user's message; never invent identifiers. "
+                "If no tool is needed, call none."
+            ),
+            model="qwen3.5:4b",
+            channel=input_data.channel,
+        ) if tool_specs else []
+        allowed = set(self.role_def.allowed_tools)
+        for call in planned[:self.MAX_TOOL_CALLS]:
+            tool_name, tool_params = call["name"], call.get("arguments") or {}
+            if tool_name not in allowed:
+                tools_called.append({"tool": tool_name, "params": tool_params, "result": None, "rejected": "NOT_IN_ROLE_ALLOWLIST"})
+                continue
+            if True:
                 try:
                     tool_res = await tool_gateway.execute_tool(
                         tool_name=tool_name,
@@ -146,13 +152,15 @@ class BaseAgent:
                             tenant_id=security_context.tenant_id,
                             user_id=security_context.user_id,
                             role=self.role_id,
-                            permissions=security_context.permissions
+                            permissions=security_context.permissions,
+                            end_user_roles=security_context.end_user_roles
                         ),
                         db_session=db_session
                     )
                     tools_called.append({"tool": tool_name, "params": tool_params, "result": tool_res})
                     tool_results_for_prompt.append(f"Tool {tool_name} returned: {tool_res}")
                 except ToolGatewayError as tge:
+                    tools_called.append({"tool": tool_name, "params": tool_params, "result": None, "error": str(tge)})
                     logger.warning(f"Tool invocation failed: {tge}")
 
         # Step 4: Model Gateway Reasoning Turn

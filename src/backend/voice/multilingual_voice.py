@@ -18,11 +18,11 @@ class MultilingualVoiceEngine:
     """
 
     SUPPORTED_LANGUAGES = {
-        "fr-FR": {"name": "French", "tts_profile": "Kokoro-82M (fr)", "verified": True},
-        "en-US": {"name": "English", "tts_profile": "Kokoro-82M (en)", "verified": True},
-        "ar-MA": {"name": "Modern Standard Arabic", "tts_profile": "Piper-ar_JO", "verified": True},
-        "ary-Arab": {"name": "Moroccan Darija (Arabic)", "tts_profile": "Piper-ar_MA (Experimental)", "verified": False},
-        "ary-Latn": {"name": "Moroccan Darija (Arabizi)", "tts_profile": "Kokoro/Piper Mixed (Experimental)", "verified": False}
+        "fr-FR": {"name": "French", "tts_profile": "Piper fr_FR-siwis-medium", "verified": True},
+        "en-US": {"name": "English", "tts_profile": "Piper en_US-lessac-medium", "verified": True},
+        "ar-MA": {"name": "Modern Standard Arabic", "tts_profile": "Piper ar_JO-kareem-medium", "verified": True},
+        "ary-Arab": {"name": "Moroccan Darija (Arabic)", "tts_profile": "Piper ar_JO-kareem-medium (approximate)", "verified": False},
+        "ary-Latn": {"name": "Moroccan Darija (Arabizi)", "tts_profile": "Piper fr_FR-siwis-medium (approximate)", "verified": False}
     }
 
     # Darija to MSA / French phonetic normalization map
@@ -92,29 +92,22 @@ class MultilingualVoiceEngine:
         hint_language: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Transcribes an incoming PCM/WAV audio chunk into text.
-        In local CPU mode without external heavy weights loaded,
-        performs energy-frequency feature extraction and phonetic mapping.
+        Transcribes a PCM audio chunk with faster-whisper on CPU (F-15).
+        Silence/very short audio is skipped without running the model.
+        Raises SpeechEngineUnavailableError when the engine is not installed - there is
+        no synthetic fallback text.
         """
-        energy = chunk.rms_energy
-        duration = chunk.duration_ms
-
-        if energy < 300.0 or duration < 100.0:
-            return {
-                "text": "",
-                "confidence": 0.0,
-                "language": hint_language or "fr-FR",
-                "is_empty": True
-            }
-
-        # Select language preference
-        target_lang = hint_language if hint_language in cls.SUPPORTED_LANGUAGES else "fr-FR"
-
+        from src.backend.voice.speech_engines import SpeechToTextEngine
+        if chunk.rms_energy < 300.0 or chunk.duration_ms < 100.0:
+            return {"text": "", "confidence": 0.0, "language": hint_language or "fr-FR", "is_empty": True}
+        result = SpeechToTextEngine.transcribe(chunk.pcm_bytes, chunk.sample_rate, hint_language=hint_language)
         return {
-            "text": "Audio utterance processed",
-            "confidence": 0.94,
-            "language": target_lang,
-            "is_empty": False
+            "text": result.text,
+            "confidence": result.confidence,
+            "language": result.language,
+            "is_empty": not result.text,
+            "engine": "faster-whisper",
+            "audio_seconds": result.audio_seconds,
         }
 
     @classmethod
@@ -125,30 +118,24 @@ class MultilingualVoiceEngine:
         sample_rate: int = 16000
     ) -> Tuple[AudioChunk, Dict[str, Any]]:
         """
-        Synthesizes text into streaming PCM audio chunks.
-        Routes to Kokoro-82M (FR/EN) or Piper (AR/Darija) configuration.
-        Returns (AudioChunk, metadata).
+        Synthesizes speech with a local Piper voice (F-15), resampled to `sample_rate`.
+        Raises SpeechEngineUnavailableError when the engine/voice is missing.
         """
+        from src.backend.voice.speech_engines import TextToSpeechEngine, APPROXIMATE_VOICES, pcm16_to_float32
+        import numpy as np
         lang = language if language in cls.SUPPORTED_LANGUAGES else "fr-FR"
-        profile_info = cls.SUPPORTED_LANGUAGES[lang]
-
-        # Estimate duration: average 15 characters per second
-        char_count = max(len(text), 1)
-        est_duration_ms = max(int((char_count / 14.0) * 1000.0), 400)
-
-        # Generate audio chunk
-        audio_chunk = SyntheticAudioGenerator.generate_speech_like_waveform(
-            duration_ms=est_duration_ms,
-            sample_rate=sample_rate
-        )
-
+        pcm, native_rate, voice_name = TextToSpeechEngine.synthesize(text, lang)
+        if native_rate != sample_rate:
+            audio = pcm16_to_float32(pcm, native_rate, target_rate=sample_rate)
+            pcm = (np.clip(audio, -1.0, 1.0) * 32767.0).astype(np.int16).tobytes()
+        audio_chunk = AudioChunk(pcm, sample_rate=sample_rate)
         metadata = {
             "language": lang,
-            "tts_engine": profile_info["tts_profile"],
-            "is_verified": profile_info["verified"],
-            "duration_ms": est_duration_ms,
+            "tts_engine": f"Piper ({voice_name})",
+            "is_verified": cls.SUPPORTED_LANGUAGES[lang]["verified"],
+            "pronunciation_approximate": lang in APPROXIMATE_VOICES,
+            "duration_ms": int(audio_chunk.duration_ms),
             "sample_rate": sample_rate,
-            "samples_count": len(audio_chunk.pcm_bytes) // 2
+            "samples_count": len(pcm) // 2
         }
-
         return audio_chunk, metadata
