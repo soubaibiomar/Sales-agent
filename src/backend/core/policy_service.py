@@ -18,7 +18,8 @@ DEFAULT_ROLE_PERMISSIONS: Dict[str, List[str]] = {
         "roles:assign", "sites:read", "sites:write", "audit:read",
         "catalog:read", "catalog:write", "quotes:read", "quotes:write",
         "orders:read", "orders:write", "inventory:read", "inventory:write",
-        "conversations:read", "conversations:write", "conversations:handoff"
+        "conversations:read", "conversations:write", "conversations:handoff",
+        "workflows:read", "workflows:manage", "notifications:manage", "integrations:manage"
     ],
     "sales_manager": [
         "users:read", "sites:read", "catalog:read", "catalog:write",

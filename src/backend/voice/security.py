@@ -210,15 +210,30 @@ class ManagerPrivilegedActionGuard:
             return None
         return entry
 
-    def consume_action(self, action_token: str, totp_code: Optional[str] = None) -> Dict[str, Any]:
+    def consume_action(
+        self,
+        action_token: str,
+        *,
+        tenant_id: str,
+        user_id: str,
+        step_up_verified: bool
+    ) -> Dict[str, Any]:
+        """
+        F-06: consumes a pending high-risk action only when
+          * the token was issued to the same tenant AND the same user, and
+          * the step-up second factor was verified server-side by the caller of this
+            method (TOTP checked against the user's enrolled seed - never a format check).
+        The token is single-use; a failed second factor does not consume it.
+        """
         action = self.get_pending_action(action_token)
         if not action:
             raise VoiceSecurityError("Action preview not found or expired.")
 
-        if action["requires_step_up_mfa"]:
-            # Validate TOTP format or mock test token
-            if not totp_code or len(totp_code.strip()) not in (6, 8):
-                raise VoiceSecurityError("Valid Step-Up TOTP code required for this high-risk action.")
+        if action.get("tenant_id") != tenant_id or action.get("user_id") != user_id:
+            raise VoiceSecurityError("Action preview was not issued to this user.")
+
+        if action["requires_step_up_mfa"] and not step_up_verified:
+            raise VoiceSecurityError("Valid Step-Up TOTP code required for this high-risk action.")
 
         del self._pending_actions[action_token]
         return action

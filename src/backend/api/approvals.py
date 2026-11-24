@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.backend.core.database import get_db_session
 from src.backend.core.auth_middleware import get_security_context, SecurityContext, require_permission
+from src.backend.core.step_up import is_step_up_satisfied
 from src.backend.domains.approvals.service import (
     ApprovalService, ApprovalDomainError, SelfApprovalProhibitedError,
     MfaRequiredForApprovalError, TermsHashMismatchError, ApprovalAlreadyDecidedError, ApprovalNotFoundError
@@ -50,7 +51,8 @@ async def decide_approval(
             decision=req.decision,
             reason=req.reason,
             approver_roles=context.roles,
-            mfa_verified=context.mfa_verified or (req.mfa_code is not None)
+            # F-04: a submitted code must actually verify against the approver's TOTP seed.
+            mfa_verified=await is_step_up_satisfied(db, context, req.mfa_code)
         )
         return app
     except SelfApprovalProhibitedError as e:

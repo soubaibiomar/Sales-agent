@@ -87,6 +87,14 @@ async def get_security_context(
     permissions = payload.get("permissions", [])
     mfa_verified = payload.get("mfa_verified", False)
 
+    # F-21: refresh tokens (7-day lifetime) must never authenticate API calls.
+    if payload.get("type") == "refresh":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"error": "Refresh tokens cannot be used as access tokens", "correlation_id": correlation_id},
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
     if not user_id or not tenant_id or not jti:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

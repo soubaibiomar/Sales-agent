@@ -21,7 +21,16 @@ from src.backend.core.auth_middleware import (
     require_permission,
     SecurityContext
 )
+from src.backend.core.config import settings
+from src.backend.core.auth_middleware import security_bearer, get_correlation_id
+from src.backend.core.database import bind_tenant_context
+from src.backend.core.step_up import verify_user_totp
+from src.backend.models.entities import TenantChannelIntegration
 from src.backend.voice.service import VoiceSessionService, VoiceSessionNotFoundError
+from src.backend.voice.session_tokens import (
+    issue_voice_session_token, verify_voice_session_token, VoiceSessionTokenError
+)
+from src.backend.voice.otp_delivery import OtpDeliveryUnavailableError
 from src.backend.voice.security import (
     VoiceSecurityError,
     CallerUnverifiedError,
@@ -65,22 +74,49 @@ call_rate_limiter = VoiceCallRateLimiter(max_concurrent=5, max_calls_per_minute=
 callback_queue = VoiceCallbackQueue()
 
 
+async def resolve_voice_tenant(
+    session_id: str,
+    request: Request,
+    credentials=Depends(security_bearer),
+    correlation_id: str = Depends(get_correlation_id)
+) -> str:
+    """
+    F-01/F-13: the tenant of a voice session is established server-side only:
+      * staff/manager callers: verified bearer JWT (any session of their tenant);
+      * anonymous customer callers: the signed X-Voice-Session-Token issued when the
+        session was created, which must match the session in the path.
+    Client-supplied X-Tenant-ID headers are ignored.
+    """
+    if credentials and credentials.credentials:
+        ctx = await get_security_context(request, credentials, correlation_id)
+        return ctx.tenant_id
+    try:
+        claims = verify_voice_session_token(request.headers.get("X-Voice-Session-Token"))
+    except VoiceSessionTokenError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    if claims.session_id != session_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Voice session token does not match this session.")
+    from src.backend.core.database import current_tenant_id_ctx
+    current_tenant_id_ctx.set(claims.tenant_id)
+    return claims.tenant_id
+
+
 @router.post("/sessions", response_model=VoiceSessionResponse, status_code=status.HTTP_201_CREATED)
 async def create_voice_session(
     req: VoiceSessionCreateRequest,
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    ctx: SecurityContext = Depends(get_security_context),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
     Initializes a customer voice session or authenticated manager voice copilot session.
     Plays mandatory AI & recording disclosure before bi-directional audio.
+    F-01: creation requires an authenticated caller (staff, portal or widget backend);
+    the response carries a signed session token that anonymous customers use afterwards.
+    PSTN calls create sessions through the signature-verified telephony webhook instead.
     """
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
-    if not tenant_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant identification.")
+    tenant_id = ctx.tenant_id
 
-    manager_user_id = ctx.user_id if ctx and req.voice_mode.upper() == "MANAGER" else None
+    manager_user_id = ctx.user_id if req.voice_mode.upper() == "MANAGER" else None
 
     # Enforce manager permission
     if req.voice_mode.upper() == "MANAGER":
@@ -125,20 +161,17 @@ async def create_voice_session(
         started_at=session.started_at,
         ended_at=session.ended_at,
         metadata_json=session.metadata_json,
-        created_at=session.created_at
+        created_at=session.created_at,
+        session_token=issue_voice_session_token(session.tenant_id, session.session_id)
     )
 
 
 @router.get("/sessions/{session_id}", response_model=VoiceSessionResponse)
 async def get_voice_session(
     session_id: str,
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    tenant_id: str = Depends(resolve_voice_tenant),
     db: AsyncSession = Depends(get_db_session)
 ):
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
-    if not tenant_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant context.")
 
     service = VoiceSessionService(db)
     session = await service.get_session(tenant_id, session_id)
@@ -171,21 +204,40 @@ async def get_voice_session(
     )
 
 
+@router.post("/sessions/{session_id}/request-otp", status_code=status.HTTP_202_ACCEPTED)
+async def request_caller_otp(
+    session_id: str,
+    tenant_id: str = Depends(resolve_voice_tenant),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """
+    Issues a single-use verification code delivered out of band (SMS/WhatsApp) to the
+    caller identifier on file (SAI-01/SAI-03). The code is never returned here.
+    Fails closed with 503 when no delivery provider is configured.
+    """
+    service = VoiceSessionService(db)
+    try:
+        await service.issue_caller_otp(tenant_id, session_id)
+    except VoiceSessionNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except OtpDeliveryUnavailableError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
+    except VoiceSecurityError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return {"status": "OTP_SENT", "session_id": session_id}
+
+
 @router.post("/sessions/{session_id}/verify-caller", response_model=CustomerVerificationResponse)
 async def verify_caller_identity(
     session_id: str,
     req: CustomerVerificationRequest,
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    tenant_id: str = Depends(resolve_voice_tenant),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
     Customer verification via OTP/PIN (Control SAI-01, SAI-03).
     Prevents caller-ID spoofing from disclosing sensitive customer records.
     """
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
-    if not tenant_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant context.")
 
     service = VoiceSessionService(db)
     try:
@@ -204,17 +256,13 @@ async def verify_caller_identity(
 async def execute_voice_turn(
     session_id: str,
     req: VoiceTurnRequest,
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    tenant_id: str = Depends(resolve_voice_tenant),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
     Processes a voice turn with text or streaming audio input.
     Enforces VAD, language identification, tool execution, and audio synthesis.
     """
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
-    if not tenant_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant context.")
 
     service = VoiceSessionService(db)
     audio_chunk = None
@@ -247,17 +295,13 @@ async def execute_voice_turn(
 async def handle_barge_in_interruption(
     session_id: str,
     req: VoiceBargeInNotification,
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    tenant_id: str = Depends(resolve_voice_tenant),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
     Signals user interruption (barge-in).
     Cancels in-flight audio synthesis and queues user input turn.
     """
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
-    if not tenant_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant context.")
 
     service = VoiceSessionService(db)
     session = await service.get_session(tenant_id, session_id)
@@ -275,16 +319,12 @@ async def handle_barge_in_interruption(
 async def escalate_to_human(
     session_id: str,
     req: VoiceHandoffRequest,
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    tenant_id: str = Depends(resolve_voice_tenant),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
     Escalates voice call to a human operator (Control SAI-11).
     """
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
-    if not tenant_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant context.")
 
     service = VoiceSessionService(db)
     session = await service.get_session(tenant_id, session_id)
@@ -308,13 +348,9 @@ async def escalate_to_human(
 async def end_voice_session(
     session_id: str,
     req: VoiceSessionEndRequest,
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    tenant_id: str = Depends(resolve_voice_tenant),
     db: AsyncSession = Depends(get_db_session)
 ):
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
-    if not tenant_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant context.")
 
     service = VoiceSessionService(db)
     try:
@@ -385,28 +421,35 @@ async def confirm_manager_action(
     from src.backend.voice.manager_copilot import ManagerVoiceCopilot
     copilot = ManagerVoiceCopilot(db, ctx.tenant_id, ctx.user_id)
 
+    # F-06: spoken high-risk commands always need a FRESH TOTP verified against the
+    # manager's enrolled seed (session-level MFA is not enough for the voice channel).
+    step_up_ok = await verify_user_totp(db, ctx.tenant_id, ctx.user_id, req.totp_code)
     try:
-        action = copilot.action_guard.consume_action(req.action_token, req.totp_code)
-        return ManagerConfirmationResponse(
-            action_token=req.action_token,
-            executed=True,
-            result={"status": "EXECUTED", "action_type": action["action_type"]},
-            message=f"Action '{action['action_type']}' confirmed and executed successfully with step-up verification."
+        action = copilot.action_guard.consume_action(
+            req.action_token,
+            tenant_id=ctx.tenant_id,
+            user_id=ctx.user_id,
+            step_up_verified=step_up_ok
         )
     except VoiceSecurityError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    # No domain executor is wired for voice-initiated actions yet: report the truth
+    # (authorized, not executed) instead of claiming execution.
+    return ManagerConfirmationResponse(
+        action_token=req.action_token,
+        executed=False,
+        result={"status": "AUTHORIZED_PENDING_EXECUTION", "action_type": action["action_type"]},
+        message=(f"Action '{action['action_type']}' authorized with verified step-up MFA. "
+                 "It must be executed through the owning domain workflow; voice does not execute it.")
+    )
 
 
 @router.get("/sessions/{session_id}/transcripts", response_model=List[VoiceTranscriptResponse])
 async def list_session_transcripts(
     session_id: str,
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    tenant_id: str = Depends(resolve_voice_tenant),
     db: AsyncSession = Depends(get_db_session)
 ):
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
-    if not tenant_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant context.")
 
     from src.backend.models.entities import VoiceTranscript
     stmt = select(VoiceTranscript).where(
@@ -425,7 +468,7 @@ async def list_session_transcripts(
 async def websocket_voice_streaming(
     websocket: WebSocket,
     session_id: str,
-    tenant_id: Optional[str] = Query(None),
+    token: Optional[str] = Query(None, description="Signed voice session token"),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
@@ -433,23 +476,27 @@ async def websocket_voice_streaming(
     Processes live audio chunks, continuous VAD turn detection, barge-in cancellation,
     and streams back audio playback frames and transcripts.
     (Controls 28, 70; SAI-04, SAI-05)
+    F-13: the connection must present the signed session token issued at session
+    creation; the tenant comes from that token. Sessions are never auto-created here,
+    and recording consent is whatever was explicitly recorded for the session.
     """
-    await websocket.accept()
-    t_id = tenant_id or "t_voice_default"
+    try:
+        claims = verify_voice_session_token(token)
+    except VoiceSessionTokenError:
+        await websocket.close(code=4401)
+        return
+    if claims.session_id != session_id:
+        await websocket.close(code=4403)
+        return
+    t_id = claims.tenant_id
+    await bind_tenant_context(db, t_id)
     service = VoiceSessionService(db)
 
     session = await service.get_session(t_id, session_id)
     if not session:
-        session = await service.create_session(
-            tenant_id=t_id,
-            voice_mode="CUSTOMER",
-            channel_type="WEBSOCKET",
-            caller_identifier="ws_caller",
-            language="fr-FR",
-            recording_consent=True,
-            session_id=session_id
-        )
-        await db.commit()
+        await websocket.close(code=4404)
+        return
+    await websocket.accept()
 
     disc_text = CustomerVoiceAgent.MANDATORY_DISCLOSURE_TEXT.get(
         session.language,
@@ -507,6 +554,7 @@ async def websocket_voice_streaming(
                         audio_chunk=audio_turn_chunk
                     )
                     await db.commit()
+                    await bind_tenant_context(db, t_id)
                     is_active_playback = True
 
                     await websocket.send_json({
@@ -530,6 +578,7 @@ async def websocket_voice_streaming(
                         input_text=text_input
                     )
                     await db.commit()
+                    await bind_tenant_context(db, t_id)
                     is_active_playback = True
                     await websocket.send_json({
                         "type": "TURN_COMPLETED",
@@ -553,11 +602,19 @@ async def websocket_voice_streaming(
                     otp_code = data.get("otp_code", "")
                     v_res = await service.verify_caller_identity(t_id, session_id, otp_code)
                     await db.commit()
+                    await bind_tenant_context(db, t_id)
                     await websocket.send_json({
                         "type": "CALLER_VERIFIED",
                         "verified": v_res["verified"],
                         "message": v_res["message"]
                     })
+
+                elif msg_type == "REQUEST_OTP":
+                    try:
+                        await service.issue_caller_otp(t_id, session_id)
+                        await websocket.send_json({"type": "OTP_SENT", "session_id": session_id})
+                    except OtpDeliveryUnavailableError:
+                        await websocket.send_json({"type": "OTP_UNAVAILABLE", "session_id": session_id})
 
                 elif msg_type == "PING":
                     await websocket.send_json({"type": "PONG", "timestamp": time.time()})
@@ -572,60 +629,78 @@ async def websocket_voice_streaming(
 # TELEPHONY / SIP INBOUND WEBHOOK & CALLBACK QUEUE ENDPOINTS
 # =============================================================================
 
-@router.post("/telephony/inbound")
-async def telephony_inbound_webhook(
-    request: Request,
-    x_tenant_id: Optional[str] = Header(None),
-    x_twilio_signature: Optional[str] = Header(None),
-    x_telephony_signature: Optional[str] = Header(None),
-    db: AsyncSession = Depends(get_db_session)
-):
+async def _verify_telephony_request(request: Request, db: AsyncSession) -> tuple:
     """
-    Inbound phone call signaling webhook.
-    Enforces signature verification, anti-replay freshness, and call flood rate limits.
-    (Control 28, 70; SAI-04, SAI-05)
+    F-13: every telephony callback must be signed. The tenant is the owner of the
+    called number ('To') registered as a VOICE_SIP integration, and the signature is
+    verified with THAT integration's secret. Returns (params, integration).
     """
     body_bytes = await request.body()
-    headers = dict(request.headers)
-    params = {}
-    content_type = headers.get("content-type", "")
-
+    content_type = request.headers.get("content-type", "")
+    params: Dict[str, Any] = {}
     if "application/json" in content_type:
         params = json.loads(body_bytes.decode("utf-8")) if body_bytes else {}
     elif "application/x-www-form-urlencoded" in content_type:
         from urllib.parse import parse_qs
-        parsed = parse_qs(body_bytes.decode("utf-8"))
-        params = {k: v[0] for k, v in parsed.items()}
+        params = {k: v[0] for k, v in parse_qs(body_bytes.decode("utf-8")).items()}
 
-    tenant_id = x_tenant_id or params.get("tenant_id") or "t_telephony_default"
-    caller_id = params.get("From") or params.get("caller_id") or "+212600000000"
+    signature = request.headers.get("x-twilio-signature") or request.headers.get("x-telephony-signature")
+    ts_header = request.headers.get("x-telephony-timestamp")
+    called_number = params.get("To") or params.get("called_number")
+    if not signature or not ts_header or not called_number:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Signed telephony callback required (signature, timestamp and called number).")
 
-    # Enforce call flood rate limiter
+    integration = (await db.execute(select(TenantChannelIntegration).where(and_(
+        TenantChannelIntegration.channel_type == "VOICE_SIP",
+        TenantChannelIntegration.provider_asset_id == str(called_number),
+        TenantChannelIntegration.is_active.is_(True)
+    )))).scalars().first()
+    secret = integration.webhook_secret if integration else None
+    if not integration or not secret:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unknown or unconfigured telephony number.")
+
+    try:
+        timestamp = float(ts_header)
+        valid = telephony_verifier.verify_twilio_signature(
+            auth_token=secret,
+            webhook_url=str(request.url),
+            params=params,
+            signature=signature,
+            timestamp=timestamp,
+            nonce=params.get("CallSid") and f"{params.get('CallSid')}:{request.url.path}:{ts_header}"
+        )
+    except ReplayAttackDetectedError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid telephony timestamp.")
+    if not valid:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid telephony webhook signature.")
+    return params, integration
+
+
+@router.post("/telephony/inbound")
+async def telephony_inbound_webhook(
+    request: Request,
+    db: AsyncSession = Depends(get_db_session)
+):
+    """
+    Inbound phone call signaling webhook.
+    Enforces mandatory signature verification, anti-replay freshness, and call flood rate limits.
+    (Control 28, 70; SAI-04, SAI-05)
+    """
+    params, integration = await _verify_telephony_request(request, db)
+    tenant_id = integration.tenant_id
+    caller_id = params.get("From") or params.get("caller_id")
+    if not caller_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing caller identifier.")
+
     try:
         call_rate_limiter.acquire_call_slot(caller_id)
     except CallRateLimitExceededError as e:
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(e))
 
-    # Verify signature if signature header is provided
-    sig = x_twilio_signature or x_telephony_signature
-    if sig:
-        auth_token = "telephony_secret_token"
-        try:
-            is_valid = telephony_verifier.verify_twilio_signature(
-                auth_token=auth_token,
-                webhook_url=str(request.url),
-                params=params,
-                signature=sig,
-                timestamp=float(headers.get("x-telephony-timestamp", time.time()))
-            )
-            if not is_valid:
-                call_rate_limiter.release_call_slot(caller_id)
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid telephony webhook signature.")
-        except ReplayAttackDetectedError as e:
-            call_rate_limiter.release_call_slot(caller_id)
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-
-    # Initialize voice session
+    await bind_tenant_context(db, tenant_id)
     service = VoiceSessionService(db)
     session = await service.create_session(
         tenant_id=tenant_id,
@@ -633,17 +708,19 @@ async def telephony_inbound_webhook(
         channel_type="SIP",
         caller_identifier=caller_id,
         language="fr-FR",
-        recording_consent=True
+        recording_consent=False  # off by default until explicit consent is captured (SAI-04)
     )
     await db.commit()
 
+    session_token = issue_voice_session_token(tenant_id, session.session_id)
     disc_text = CustomerVoiceAgent.MANDATORY_DISCLOSURE_TEXT["fr-FR"]
     return {
         "status": "ACCEPTED",
         "session_id": session.session_id,
         "caller_id": caller_id,
         "disclosure_text": disc_text,
-        "stream_url": f"/api/v1/voice/ws/{session.session_id}?tenant_id={tenant_id}"
+        "session_token": session_token,
+        "stream_url": f"/api/v1/voice/ws/{session.session_id}?token={session_token}"
     }
 
 
@@ -652,29 +729,24 @@ async def telephony_status_webhook(
     request: Request,
     db: AsyncSession = Depends(get_db_session)
 ):
-    """Releases rate limiter slots on call termination."""
-    body_bytes = await request.body()
-    try:
-        data = json.loads(body_bytes.decode("utf-8")) if body_bytes else {}
-    except Exception:
-        data = {}
-
-    caller_id = data.get("From") or data.get("caller_id")
+    """Releases rate limiter slots on call termination (signed callbacks only)."""
+    params, _integration = await _verify_telephony_request(request, db)
+    caller_id = params.get("From") or params.get("caller_id")
     if caller_id:
         call_rate_limiter.release_call_slot(caller_id)
-
     return {"status": "ACKNOWLEDGED"}
 
 
 @router.post("/callbacks")
 async def request_voice_callback(
     req: Dict[str, Any],
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
-    x_tenant_id: Optional[str] = Header(None)
+    ctx: SecurityContext = Depends(get_security_context)
 ):
     """Registers customer callback request when operators are unavailable."""
-    tenant_id = ctx.tenant_id if ctx else (x_tenant_id or "t_callback_default")
-    caller_id = req.get("caller_id") or "+212600000000"
+    tenant_id = ctx.tenant_id
+    caller_id = req.get("caller_id")
+    if not caller_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="caller_id is required.")
     record = callback_queue.enqueue_callback(
         tenant_id=tenant_id,
         caller_id=caller_id,
@@ -687,10 +759,8 @@ async def request_voice_callback(
 
 @router.get("/callbacks")
 async def list_voice_callbacks(
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
-    x_tenant_id: Optional[str] = Header(None)
+    ctx: SecurityContext = Depends(get_security_context)
 ):
     """Lists registered customer callbacks for this tenant."""
-    tenant_id = ctx.tenant_id if ctx else (x_tenant_id or "t_callback_default")
-    callbacks = callback_queue.list_callbacks(tenant_id=tenant_id)
-    return {"tenant_id": tenant_id, "callbacks": callbacks}
+    callbacks = callback_queue.list_callbacks(tenant_id=ctx.tenant_id)
+    return {"tenant_id": ctx.tenant_id, "callbacks": callbacks}

@@ -187,28 +187,42 @@ class BaseAgent:
         # Step 5: Commercial Claim Grounding & Output Guard (Invariant 2 & Control 65, 66)
         # Extract evidence envelope from tool results, explicit evidence param, or input
         evidence_dict = {**(evidence or {}), **(input_data.evidence or {})}
+        # F-07/F-08: only authoritative (non-simulated) tool results become evidence,
+        # converted to the units the ClaimVerifier compares against (major currency units).
+        verified_prices = dict(evidence_dict.get("verified_prices", {}))
+        verified_stock = dict(evidence_dict.get("verified_stock_atp", {}))
+        verified_order_status = evidence_dict.get("verified_order_status")
+        verified_tracking = evidence_dict.get("verified_tracking_number")
+        currency = evidence_dict.get("currency", "MAD")
         for tc in tools_called:
+            res = tc.get("result") or {}
+            if not isinstance(res, dict) or res.get("simulated"):
+                continue
             if tc["tool"] == "pricing.calculate_quote":
-                res = tc["result"]
-                evidence_dict["price_cents"] = res.get("total_cents")
-                evidence_dict["total_cents"] = res.get("total_cents")
-                evidence_dict["subtotal_cents"] = res.get("subtotal_cents")
-                evidence_dict["currency"] = res.get("currency", "MAD")
+                for key in ("total_cents", "subtotal_cents", "tax_cents"):
+                    if res.get(key) is not None:
+                        verified_prices[f"quote_{key[:-6]}"] = res[key] / 100.0
+                currency = res.get("currency", currency)
+            elif tc["tool"] == "catalog.search":
+                for prod in res.get("products", []):
+                    verified_prices[prod["sku"]] = prod["price_cents"] / 100.0
             elif tc["tool"] == "inventory.check_atp":
-                evidence_dict["sku"] = tc["result"].get("sku")
-                evidence_dict["available_units"] = tc["result"].get("available_units")
+                verified_stock[res["sku"]] = int(res["available_units"])
+            elif tc["tool"] == "orders.get_status":
+                verified_order_status = res.get("payment_status")
+                verified_tracking = res.get("tracking_number")
 
-        envelope = None
-        if evidence_dict:
-            envelope = EvidenceEnvelope(
-                tenant_id=evidence_dict.get("tenant_id", security_context.tenant_id),
-                verified_prices=evidence_dict.get("verified_prices", {}),
-                verified_currency=evidence_dict.get("currency", "MAD"),
-                verified_stock_atp=evidence_dict.get("verified_stock_atp", {}),
-                approved_discounts_percent=evidence_dict.get("approved_discounts_percent", []),
-                verified_order_status=evidence_dict.get("verified_order_status"),
-                verified_tracking_number=evidence_dict.get("verified_tracking_number")
-            )
+        # Always build an envelope: an empty one means "nothing verified", so any
+        # commercial claim in the model output is rejected (fail closed).
+        envelope = EvidenceEnvelope(
+            tenant_id=security_context.tenant_id,
+            verified_prices=verified_prices,
+            verified_currency=currency,
+            verified_stock_atp=verified_stock,
+            approved_discounts_percent=evidence_dict.get("approved_discounts_percent", []),
+            verified_order_status=verified_order_status,
+            verified_tracking_number=verified_tracking
+        )
         guarded = OutputGuard.inspect_and_guard(
             text=raw_text,
             evidence=envelope,

@@ -25,14 +25,13 @@ router = APIRouter(prefix="/api/v1/integrations", tags=["Integrations & n8n"])
 
 @router.get("/status", response_model=Dict[str, Any])
 async def get_integrations_and_outbox_health(
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    ctx: SecurityContext = Depends(require_permission("integrations:manage")),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
     Returns health status of tenant integrations, outbox pending backlog, and DLQ counts.
     """
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
+    tenant_id = ctx.tenant_id
     if not tenant_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant identification.")
 
@@ -73,14 +72,13 @@ async def get_integrations_and_outbox_health(
 
 @router.get("/outbox/dlq", response_model=List[Dict[str, Any]])
 async def list_dead_letter_queue(
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    ctx: SecurityContext = Depends(require_permission("integrations:manage")),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
     Returns items quarantined in the Outbox Dead-Letter Queue (DLQ).
     """
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
+    tenant_id = ctx.tenant_id
     if not tenant_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant identification.")
 
@@ -109,14 +107,13 @@ async def list_dead_letter_queue(
 @router.post("/outbox/dlq/{event_id}/retry", response_model=Dict[str, Any])
 async def retry_dead_letter_event(
     event_id: str,
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    ctx: SecurityContext = Depends(require_permission("integrations:manage")),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
     Requeues a dead-letter event for fresh dispatch attempts.
     """
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
+    tenant_id = ctx.tenant_id
     if not tenant_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant identification.")
 
@@ -147,17 +144,19 @@ async def dispatch_n8n_event(
     event_type: str,
     webhook_url: str,
     payload: Dict[str, Any],
-    secret_key: Optional[str] = "test_n8n_hmac_secret",
-    idempotency_key: Optional[str] = None
+    idempotency_key: Optional[str] = None,
+    ctx: SecurityContext = Depends(require_permission("integrations:manage"))
 ):
     """
     Dispatches an event to an external peripheral n8n webhook with cryptographic HMAC signature.
+    The signing secret comes from server configuration, never from the caller (F-10/F-33).
     """
     import uuid
+    from src.backend.core.config import settings
     idemp = idempotency_key or str(uuid.uuid4())
     result = await N8NIntegrationGateway.dispatch_event_to_n8n(
         webhook_url=webhook_url,
-        secret_key=secret_key or "default_secret",
+        secret_key=settings.n8n_webhook_secret,
         event_type=event_type,
         payload=payload,
         idempotency_key=idemp
@@ -174,7 +173,10 @@ class VerifyBarrierRequest(BaseModel):
 
 
 @router.post("/n8n/verify-barrier", response_model=Dict[str, Any])
-async def verify_n8n_security_barrier(req: VerifyBarrierRequest):
+async def verify_n8n_security_barrier(
+    req: VerifyBarrierRequest,
+    ctx: SecurityContext = Depends(require_permission("integrations:manage"))
+):
     """
     Security check: Demonstrates that an n8n peripheral integration role is denied commercial mutations.
     """

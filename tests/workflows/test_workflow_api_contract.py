@@ -12,6 +12,15 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from src.backend.models.entities import Base, Tenant, Warehouse, Product, InventoryItem
 from src.backend.main import app
 from src.backend.core.database import get_db_session
+from src.backend.core.auth_middleware import get_security_context, SecurityContext
+
+
+def _operator_ctx(tenant_id: str) -> SecurityContext:
+    return SecurityContext(
+        user_id="u_ops_admin", tenant_id=tenant_id, email="ops@example.com", roles=["tenant_admin"],
+        permissions=["workflows:read", "workflows:manage", "notifications:manage", "integrations:manage"],
+        mfa_verified=True, jti="jti_ops", correlation_id="corr_ops"
+    )
 
 
 @asynccontextmanager
@@ -66,7 +75,16 @@ async def test_workflow_executions_api_lifecycle():
         tenant_id = "tenant-api-test"
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            headers = {"X-Tenant-Id": tenant_id}
+            # The tenant comes from the verified identity; a bare X-Tenant-Id header is rejected.
+            unauth = await client.get("/api/v1/workflows/executions", headers={"X-Tenant-Id": tenant_id})
+            assert unauth.status_code == 401
+            ctx = _operator_ctx(tenant_id)
+
+            async def _sec():
+                return ctx
+
+            app.dependency_overrides[get_security_context] = _sec
+            headers = {}
 
             # 1. Trigger Workflow Execution
             resp_trigger = await client.post(
@@ -110,7 +128,16 @@ async def test_notifications_api_lifecycle():
         tenant_id = "tenant-api-test"
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            headers = {"X-Tenant-Id": tenant_id}
+            # The tenant comes from the verified identity; a bare X-Tenant-Id header is rejected.
+            unauth = await client.get("/api/v1/workflows/executions", headers={"X-Tenant-Id": tenant_id})
+            assert unauth.status_code == 401
+            ctx = _operator_ctx(tenant_id)
+
+            async def _sec():
+                return ctx
+
+            app.dependency_overrides[get_security_context] = _sec
+            headers = {}
 
             # 1. Send Transactional Notification
             resp_send = await client.post(
@@ -156,7 +183,16 @@ async def test_integrations_and_n8n_barrier_api():
         tenant_id = "tenant-api-test"
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            headers = {"X-Tenant-Id": tenant_id}
+            # The tenant comes from the verified identity; a bare X-Tenant-Id header is rejected.
+            unauth = await client.get("/api/v1/workflows/executions", headers={"X-Tenant-Id": tenant_id})
+            assert unauth.status_code == 401
+            ctx = _operator_ctx(tenant_id)
+
+            async def _sec():
+                return ctx
+
+            app.dependency_overrides[get_security_context] = _sec
+            headers = {}
 
             # 1. Get Integration Status & DLQ metrics
             resp_status = await client.get("/api/v1/integrations/status", headers=headers)

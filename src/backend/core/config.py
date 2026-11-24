@@ -2,7 +2,7 @@
 Backend System Configuration & Security Environment Settings.
 """
 from typing import List
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -68,8 +68,59 @@ class Settings(BaseSettings):
     voice_telephony_secret: str = "dev_telephony_secret_change_in_prod"
     webchat_shared_token: str = "dev_webchat_token_change_in_prod"
 
+    # Payments: development-only fallback. Production secrets are stored per tenant in
+    # tenant_channel_integrations (channel_type 'PAYMENT_<PROVIDER>').
+    payment_webhook_secret: str = "dev_payment_webhook_secret_change_in_prod"
+    payment_webhook_tolerance_seconds: int = 300
+
+    # Signs short-lived customer voice session tokens (tenant + session binding).
+    voice_session_secret: str = Field(
+        default="dev_voice_session_signing_secret_change_in_prod_32b",
+        min_length=32
+    )
+    voice_session_token_ttl_seconds: int = 3600
+
+    # Peripheral n8n outbound signing secret.
+    n8n_webhook_secret: str = "dev_n8n_webhook_secret_change_in_prod"
+
     @property
     def cors_origins_list(self) -> List[str]:
         return [o.strip() for o in self.cors_allowed_origins.split(",") if o.strip()]
+
+    @property
+    def is_development(self) -> bool:
+        return self.environment.lower() in DEVELOPMENT_ENVIRONMENTS
+
+    @model_validator(mode="after")
+    def _reject_insecure_defaults_outside_development(self) -> "Settings":
+        """
+        F-10: Committed development defaults must never reach a non-development deployment.
+        Fails startup when any secret still equals its committed default, or when the
+        database is SQLite (no Row-Level Security).
+        """
+        if self.is_development:
+            return self
+        problems = [
+            name for name in SECRET_FIELDS
+            if getattr(self, name) == type(self).model_fields[name].default
+        ]
+        if self.database_url.startswith("sqlite"):
+            problems.append("database_url (SQLite has no Row-Level Security)")
+        if problems:
+            raise ValueError(
+                f"Refusing to start in environment '{self.environment}': insecure default "
+                f"configuration for {', '.join(problems)}. Provide real values via environment/secret store."
+            )
+        return self
+
+
+DEVELOPMENT_ENVIRONMENTS = {"development", "dev", "test", "testing", "local"}
+
+SECRET_FIELDS = (
+    "postgres_password", "redis_password", "jwt_secret_key", "mfa_encryption_key",
+    "s3_access_key", "s3_secret_key", "whatsapp_webhook_secret", "whatsapp_verify_token",
+    "email_webhook_secret", "voice_telephony_secret", "webchat_shared_token",
+    "payment_webhook_secret", "voice_session_secret", "n8n_webhook_secret",
+)
 
 settings = Settings()

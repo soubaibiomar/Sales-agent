@@ -14,6 +14,20 @@ from src.backend.main import app
 from src.backend.core.database import get_db_session
 from src.backend.core.auth_middleware import get_security_context, SecurityContext
 from src.backend.voice.audio_pipeline import SyntheticAudioGenerator
+from src.backend.voice.otp_delivery import register_otp_delivery_adapter
+from src.backend.core.security import SecurityService
+from src.backend.models.entities import User, Tenant
+
+MANAGER_TOTP_SEED = SecurityService.generate_totp_secret()
+
+
+class CapturingOtpDelivery:
+    """Test double for the SMS/WhatsApp OTP provider: records the code it would send."""
+    def __init__(self):
+        self.sent = {}
+
+    async def deliver(self, tenant_id, recipient, code, session_id):
+        self.sent[session_id] = code
 
 
 @asynccontextmanager
@@ -32,9 +46,19 @@ async def override_voice_api_dependencies():
             yield session
             await session.commit()
 
+    async with session_factory() as session:
+        session.add(Tenant(id="t_api_voice_mgr", name="Voice Mgr Tenant", slug="voice-mgr-tenant"))
+        session.add(User(
+            id="u_manager_api", tenant_id="t_api_voice_mgr", email="manager@example.com",
+            hashed_password="x", full_name="Manager", is_active=True, mfa_enabled=True,
+            mfa_secret=SecurityService.encrypt_mfa_secret(MANAGER_TOTP_SEED)
+        ))
+        await session.commit()
+
     app.dependency_overrides[get_db_session] = _get_test_db
     yield
     app.dependency_overrides.clear()
+    register_otp_delivery_adapter(None)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
     await engine.dispose()
@@ -44,14 +68,25 @@ async def override_voice_api_dependencies():
 async def test_full_customer_voice_api_lifecycle():
     async with override_voice_api_dependencies():
         tenant_id = "t_api_voice_01"
+        staff_ctx = SecurityContext(
+            user_id="u_agent_api", tenant_id=tenant_id, email="agent@example.com",
+            roles=["support_agent"], permissions=[], mfa_verified=False,
+            jti="jti_agent", correlation_id="corr_agent"
+        )
+
+        async def _staff_sec():
+            return staff_ctx
+
+        # Session creation requires an authenticated caller (portal/widget backend);
+        # all later customer calls use only the signed session token it returns.
+        app.dependency_overrides[get_security_context] = _staff_sec
+        otp_provider = CapturingOtpDelivery()
+        register_otp_delivery_adapter(otp_provider)
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            headers = {"X-Tenant-Id": tenant_id}
-
             # 1. Create Voice Session
             resp_create = await client.post(
                 "/api/v1/voice/sessions",
-                headers=headers,
                 json={
                     "voice_mode": "CUSTOMER",
                     "channel_type": "WEBRTC",
@@ -66,6 +101,8 @@ async def test_full_customer_voice_api_lifecycle():
             assert data_create["disclosure_played"] is True
             assert "enregistré" in data_create["disclosure_text"]
             assert data_create["is_caller_verified"] is False
+            assert data_create["session_token"]
+            headers = {"X-Voice-Session-Token": data_create["session_token"]}
 
             # 2. Execute Public Voice Turn (Text input)
             resp_turn1 = await client.post(
@@ -89,11 +126,20 @@ async def test_full_customer_voice_api_lifecycle():
             data_turn2 = resp_turn2.json()
             assert "vérification de sécurité" in data_turn2["agent_response_text"]
 
-            # 4. Caller Identity Verification with OTP
-            resp_verify = await client.post(
+            # 4. Caller Identity Verification with an out-of-band delivered OTP
+            resp_static = await client.post(
                 f"/api/v1/voice/sessions/{session_id}/verify-caller",
                 headers=headers,
                 json={"otp_code": "123456"}
+            )
+            assert resp_static.json()["verified"] is False  # no static/demo code is accepted
+            resp_req = await client.post(f"/api/v1/voice/sessions/{session_id}/request-otp", headers=headers)
+            assert resp_req.status_code == 202
+            assert "otp" not in resp_req.text.lower().replace("otp_sent", "")
+            resp_verify = await client.post(
+                f"/api/v1/voice/sessions/{session_id}/verify-caller",
+                headers=headers,
+                json={"otp_code": otp_provider.sent[session_id]}
             )
             assert resp_verify.status_code == 200
             assert resp_verify.json()["verified"] is True
@@ -172,7 +218,7 @@ async def test_manager_copilot_api_and_step_up_mfa_flow():
 
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            headers = {"X-Tenant-Id": tenant_id}
+            headers = {}
 
             # 1. Safe query: sales insight
             resp_sales = await client.post(
@@ -196,12 +242,22 @@ async def test_manager_copilot_api_and_step_up_mfa_flow():
             assert data_cmd["action_preview"] is not None
             token = data_cmd["action_preview"]["action_token"]
 
-            # 3. Confirm with valid 6-digit Step-Up MFA TOTP
+            # 3. A well-formed but wrong code is rejected (no format-only checks)
+            wrong_code = "000000" if SecurityService.generate_totp_code(MANAGER_TOTP_SEED) != "000000" else "111111"
+            resp_bad = await client.post(
+                "/api/v1/voice/copilot/confirm-action",
+                headers=headers,
+                json={"action_token": token, "totp_code": wrong_code, "confirmed": True}
+            )
+            assert resp_bad.status_code == 403
+
+            # 4. Confirm with a TOTP that verifies against the manager's enrolled seed
             resp_confirm = await client.post(
                 "/api/v1/voice/copilot/confirm-action",
                 headers=headers,
-                json={"action_token": token, "totp_code": "123456", "confirmed": True}
+                json={"action_token": token, "totp_code": SecurityService.generate_totp_code(MANAGER_TOTP_SEED), "confirmed": True}
             )
             assert resp_confirm.status_code == 200
-            assert resp_confirm.json()["executed"] is True
-            assert "confirmed and executed" in resp_confirm.json()["message"]
+            # Voice authorizes; it never executes the high-risk action itself.
+            assert resp_confirm.json()["executed"] is False
+            assert "authorized with verified step-up MFA" in resp_confirm.json()["message"]

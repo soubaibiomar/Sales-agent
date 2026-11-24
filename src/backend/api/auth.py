@@ -10,7 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.backend.core.config import settings
 from src.backend.core.security import SecurityService
-from src.backend.core.database import get_db_session, current_tenant_id_ctx
+from src.backend.core.database import (
+    get_db_session, current_tenant_id_ctx, bind_tenant_context, resolve_login_tenants
+)
 from src.backend.core.policy_service import policy_service
 from src.backend.core.auth_middleware import (
     get_security_context, SecurityContext, get_correlation_id
@@ -36,13 +38,18 @@ async def login(
     Authenticates user credentials.
     If privileged role or MFA enabled, requires step-up MFA verification before issuing full access token.
     """
-    # Query user by email (and optional tenant_id)
-    stmt = select(User).where(User.email == req.email)
-    if req.tenant_id:
-        stmt = stmt.where(User.tenant_id == req.tenant_id)
-    
-    res = await db.execute(stmt)
-    user = res.scalars().first()
+    # F-09: resolve the tenant through the RLS-compatible pre-auth lookup, then bind it
+    # so the remaining queries run under Row-Level Security as the least-privileged role.
+    user = None
+    candidate_tenants = await resolve_login_tenants(db, req.email, req.tenant_id)
+    if len(candidate_tenants) == 1:
+        login_tenant_id = candidate_tenants[0]
+        await bind_tenant_context(db, login_tenant_id)
+        stmt = select(User).where(User.email == req.email, User.tenant_id == login_tenant_id)
+        res = await db.execute(stmt)
+        user = res.scalars().first()
+    # Zero matches, or an email registered in several tenants without tenant_id:
+    # same generic failure as a wrong password (no account enumeration).
 
     if not user or not user.is_active:
         SecurityService.verify_dummy_password(req.password)
@@ -74,6 +81,7 @@ async def login(
     # Reset failed attempts
     user.failed_login_attempts = 0
     await db.commit()
+    await bind_tenant_context(db, user.tenant_id)  # GUC is transaction-local
 
     # Fetch user roles
     role_stmt = (
@@ -184,6 +192,13 @@ async def verify_mfa(
     user_id = payload.get("sub")
     tenant_id = payload.get("tenant_id")
     roles = payload.get("roles", [])
+    if not user_id or not tenant_id or payload.get("type") == "refresh":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"error": "Invalid temporary token", "correlation_id": correlation_id}
+        )
+    # Tenant comes from a signature-verified token, so it can be bound for RLS.
+    await bind_tenant_context(db, tenant_id)
 
     user_stmt = select(User).where(User.id == user_id, User.tenant_id == tenant_id)
     user_res = await db.execute(user_stmt)

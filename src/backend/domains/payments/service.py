@@ -218,7 +218,11 @@ class PaymentService:
         provider: str,
         raw_payload_str: str,
         signature: str,
-        webhook_secret: str
+        webhook_secret: str,
+        timestamp: Optional[int] = None,
+        require_timestamp: bool = False,
+        tolerance_seconds: int = 300,
+        require_amount_match: bool = False
     ) -> Dict[str, Any]:
         """
         Processes verified inbound payment webhook callbacks.
@@ -226,7 +230,18 @@ class PaymentService:
         and authoritative state transition (Controls 31, 32, 59).
         """
         # 1. Cryptographic HMAC verification
-        if not self.verify_webhook_signature(raw_payload_str, signature, webhook_secret):
+        # F-02: when a timestamp is used it is part of the signed message ("<ts>.<body>"),
+        # so it cannot be altered, and stale deliveries are rejected.
+        if require_timestamp and timestamp is None:
+            raise InvalidWebhookSignatureError("Missing signed webhook timestamp")
+        if timestamp is not None:
+            import time as _time
+            if abs(int(_time.time()) - int(timestamp)) > tolerance_seconds:
+                raise InvalidWebhookSignatureError("Webhook timestamp outside tolerance window (replay protection)")
+            signed_message = f"{int(timestamp)}.{raw_payload_str}"
+        else:
+            signed_message = raw_payload_str
+        if not self.verify_webhook_signature(signed_message, signature, webhook_secret):
             raise InvalidWebhookSignatureError("Inbound webhook HMAC signature verification failed")
 
         payload = json.loads(raw_payload_str)
@@ -269,6 +284,16 @@ class PaymentService:
             ).with_for_update()
             res = await self.db.execute(stmt)
             intent = res.scalar_one_or_none()
+            if intent and require_amount_match:
+                # F-02: the provider-reported amount/currency must match the intent exactly.
+                data_obj = payload.get("data", {}) if isinstance(payload.get("data"), dict) else {}
+                data_obj = data_obj.get("object", data_obj) if isinstance(data_obj.get("object"), dict) else data_obj
+                reported_amount = payload.get("amount_cents", data_obj.get("amount"))
+                reported_currency = (payload.get("currency") or data_obj.get("currency") or "").upper()
+                if reported_amount is None or int(reported_amount) != int(intent.amount_cents):
+                    raise PaymentError("Webhook amount does not match the payment intent amount")
+                if reported_currency and reported_currency != (intent.currency or "").upper():
+                    raise PaymentError("Webhook currency does not match the payment intent currency")
             if intent and intent.status != "SUCCEEDED":
                 intent.status = "SUCCEEDED"
                 provider_tx_id = f"tx_wh_{uuid.uuid4().hex[:12]}"
@@ -327,20 +352,41 @@ class PaymentService:
         if amount_cents <= 0:
             raise PaymentError("Refund amount must be greater than zero")
 
+        # Lock the order so concurrent refund requests are serialised (F-03).
         order_stmt = select(SalesOrder).where(
             and_(SalesOrder.id == order_id, SalesOrder.tenant_id == tenant_id)
-        )
+        ).with_for_update()
         order_res = await self.db.execute(order_stmt)
         order = order_res.scalar_one_or_none()
         if not order:
             raise PaymentError("Order not found")
 
-        if order.payment_status != "PAID":
+        # Idempotency: replaying the same key returns the original request; reusing it
+        # for different terms is rejected (F-03).
+        if idempotency_key:
+            existing = (await self.db.execute(select(RefundRequest).where(and_(
+                RefundRequest.tenant_id == tenant_id,
+                RefundRequest.idempotency_key == idempotency_key
+            )))).scalars().first()
+            if existing:
+                if existing.order_id == order.id and existing.amount_cents == amount_cents:
+                    return existing
+                raise PaymentError("Idempotency key already used for a different refund request")
+
+        if order.payment_status not in ("PAID", "PARTIALLY_REFUNDED"):
             raise PaymentError(f"Cannot refund order with payment_status {order.payment_status}. Must be PAID.")
 
         if amount_cents > order.grand_total_cents:
             raise RefundExceedsPaidAmountError(
                 f"Refund amount {amount_cents} cents exceeds order total {order.grand_total_cents} cents"
+            )
+
+        # Cumulative ceiling: open + completed refunds can never exceed the paid amount (F-03).
+        already_committed = await self._committed_refund_cents(tenant_id, order.id)
+        if already_committed + amount_cents > order.grand_total_cents:
+            raise RefundExceedsPaidAmountError(
+                f"Refund amount {amount_cents} cents plus existing refunds {already_committed} cents "
+                f"exceeds order total {order.grand_total_cents} cents"
             )
 
         refund = RefundRequest(
@@ -356,6 +402,20 @@ class PaymentService:
         self.db.add(refund)
         await self.db.flush()
         return refund
+
+    async def _committed_refund_cents(
+        self, tenant_id: str, order_id: str,
+        statuses: tuple = ("REQUESTED", "APPROVED", "COMPLETED")
+    ) -> int:
+        from sqlalchemy import func
+        total = (await self.db.execute(
+            select(func.coalesce(func.sum(RefundRequest.amount_cents), 0)).where(and_(
+                RefundRequest.tenant_id == tenant_id,
+                RefundRequest.order_id == order_id,
+                RefundRequest.status.in_(statuses)
+            ))
+        )).scalar()
+        return int(total or 0)
 
     async def approve_and_process_refund(
         self,
@@ -379,6 +439,23 @@ class PaymentService:
         if refund.status != "REQUESTED":
             return refund
 
+        # Four-eyes principle: the requester can never approve their own refund (F-03).
+        if refund.requested_by_user_id and refund.requested_by_user_id == approved_by_user_id:
+            raise UnauthorizedRefundError("Segregation of duties: a refund cannot be approved by its requester")
+
+        # Defence in depth: re-check the cumulative ceiling at approval time.
+        order_lock = (await self.db.execute(
+            select(SalesOrder).where(SalesOrder.id == refund.order_id, SalesOrder.tenant_id == tenant_id).with_for_update()
+        )).scalar_one()
+        completed = await self._committed_refund_cents(tenant_id, refund.order_id, statuses=("COMPLETED",))
+        if completed + refund.amount_cents > order_lock.grand_total_cents:
+            raise RefundExceedsPaidAmountError(
+                f"Approving would refund {completed + refund.amount_cents} cents, "
+                f"exceeding order total {order_lock.grand_total_cents} cents"
+            )
+
+        # NOTE: no payment provider is integrated; the provider refund id below is still
+        # simulated. A real provider refund call must happen before COMPLETED in production.
         provider_refund_id = f"re_{uuid.uuid4().hex[:16]}"
         refund.status = "COMPLETED"
         refund.approved_by_user_id = approved_by_user_id
@@ -404,8 +481,13 @@ class PaymentService:
         order_res = await self.db.execute(order_stmt)
         order = order_res.scalar_one()
 
-        order.payment_status = "REFUNDED"
-        order.status = "REFUNDED"
+        # Only a full refund refunds the order; partial refunds are tracked as such.
+        total_refunded = completed + refund.amount_cents
+        if total_refunded >= order.grand_total_cents:
+            order.payment_status = "REFUNDED"
+            order.status = "REFUNDED"
+        else:
+            order.payment_status = "PARTIALLY_REFUNDED"
         order.version += 1
 
         audit = AuditEvent(

@@ -703,6 +703,9 @@ class ToolGateway:
         self._handlers: Dict[str, Callable] = {}
         self._schemas: Dict[str, ToolDefinition] = {}
         self._register_default_tools()
+        # F-07: commercial-fact tools are answered by tenant-scoped domain data only.
+        from src.ai.domain_tool_handlers import register_domain_tool_handlers
+        register_domain_tool_handlers(self)
 
     def _register_default_tools(self):
         # 1. Catalog & Inventory
@@ -929,8 +932,18 @@ class ToolGateway:
         # Step 5: Execute handler with timeout deadline
         handler = self._handlers.get(tool_name)
         if not handler:
-            # Default deterministic built-in mock/fallback handlers for standard tools
-            return await self._execute_builtin_tool(tool_name, validated_input, context, db_session)
+            from src.ai.domain_tool_handlers import AUTHORITATIVE_FACT_TOOLS
+            if tool_name in AUTHORITATIVE_FACT_TOOLS:
+                # Never answer prices/stock/payment status from fixtures (F-07).
+                raise DomainServiceRejectedError(
+                    f"No authoritative handler registered for '{tool_name}'.", code="SERVICE_REJECTED"
+                )
+            # Remaining tools are not yet wired to domain services. Their placeholder
+            # output is explicitly labelled so it can never be used as verified evidence.
+            res = await self._execute_builtin_tool(tool_name, validated_input, context, db_session)
+            if isinstance(res, dict):
+                res = {**res, "simulated": True}
+            return res
 
         try:
             res = await asyncio.wait_for(

@@ -16,7 +16,8 @@ from httpx import AsyncClient, ASGITransport
 from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-from src.backend.models.entities import Base
+from src.backend.models.entities import Base, Tenant, TenantChannelIntegration
+from src.backend.core.auth_middleware import get_security_context, SecurityContext
 from src.backend.main import app
 from src.backend.core.database import get_db_session
 from src.backend.voice.telephony import (
@@ -30,6 +31,16 @@ from src.backend.voice.telephony import (
 )
 
 
+SIP_TEST_NUMBER = "+212522000999"
+SIP_TEST_SECRET = "sip-test-secret-" + uuid.uuid4().hex
+
+
+def _twilio_headers(url: str, params: dict) -> dict:
+    data = url + "".join(f"{k}{params[k]}" for k in sorted(params))
+    sig = base64.b64encode(hmac.new(SIP_TEST_SECRET.encode(), data.encode(), hashlib.sha1).digest()).decode()
+    return {"X-Twilio-Signature": sig, "X-Telephony-Timestamp": str(time.time())}
+
+
 @asynccontextmanager
 async def setup_telephony_db():
     unique_id = uuid.uuid4().hex
@@ -40,6 +51,14 @@ async def setup_telephony_db():
     session_factory = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    async with session_factory() as session:
+        session.add(Tenant(id="t_api_telephony_01", name="Telephony Tenant", slug="telephony-tenant"))
+        session.add(TenantChannelIntegration(
+            tenant_id="t_api_telephony_01", channel_type="VOICE_SIP",
+            provider_asset_id=SIP_TEST_NUMBER, webhook_secret=SIP_TEST_SECRET
+        ))
+        await session.commit()
 
     async def _get_test_db():
         async with session_factory() as session:
@@ -169,28 +188,50 @@ async def test_telephony_inbound_api_and_callbacks():
         tenant_id = "t_api_telephony_01"
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            headers = {"X-Tenant-Id": tenant_id}
+            # 0. Unsigned callbacks and client-chosen tenants are rejected
+            resp_unsigned = await client.post(
+                "/api/v1/voice/telephony/inbound",
+                headers={"X-Tenant-Id": tenant_id},
+                json={"From": "+212612345678", "To": SIP_TEST_NUMBER, "CallSid": "CA998877"}
+            )
+            assert resp_unsigned.status_code == 401
 
-            # 1. Inbound Webhook
+            # 1. Signed Inbound Webhook: tenant derived from the called number's integration
+            inbound_params = {"From": "+212612345678", "To": SIP_TEST_NUMBER, "CallSid": "CA998877"}
             resp_inbound = await client.post(
                 "/api/v1/voice/telephony/inbound",
-                headers=headers,
-                json={"From": "+212612345678", "CallSid": "CA998877"}
+                headers=_twilio_headers("http://test/api/v1/voice/telephony/inbound", inbound_params),
+                json=inbound_params
             )
             assert resp_inbound.status_code == 200
             data_inbound = resp_inbound.json()
             assert data_inbound["status"] == "ACCEPTED"
             assert "ws" in data_inbound["stream_url"]
+            assert "token=" in data_inbound["stream_url"]
             assert data_inbound["caller_id"] == "+212612345678"
 
-            # 2. Status Webhook
+            # 2. Signed Status Webhook
+            status_params = {"From": "+212612345678", "To": SIP_TEST_NUMBER, "CallDuration": "45"}
             resp_status = await client.post(
                 "/api/v1/voice/telephony/status",
-                headers=headers,
-                json={"From": "+212612345678", "CallDuration": "45"}
+                headers=_twilio_headers("http://test/api/v1/voice/telephony/status", status_params),
+                json=status_params
             )
             assert resp_status.status_code == 200
             assert resp_status.json()["status"] == "ACKNOWLEDGED"
+
+            # Callbacks are an authenticated staff API
+            staff_ctx = SecurityContext(
+                user_id="u_tel_agent", tenant_id=tenant_id, email="agent@example.com", roles=["support_agent"],
+                permissions=[], mfa_verified=False, jti="jti_tel", correlation_id="corr_tel"
+            )
+
+            async def _staff_sec():
+                return staff_ctx
+
+            assert (await client.get("/api/v1/voice/callbacks", headers={"X-Tenant-Id": tenant_id})).status_code == 401
+            app.dependency_overrides[get_security_context] = _staff_sec
+            headers = {}
 
             # 3. Request Callback
             resp_cb = await client.post(

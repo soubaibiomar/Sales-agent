@@ -17,7 +17,8 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.backend.core.config import settings
-from src.backend.core.database import init_db
+from contextlib import asynccontextmanager
+from src.backend.core.database import init_db, assert_rls_enforced_connection
 from src.backend.api.auth import router as auth_router
 from src.backend.api.tenants import router as tenants_router
 from src.backend.api.users import router as users_router
@@ -66,11 +67,21 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         
         return response
 
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # F-09: never serve traffic on a connection that silently bypasses tenant RLS.
+    warning = await assert_rls_enforced_connection()
+    if warning:
+        logger.warning(f"[SECURITY] {warning}")
+    yield
+
+
 app = FastAPI(
     title="Sales AI Management Platform API",
     version="1.0.0",
     docs_url="/api/docs" if settings.environment == "development" else None,
-    redoc_url=None
+    redoc_url=None,
+    lifespan=lifespan
 )
 
 # Attach Middlewares

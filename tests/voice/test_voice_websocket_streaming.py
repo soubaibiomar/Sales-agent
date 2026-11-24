@@ -13,6 +13,31 @@ from src.backend.models.entities import Base
 from src.backend.main import app
 from src.backend.core.database import get_db_session
 from src.backend.voice.audio_pipeline import SyntheticAudioGenerator
+from src.backend.voice.session_tokens import issue_voice_session_token
+from src.backend.voice.otp_delivery import register_otp_delivery_adapter
+
+
+class CapturingOtpDelivery:
+    def __init__(self):
+        self.sent = {}
+
+    async def deliver(self, tenant_id, recipient, code, session_id):
+        self.sent[session_id] = code
+
+
+def _create_session_via_api(client, tenant_id: str) -> tuple:
+    """Voice sessions are created by the authenticated API (never by the socket itself)."""
+    from src.backend.core.auth_middleware import get_security_context, SecurityContext
+
+    async def _staff():
+        return SecurityContext(user_id="u_ws_staff", tenant_id=tenant_id, email="s@x.test", roles=["support_agent"],
+                               permissions=[], mfa_verified=False, jti="jti_ws", correlation_id="corr_ws")
+    app.dependency_overrides[get_security_context] = _staff
+    resp = client.post("/api/v1/voice/sessions", json={"voice_mode": "CUSTOMER", "channel_type": "WEBSOCKET",
+                                                        "caller_identifier": "+212611000000", "language": "fr-FR"})
+    assert resp.status_code == 201, resp.text
+    app.dependency_overrides.pop(get_security_context)
+    return resp.json()["session_id"], resp.json()["session_token"]
 
 
 def test_voice_websocket_full_lifecycle():
@@ -38,10 +63,19 @@ def test_voice_websocket_full_lifecycle():
 
     try:
         client = TestClient(app)
-        session_id = f"ws_sess_{uuid.uuid4().hex[:8]}"
+        session_id, token = _create_session_via_api(client, "t_ws_01")
+        otp_provider = CapturingOtpDelivery()
+        register_otp_delivery_adapter(otp_provider)
+
+        # 0. Without the signed session token the socket is refused
+        import pytest
+        from starlette.websockets import WebSocketDisconnect
+        with pytest.raises(WebSocketDisconnect):
+            with client.websocket_connect(f"/api/v1/voice/ws/{session_id}?tenant_id=t_ws_01") as ws:
+                ws.receive_json()
 
         # 1. Connect WebSocket
-        with client.websocket_connect(f"/api/v1/voice/ws/{session_id}?tenant_id=t_ws_01") as ws:
+        with client.websocket_connect(f"/api/v1/voice/ws/{session_id}?token={token}") as ws:
             # 2. Receive initial session initialization with statutory disclosure
             init_frame = ws.receive_json()
             assert init_frame["type"] == "SESSION_INITIALIZED"
@@ -69,10 +103,14 @@ def test_voice_websocket_full_lifecycle():
             assert barge_frame["type"] == "BARGE_IN_CONFIRMED"
             assert barge_frame["status"] == "PLAYBACK_CANCELLED"
 
-            # 5. Send Caller Verification Frame (OTP code)
+            # 5. Static code is refused; the out-of-band delivered OTP verifies the caller
+            ws.send_json({"type": "VERIFY_CALLER", "otp_code": "123456"})
+            assert ws.receive_json()["verified"] is False
+            ws.send_json({"type": "REQUEST_OTP"})
+            assert ws.receive_json()["type"] == "OTP_SENT"
             ws.send_json({
                 "type": "VERIFY_CALLER",
-                "otp_code": "123456"
+                "otp_code": otp_provider.sent[session_id]
             })
             verify_frame = ws.receive_json()
             assert verify_frame["type"] == "CALLER_VERIFIED"
@@ -85,9 +123,10 @@ def test_voice_websocket_full_lifecycle():
 
     finally:
         app.dependency_overrides.clear()
+        register_otp_delivery_adapter(None)
         async def _drop():
-            async with engine.begin() as conn:
-                await conn.run_sync(Base.metadata.drop_all)
+            # The in-memory database disappears with its last connection; dropping tables
+            # through a pooled connection owned by the TestClient's event loop is not possible.
             await engine.dispose()
         asyncio.run(_drop())
 
@@ -115,9 +154,9 @@ def test_voice_websocket_binary_audio_pcm_streaming():
 
     try:
         client = TestClient(app)
-        session_id = f"ws_audio_{uuid.uuid4().hex[:8]}"
+        session_id, token = _create_session_via_api(client, "t_ws_02")
 
-        with client.websocket_connect(f"/api/v1/voice/ws/{session_id}?tenant_id=t_ws_02") as ws:
+        with client.websocket_connect(f"/api/v1/voice/ws/{session_id}?token={token}") as ws:
             init_frame = ws.receive_json()
             assert init_frame["type"] == "SESSION_INITIALIZED"
 
@@ -132,8 +171,9 @@ def test_voice_websocket_binary_audio_pcm_streaming():
 
     finally:
         app.dependency_overrides.clear()
+        register_otp_delivery_adapter(None)
         async def _drop():
-            async with engine.begin() as conn:
-                await conn.run_sync(Base.metadata.drop_all)
+            # The in-memory database disappears with its last connection; dropping tables
+            # through a pooled connection owned by the TestClient's event loop is not possible.
             await engine.dispose()
         asyncio.run(_drop())

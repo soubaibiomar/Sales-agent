@@ -33,14 +33,13 @@ router = APIRouter(prefix="/api/v1/workflows", tags=["Durable Workflows"])
 @router.post("/executions", response_model=WorkflowExecutionResponse, status_code=status.HTTP_201_CREATED)
 async def trigger_workflow_execution(
     req: WorkflowExecutionCreateRequest,
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    ctx: SecurityContext = Depends(require_permission("workflows:manage")),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
     Triggers an asynchronous durable workflow saga with guaranteed idempotency.
     """
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
+    tenant_id = ctx.tenant_id
     if not tenant_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant identification.")
 
@@ -71,11 +70,10 @@ async def trigger_workflow_execution(
 async def list_workflow_executions(
     status_filter: Optional[str] = None,
     workflow_type: Optional[str] = None,
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    ctx: SecurityContext = Depends(require_permission("workflows:read")),
     db: AsyncSession = Depends(get_db_session)
 ):
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
+    tenant_id = ctx.tenant_id
     if not tenant_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant identification.")
 
@@ -96,11 +94,10 @@ async def list_workflow_executions(
 @router.get("/executions/{execution_id}", response_model=WorkflowExecutionResponse)
 async def get_workflow_execution(
     execution_id: str,
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    ctx: SecurityContext = Depends(require_permission("workflows:read")),
     db: AsyncSession = Depends(get_db_session)
 ):
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
+    tenant_id = ctx.tenant_id
     if not tenant_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant identification.")
 
@@ -120,14 +117,13 @@ async def get_workflow_execution(
 
 @router.post("/recovery/resume", response_model=Dict[str, Any])
 async def resume_interrupted_workflows(
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    ctx: SecurityContext = Depends(require_permission("workflows:manage")),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
     Operator endpoint: Resumes or compensates workflows interrupted by a sudden process restart.
     """
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
+    tenant_id = ctx.tenant_id
     engine = WorkflowEngine(db)
     recovered = await engine.resume_interrupted_workflows(tenant_id)
     await db.commit()
@@ -142,11 +138,10 @@ async def resume_interrupted_workflows(
 
 @router.get("/automations/rules", response_model=List[AutomationRuleResponse])
 async def list_automation_rules(
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    ctx: SecurityContext = Depends(require_permission("workflows:read")),
     db: AsyncSession = Depends(get_db_session)
 ):
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
+    tenant_id = ctx.tenant_id
     if not tenant_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant identification.")
 
@@ -158,11 +153,10 @@ async def list_automation_rules(
 @router.post("/automations/rules", response_model=AutomationRuleResponse, status_code=status.HTTP_201_CREATED)
 async def create_automation_rule(
     req: AutomationRuleCreateRequest,
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    ctx: SecurityContext = Depends(require_permission("workflows:manage")),
     db: AsyncSession = Depends(get_db_session)
 ):
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
+    tenant_id = ctx.tenant_id
     if not tenant_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant identification.")
 

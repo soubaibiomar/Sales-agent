@@ -30,14 +30,13 @@ router = APIRouter(prefix="/api/v1/notifications", tags=["Notifications"])
 @router.post("/send", response_model=NotificationLogResponse, status_code=status.HTTP_201_CREATED)
 async def send_notification(
     req: NotificationSendRequest,
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    ctx: SecurityContext = Depends(require_permission("notifications:manage")),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
     Sends or enqueues a notification governed by Moroccan quiet hours, multi-script STOP opt-out, and frequency caps.
     """
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
+    tenant_id = ctx.tenant_id
     if not tenant_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant identification.")
 
@@ -64,11 +63,10 @@ async def list_notification_history(
     channel_type: Optional[str] = None,
     message_class: Optional[str] = None,
     status_filter: Optional[str] = None,
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    ctx: SecurityContext = Depends(require_permission("notifications:manage")),
     db: AsyncSession = Depends(get_db_session)
 ):
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
+    tenant_id = ctx.tenant_id
     if not tenant_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant identification.")
 
@@ -90,11 +88,10 @@ async def list_notification_history(
 @router.get("/templates", response_model=List[NotificationTemplateResponse])
 async def list_templates(
     channel_type: Optional[str] = None,
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    ctx: SecurityContext = Depends(require_permission("notifications:manage")),
     db: AsyncSession = Depends(get_db_session)
 ):
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
+    tenant_id = ctx.tenant_id
     if not tenant_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant identification.")
 
@@ -110,11 +107,10 @@ async def list_templates(
 @router.post("/templates", response_model=NotificationTemplateResponse, status_code=status.HTTP_201_CREATED)
 async def create_template(
     req: NotificationTemplateCreateRequest,
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    ctx: SecurityContext = Depends(require_permission("notifications:manage")),
     db: AsyncSession = Depends(get_db_session)
 ):
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
+    tenant_id = ctx.tenant_id
     if not tenant_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant identification.")
 
@@ -140,14 +136,13 @@ async def create_template(
 @router.post("/opt-out", response_model=Dict[str, Any])
 async def process_opt_out(
     req: OptOutRequest,
-    x_tenant_id: Optional[str] = Header(None),
-    ctx: Optional[SecurityContext] = Depends(get_optional_security_context),
+    ctx: SecurityContext = Depends(require_permission("notifications:manage")),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
     Registers an explicit STOP / opt-out directive across French, English, Darija, or Arabic.
     """
-    tenant_id = ctx.tenant_id if ctx else x_tenant_id
+    tenant_id = ctx.tenant_id
     if not tenant_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing tenant identification.")
 

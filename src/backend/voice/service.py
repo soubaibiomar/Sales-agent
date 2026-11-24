@@ -111,6 +111,25 @@ class VoiceSessionService:
         res = await self.db.execute(stmt)
         return res.scalar_one_or_none()
 
+    async def issue_caller_otp(self, tenant_id: str, session_id: str) -> None:
+        """
+        Generates a single-use OTP for the session and delivers it out of band to the
+        caller identifier on file. Raises OtpDeliveryUnavailableError when no provider
+        is configured (fail closed). The code is never returned to the API caller.
+        """
+        from src.backend.voice.otp_delivery import get_otp_delivery_adapter
+        session = await self.get_session(tenant_id, session_id)
+        if not session:
+            raise VoiceSessionNotFoundError(f"Voice session '{session_id}' not found.")
+        if not session.caller_identifier:
+            raise VoiceSecurityError("No caller identifier on file to deliver a verification code to.")
+        code = self.verification_manager.generate_otp(session_id, session.caller_identifier)
+        try:
+            await get_otp_delivery_adapter().deliver(tenant_id, session.caller_identifier, code, session_id)
+        except Exception:
+            self.verification_manager._tokens.pop(session_id, None)
+            raise
+
     async def verify_caller_identity(
         self,
         tenant_id: str,
@@ -125,11 +144,9 @@ class VoiceSessionService:
         if not session:
             raise VoiceSessionNotFoundError(f"Voice session '{session_id}' not found.")
 
+        # F-05: only a server-issued, out-of-band delivered, single-use OTP is accepted.
+        # (The former static '123456' fallback has been removed.)
         is_valid = self.verification_manager.verify_otp(session_id, otp_code)
-        if not is_valid:
-            # Check test/demo token '123456'
-            if otp_code.strip() == "123456":
-                is_valid = True
 
         if is_valid:
             session.is_caller_verified = True

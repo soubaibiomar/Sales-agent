@@ -22,11 +22,45 @@ from src.backend.schemas.payments import (
     PaymentConfirmRequest, PaymentTransactionResponse,
     RefundCreateRequest, RefundResponse
 )
-from src.backend.models.entities import PaymentIntent, PaymentTransaction, RefundRequest
+from src.backend.models.entities import PaymentIntent, PaymentTransaction, RefundRequest, TenantChannelIntegration
+from src.backend.core.config import settings
+from src.backend.core.database import bind_tenant_context
+from src.backend.core.step_up import is_step_up_satisfied
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/payments", tags=["Payments & Refunds"])
 
-DEFAULT_WEBHOOK_SECRET = os.getenv("PAYMENT_WEBHOOK_SECRET", "whsec_test_secret_for_sales_ai_sandbox_hmac_256")
+
+
+class RefundApproveRequest(BaseModel):
+    mfa_code: Optional[str] = None  # TOTP code, verified server-side against the approver's seed
+
+
+def _parse_signature_headers(x_signature: Optional[str], x_timestamp: Optional[str], stripe_signature: Optional[str]):
+    """Returns (signature, timestamp) from either our header pair or a Stripe-style 't=..,v1=..' header."""
+    if stripe_signature:
+        parts = dict(p.split("=", 1) for p in stripe_signature.split(",") if "=" in p)
+        ts = parts.get("t")
+        return parts.get("v1"), (int(ts) if ts and ts.isdigit() else None)
+    return x_signature, (int(x_timestamp) if x_timestamp and x_timestamp.isdigit() else None)
+
+
+async def _resolve_payment_webhook_secret(db: AsyncSession, tenant_id: str, provider: str) -> Optional[str]:
+    """
+    F-02: per-tenant provider secret from tenant_channel_integrations
+    (channel_type 'PAYMENT_<PROVIDER>'). The shared configured secret is a
+    development-only fallback and is refused in any other environment.
+    """
+    integration = (await db.execute(select(TenantChannelIntegration).where(and_(
+        TenantChannelIntegration.channel_type == f"PAYMENT_{provider.upper()}",
+        TenantChannelIntegration.tenant_id == tenant_id,
+        TenantChannelIntegration.is_active.is_(True)
+    )))).scalars().first()
+    if integration and integration.webhook_secret:
+        return integration.webhook_secret
+    if settings.is_development:
+        return settings.payment_webhook_secret
+    return None
 
 
 @router.post("/intents", response_model=PaymentIntentResponse, status_code=status.HTTP_201_CREATED)
@@ -75,21 +109,28 @@ async def confirm_payment_intent(
 @router.post("/webhook")
 async def process_payment_webhook(
     request: Request,
-    tenant_id: str = Query(..., description="Target tenant ID"),
+    tenant_id: str = Query(..., description="Target tenant ID (authenticated by the tenant's own webhook secret)"),
     provider: str = Query("STRIPE_SANDBOX"),
     x_signature_sha256: Optional[str] = Header(None, alias="X-Signature-SHA256"),
+    x_signature_timestamp: Optional[str] = Header(None, alias="X-Signature-Timestamp"),
     stripe_signature: Optional[str] = Header(None, alias="Stripe-Signature"),
     db: AsyncSession = Depends(get_db_session)
 ):
-    signature = x_signature_sha256 or stripe_signature
-    if not signature:
+    signature, timestamp = _parse_signature_headers(x_signature_sha256, x_signature_timestamp, stripe_signature)
+    if not signature or timestamp is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing required cryptographic webhook signature (X-Signature-SHA256 or Stripe-Signature)"
+            detail="Missing webhook signature or signed timestamp"
         )
 
-    raw_body_bytes = await request.body()
-    raw_payload_str = raw_body_bytes.decode("utf-8")
+    secret = await _resolve_payment_webhook_secret(db, tenant_id, provider)
+    if not secret:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Webhook source not configured for tenant")
+
+    raw_payload_str = (await request.body()).decode("utf-8")
+    # The tenant id is only trusted because the payload must verify with THAT tenant's
+    # secret; the service verifies the signature before reading any tenant data.
+    await bind_tenant_context(db, tenant_id)
 
     service = PaymentService(db)
     try:
@@ -98,7 +139,11 @@ async def process_payment_webhook(
             provider=provider,
             raw_payload_str=raw_payload_str,
             signature=signature,
-            webhook_secret=DEFAULT_WEBHOOK_SECRET
+            webhook_secret=secret,
+            timestamp=timestamp,
+            require_timestamp=True,
+            tolerance_seconds=settings.payment_webhook_tolerance_seconds,
+            require_amount_match=True
         )
         return result
     except InvalidWebhookSignatureError as e:
@@ -133,12 +178,13 @@ async def create_refund_request(
 @router.post("/refunds/{refund_id}/approve", response_model=RefundResponse)
 async def approve_refund(
     refund_id: str,
-    x_mfa_verified: Optional[str] = Header(None, alias="X-MFA-Verified"),
-    mfa_verified: bool = Query(False, description="MFA step-up verification token"),
+    req: Optional[RefundApproveRequest] = None,
     ctx: SecurityContext = Depends(require_permission("quotes:approve")),
     db: AsyncSession = Depends(get_db_session)
 ):
-    is_mfa_verified = (x_mfa_verified == "true") or mfa_verified
+    # F-03: MFA is proven server-side (MFA-verified session token or a TOTP code that
+    # verifies against the approver's seed) - never by a client header or query flag.
+    is_mfa_verified = await is_step_up_satisfied(db, ctx, req.mfa_code if req else None)
     service = PaymentService(db)
     try:
         refund = await service.approve_and_process_refund(
@@ -150,6 +196,8 @@ async def approve_refund(
         return refund
     except UnauthorizedRefundError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except RefundExceedsPaidAmountError as e:
+        raise HTTPException(status_code=422, detail=str(e))
     except PaymentError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 

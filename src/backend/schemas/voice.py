@@ -39,6 +39,7 @@ class VoiceSessionResponse(BaseModel):
     ended_at: Optional[datetime] = None
     metadata_json: Dict[str, Any] = Field(default_factory=dict)
     created_at: datetime
+    session_token: Optional[str] = None  # signed tenant+session binding, only returned on creation
 
 
 class VoiceSessionEndRequest(BaseModel):

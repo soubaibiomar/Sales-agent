@@ -503,9 +503,14 @@ async def test_scenario_d_manager_copilot_and_privileged_mfa():
         # 3. Step-up MFA verification
         from src.backend.voice.security import VoiceSecurityError
         with pytest.raises(VoiceSecurityError, match="Step-Up TOTP code required"):
-            copilot.action_guard.consume_action(action_token, totp_code="")
+            copilot.action_guard.consume_action(action_token, tenant_id=tenant_id, user_id=manager_id, step_up_verified=False)
 
-        confirmed = copilot.action_guard.consume_action(action_token, totp_code="654321")
+        # A different user (even with a verified second factor) cannot consume the token
+        with pytest.raises(VoiceSecurityError, match="not issued to this user"):
+            copilot.action_guard.consume_action(action_token, tenant_id=tenant_id, user_id="someone_else", step_up_verified=True)
+
+        # Server-verified step-up (TOTP checked against the enrolled seed by the API layer) succeeds
+        confirmed = copilot.action_guard.consume_action(action_token, tenant_id=tenant_id, user_id=manager_id, step_up_verified=True)
         assert confirmed["action_type"] == "APPROVE_PURCHASE_ORDER"
         assert confirmed["user_id"] == manager_id
 
