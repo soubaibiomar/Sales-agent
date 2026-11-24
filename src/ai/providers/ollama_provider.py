@@ -27,9 +27,12 @@ from src.ai.model_lifecycle import lifecycle_manager, VoiceModelSafetyError  # n
 logger = logging.getLogger("SalesAI.OllamaProvider")
 
 MAX_9B_CONTEXT_TOKENS = 4096
-# Measured cold-load times on the reference laptop are 15 s (4B) and 28 s (9B).
+# Measured cold-load times on the reference laptop are 15 s (4B) and 28 s (9B) when RAM
+# is free, but up to ~70-90+ s for 9B under memory pressure (16 GB host, ~0.4 GB free
+# during the full test run). 9B is only used for background reasoning, so it gets a
+# longer budget; interactive 4B turns keep 60 s.
 DEFAULT_GENERATION_TIMEOUT_S = 60.0
-COLD_START_TIMEOUT_S = 90.0
+COLD_START_TIMEOUT_S = 180.0
 
 
 class ModelUnavailableError(RuntimeError):

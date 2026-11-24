@@ -17,6 +17,18 @@ from src.backend.core.security import SecurityService
 from src.backend.core.database import get_db_session
 
 
+class _DeterministicModel:
+    """Explicit model test double: these are API contract tests, not model-quality tests (see tests/agents/conftest.py)."""
+    async def generate(self, prompt, system_prompt=None, model=None, max_tokens=1024, temperature=0.2, timeout=None, **kw):
+        return {"content": "Demande bien reçue ; un conseiller confirmera les détails.", "model": model or "qwen3.5:4b", "metrics": {}}
+
+
+@pytest.fixture(autouse=True)
+def _deterministic_model(monkeypatch):
+    from src.ai.model_gateway import model_gateway
+    monkeypatch.setattr(model_gateway, "local_provider", _DeterministicModel())
+
+
 @asynccontextmanager
 async def get_agent_api_env():
     db_id = uuid.uuid4().hex

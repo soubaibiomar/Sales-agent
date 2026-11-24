@@ -62,3 +62,8 @@ tmp/
 *.sqlite3
 backups/
 
+
+# Database dumps / backups (F-22: never commit data exports)
+*.dump
+*.sql.gz
+*.backup

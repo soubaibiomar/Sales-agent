@@ -202,8 +202,25 @@ async def carrier_tracking_webhook(
     headers = dict(request.headers)
     service = LogisticsService(db)
 
-    # Use tenant's carrier webhook secret (or default testing secret)
-    secret = "amana_webhook_secret_default" if carrier_code.upper() == "AMANA" else "simulated_webhook_secret_default"
+    # F-10/F-30: the tenant's own carrier secret (CARRIER_<CODE> integration, encrypted at
+    # rest). The shared configured secret is a development-only fallback. The tenant in
+    # the header is only trusted because the body must verify with THAT tenant's secret.
+    from sqlalchemy import select as _select, and_ as _and
+    from src.backend.core.config import settings
+    from src.backend.core.database import bind_tenant_context
+    from src.backend.models.entities import TenantChannelIntegration
+    integration = (await db.execute(_select(TenantChannelIntegration).where(_and(
+        TenantChannelIntegration.channel_type == f"CARRIER_{carrier_code.upper()}",
+        TenantChannelIntegration.tenant_id == x_tenant_id,
+        TenantChannelIntegration.is_active.is_(True)
+    )))).scalars().first()
+    if integration and integration.webhook_secret:
+        secret = integration.webhook_secret
+    elif settings.is_development:
+        secret = settings.carrier_webhook_secret
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Carrier webhook not configured for tenant.")
+    await bind_tenant_context(db, x_tenant_id)
 
     try:
         return await service.process_carrier_webhook(

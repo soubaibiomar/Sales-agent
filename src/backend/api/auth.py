@@ -2,6 +2,7 @@
 Authentication & Session Lifecycle API Endpoints.
 Covers: Login, Step-up MFA, Session Refresh, and Immediate JTI Revocation on Logout.
 """
+import uuid
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List
 from fastapi import APIRouter, Depends, HTTPException, status, Request
@@ -129,18 +130,21 @@ async def login(
             )
         )
 
-    # Issue standard full tokens
+    # Issue standard full tokens (one session family per login, F-21)
+    family_id = str(uuid.uuid4())
     access_token, jti, exp = SecurityService.create_access_token(
         user_id=user.id,
         tenant_id=user.tenant_id,
         email=user.email,
         roles=roles,
         permissions=permissions,
-        mfa_verified=False
+        mfa_verified=False,
+        family_id=family_id
     )
     refresh_token, _, _ = SecurityService.create_refresh_token(
         user_id=user.id,
-        tenant_id=user.tenant_id
+        tenant_id=user.tenant_id,
+        family_id=family_id
     )
 
     # Log successful login audit event
@@ -227,17 +231,20 @@ async def verify_mfa(
 
     # Issue verified access token
     permissions = await policy_service.get_user_permissions_from_db(db, user.id, user.tenant_id)
+    family_id = str(uuid.uuid4())
     access_token, jti, exp = SecurityService.create_access_token(
         user_id=user.id,
         tenant_id=user.tenant_id,
         email=user.email,
         roles=roles,
         permissions=permissions,
-        mfa_verified=True
+        mfa_verified=True,
+        family_id=family_id
     )
     refresh_token, _, _ = SecurityService.create_refresh_token(
         user_id=user.id,
-        tenant_id=user.tenant_id
+        tenant_id=user.tenant_id,
+        family_id=family_id
     )
 
     return TokenResponse(
@@ -276,19 +283,101 @@ async def setup_mfa(
 
     return MFASetupResponse(secret=secret, otpauth_uri=uri)
 
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh_session(
+    req: RefreshTokenRequest,
+    db: AsyncSession = Depends(get_db_session),
+    correlation_id: str = Depends(get_correlation_id)
+):
+    """
+    Rotates a refresh token (F-21). Each refresh token is single-use: it is revoked as
+    soon as it is exchanged. Presenting an already-used refresh token is treated as theft:
+    the whole session family is revoked, including access tokens already issued from it.
+    Roles and permissions are re-read from the database on every refresh.
+    """
+    def _deny(msg: str):
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                             detail={"error": msg, "correlation_id": correlation_id})
+    try:
+        payload = SecurityService.decode_token(req.refresh_token)
+    except Exception:
+        raise _deny("Invalid refresh token")
+    user_id, tenant_id = payload.get("sub"), payload.get("tenant_id")
+    jti, family_id = payload.get("jti"), payload.get("fam")
+    if payload.get("type") != "refresh" or not (user_id and tenant_id and jti and family_id):
+        raise _deny("Invalid refresh token")
+
+    await bind_tenant_context(db, tenant_id)
+    family_marker = f"family:{family_id}"
+    revoked = {r.token_jti for r in (await db.execute(
+        select(SessionRevocation).where(SessionRevocation.token_jti.in_([jti, family_marker]))
+    )).scalars().all()}
+    expires = datetime.fromtimestamp(int(payload["exp"]), tz=timezone.utc)
+    if family_marker in revoked:
+        raise _deny("Session has been revoked")
+    if jti in revoked:
+        # Reuse of a rotated token: assume it was stolen and kill the whole session.
+        db.add(SessionRevocation(token_jti=family_marker, tenant_id=tenant_id, user_id=user_id,
+                                 expires_at=expires, reason="refresh_token_reuse_detected"))
+        db.add(AuditEvent(tenant_id=tenant_id, actor_id=user_id, event_type="AUTH_REFRESH_REUSE",
+                          resource_type="SESSION", resource_id=family_id, action="REVOKE_FAMILY", status="BLOCKED"))
+        await db.commit()
+        raise _deny("Refresh token reuse detected; session revoked")
+
+    user = (await db.execute(select(User).where(User.id == user_id, User.tenant_id == tenant_id))).scalars().first()
+    tenant = (await db.execute(select(Tenant).where(Tenant.id == tenant_id))).scalars().first()
+    if not user or not user.is_active or not tenant or not tenant.is_active:
+        raise _deny("Account or tenant is inactive")
+
+    roles = [r[0] for r in (await db.execute(
+        select(Role.name).join(UserRole, UserRole.role_id == Role.id)
+        .where(UserRole.user_id == user.id, UserRole.tenant_id == tenant_id)
+    )).all()] or ["sales_representative"]
+    # Privileged sessions must re-authenticate with MFA rather than silently extend.
+    if settings.enforce_mfa_for_managers and (policy_service.has_privileged_role(roles) or user.mfa_enabled):
+        raise _deny("Re-authentication with MFA required")
+    permissions = await policy_service.get_user_permissions_from_db(db, user.id, tenant_id)
+
+    db.add(SessionRevocation(token_jti=jti, tenant_id=tenant_id, user_id=user_id,
+                             expires_at=expires, reason="refresh_rotated"))
+    access_token, _, _ = SecurityService.create_access_token(
+        user_id=user.id, tenant_id=tenant_id, email=user.email, roles=roles,
+        permissions=permissions, mfa_verified=False, family_id=family_id
+    )
+    new_refresh, _, _ = SecurityService.create_refresh_token(user_id=user.id, tenant_id=tenant_id, family_id=family_id)
+    await db.commit()
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=new_refresh,
+        token_type="Bearer",
+        expires_in=settings.access_token_expire_minutes * 60,
+        mfa_required=False,
+        user=UserSummary(id=user.id, tenant_id=tenant_id, email=user.email, full_name=user.full_name,
+                         roles=roles, mfa_enabled=user.mfa_enabled, is_active=user.is_active)
+    )
+
+
 @router.post("/logout")
 async def logout(
     context: SecurityContext = Depends(get_security_context),
     db: AsyncSession = Depends(get_db_session)
 ):
-    """Revokes active token immediately by recording JTI in session_revocations table."""
-    revocation = SessionRevocation(
+    """Revokes the presented token and its whole session family (incl. refresh tokens)."""
+    expires_at = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days)
+    db.add(SessionRevocation(
         token_jti=context.jti,
         tenant_id=context.tenant_id,
         user_id=context.user_id,
-        expires_at=datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes),
+        expires_at=expires_at,
         reason="user_logout"
-    )
-    db.add(revocation)
+    ))
+    if context.family_id:
+        db.add(SessionRevocation(
+            token_jti=f"family:{context.family_id}",
+            tenant_id=context.tenant_id,
+            user_id=context.user_id,
+            expires_at=expires_at,
+            reason="user_logout"
+        ))
     await db.commit()
     return {"status": "SUCCESS", "message": "Session revoked successfully"}

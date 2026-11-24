@@ -26,6 +26,15 @@ PG_CONN_STR = "postgresql://sales_app_user:sales_app_dev_password@127.0.0.1:5432
 def get_connection():
     return psycopg.connect(PG_CONN_STR, autocommit=False)
 
+
+def _admin_conn_str() -> str:
+    """Superuser connection for test setup/teardown only; the app role cannot delete tenants (F-12)."""
+    import re
+    from pathlib import Path
+    compose = (Path(__file__).resolve().parents[2] / "infra" / "docker-compose.yml").read_text(encoding="utf-8")
+    pw = re.search(r"POSTGRES_PASSWORD:-([^}]+)\}", compose).group(1)
+    return f"postgresql://postgres:{pw}@127.0.0.1:5432/sales_ai_db"
+
 def set_tenant_context(cur, tenant_id: str):
     """Sets local transaction-bound tenant context via injection-safe set_config."""
     cur.execute("SELECT set_config('app.current_tenant_id', %s, true);", (tenant_id,))
@@ -33,7 +42,7 @@ def set_tenant_context(cur, tenant_id: str):
 @pytest.fixture(scope="module")
 def setup_pg_tenants():
     """Sets up two isolated test tenants in real PostgreSQL."""
-    conn = get_connection()
+    conn = psycopg.connect(_admin_conn_str(), autocommit=False)
     with conn.cursor() as cur:
         tenant_a = str(uuid.uuid4())
         tenant_b = str(uuid.uuid4())
@@ -50,7 +59,7 @@ def setup_pg_tenants():
     yield tenant_a, tenant_b
 
     # Teardown
-    with get_connection() as cleanup_conn:
+    with psycopg.connect(_admin_conn_str()) as cleanup_conn:
         with cleanup_conn.cursor() as cur:
             cur.execute("DELETE FROM tenants WHERE slug IN ('test-rls-a', 'test-rls-b');")
         cleanup_conn.commit()
@@ -302,5 +311,23 @@ def test_rls_persists_across_migrations_and_reconnects():
         original_6 = {"organization_sites", "users", "user_roles", "session_revocations", "audit_logs", "feature_flags"}
         found_tables = {p[0] for p in policies}
         assert original_6.issubset(found_tables), f"Missing original RLS policies: {original_6 - found_tables}"
-        assert len(policies) in (6, 12, 13, 25, 36, 56, 59, 64, 67, 71, 79), f"Expected 6, 12, 13, 25, 36, 56, 59, 64, 67, 71, or 79 active RLS policies, found {len(policies)}"
+        # Coverage check instead of a hard-coded list of historical counts (which could
+        # never fail): EVERY table carrying tenant_id - except the tenant registry's own
+        # integration lookup table - must have RLS enabled, forced, and a tenant policy.
+        cur.execute("""
+            SELECT c.relname, c.relrowsecurity, c.relforcerowsecurity
+            FROM pg_class c
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = 'public' AND c.relkind = 'r'
+              AND EXISTS (SELECT 1 FROM information_schema.columns col
+                          WHERE col.table_schema = 'public' AND col.table_name = c.relname AND col.column_name = 'tenant_id')
+        """)
+        tenant_tables = cur.fetchall()
+        # tenant_channel_integrations is read before a tenant is known (webhook routing);
+        # its secrets are encrypted at rest (migration 016) instead.
+        exempt = {"tenant_channel_integrations"}
+        missing = [name for name, enabled, forced in tenant_tables
+                   if name not in exempt and not (enabled and forced and name in found_tables)]
+        assert len(tenant_tables) >= 80
+        assert not missing, f"Tenant tables without enforced RLS + tenant policy: {missing}"
     conn.close()

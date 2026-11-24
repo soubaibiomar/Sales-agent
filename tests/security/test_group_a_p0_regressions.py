@@ -274,15 +274,22 @@ async def test_f06_manager_action_needs_real_totp_and_same_user():
         assert ok.json()["result"]["status"] == "AUTHORIZED_PENDING_EXECUTION"
 
 
-def test_f06_guard_unit_binding():
-    guard = ManagerPrivilegedActionGuard()
-    prev = guard.create_action_preview(TA, MGR_A, "APPROVE_PO", {}, "s")
+@pytest.mark.asyncio
+async def test_f06_guard_unit_binding():
     from src.backend.voice.security import VoiceSecurityError
-    with pytest.raises(VoiceSecurityError):
-        guard.consume_action(prev["action_token"], tenant_id=TA, user_id=MGR_A, step_up_verified=False)
-    with pytest.raises(VoiceSecurityError):
-        guard.consume_action(prev["action_token"], tenant_id=TB, user_id=MGR_B, step_up_verified=True)
-    assert guard.consume_action(prev["action_token"], tenant_id=TA, user_id=MGR_A, step_up_verified=True)["action_type"] == "APPROVE_PO"
+    async with p0_env() as (_, factory):
+        async with factory() as s:
+            guard = ManagerPrivilegedActionGuard(s)
+            prev = await guard.create_action_preview(TA, MGR_A, "APPROVE_PO", {}, "s")
+            with pytest.raises(VoiceSecurityError):
+                await guard.consume_action(prev["action_token"], tenant_id=TA, user_id=MGR_A, step_up_verified=False)
+            with pytest.raises(VoiceSecurityError):
+                await guard.consume_action(prev["action_token"], tenant_id=TB, user_id=MGR_B, step_up_verified=True)
+            ok = await guard.consume_action(prev["action_token"], tenant_id=TA, user_id=MGR_A, step_up_verified=True)
+            assert ok["action_type"] == "APPROVE_PO"
+            # Single use
+            with pytest.raises(VoiceSecurityError):
+                await guard.consume_action(prev["action_token"], tenant_id=TA, user_id=MGR_A, step_up_verified=True)
 
 
 # ---------------------------------------------------------------- F-13 telephony / websocket

@@ -7,7 +7,8 @@ periodic durable jobs, per tenant, under Row-Level Security:
 
   * outbox relay      - OutboxService.dispatch_pending_events (SKIP LOCKED leases + fencing
                         tokens, so several worker processes can run safely in parallel);
-  * reservation expiry - InventoryService.expire_stale_reservations (row locks).
+  * reservation expiry - InventoryService.expire_stale_reservations (row locks);
+  * data retention   - purge expired recordings/transcripts and voice security state.
 
 Channel delivery: no WhatsApp/email/SMS provider is integrated yet. The default dispatcher
 therefore reports failure, so events retry and dead-letter instead of being marked
@@ -69,12 +70,46 @@ class PlatformWorker:
             await s.commit()
             return count
 
+    async def _apply_retention(self, tenant_id: str) -> int:
+        """
+        F-13 / AGENTS.md section 7: purge voice recordings past their retention date (90 days),
+        transcripts older than the transcript retention (365 days), and expired voice
+        security state (OTP challenges, action previews, telephony nonces).
+        Recording *metadata* rows are deleted here; the audio objects themselves must be
+        expired by the object store lifecycle policy (no storage client is integrated yet).
+        """
+        from datetime import datetime, timedelta, timezone
+        from sqlalchemy import delete
+        from src.backend.core.config import settings
+        from src.backend.models.entities import (
+            VoiceRecording, VoiceTranscript, VoiceOtpChallenge, ManagerActionPreview, TelephonyReplayNonce
+        )
+        now = datetime.now(timezone.utc)
+        transcript_cutoff = now - timedelta(days=settings.data_retention_days_transcripts)
+        audio_cutoff = now - timedelta(days=settings.data_retention_days_audio)
+        purged = 0
+        async with self.session_factory() as s:
+            await bind_tenant_context(s, tenant_id)
+            for stmt in (
+                delete(VoiceRecording).where(VoiceRecording.tenant_id == tenant_id,
+                                             (VoiceRecording.expires_at < now) | (VoiceRecording.created_at < audio_cutoff)),
+                delete(VoiceTranscript).where(VoiceTranscript.tenant_id == tenant_id, VoiceTranscript.created_at < transcript_cutoff),
+                delete(VoiceOtpChallenge).where(VoiceOtpChallenge.tenant_id == tenant_id, VoiceOtpChallenge.expires_at < now),
+                delete(ManagerActionPreview).where(ManagerActionPreview.tenant_id == tenant_id, ManagerActionPreview.expires_at < now),
+                delete(TelephonyReplayNonce).where(TelephonyReplayNonce.tenant_id == tenant_id, TelephonyReplayNonce.expires_at < now),
+            ):
+                purged += (await s.execute(stmt)).rowcount or 0
+            await s.commit()
+        return purged
+
     async def run_cycle(self) -> Dict[str, int]:
         """One pass over every active tenant. A failure in one tenant never blocks the others."""
-        totals = {"tenants": 0, "outbox_processed": 0, "reservations_expired": 0, "errors": 0}
+        totals = {"tenants": 0, "outbox_processed": 0, "reservations_expired": 0, "retention_purged": 0, "errors": 0}
         for tenant_id in await self._active_tenants():
             totals["tenants"] += 1
-            for key, job in (("outbox_processed", self._relay_outbox), ("reservations_expired", self._expire_reservations)):
+            for key, job in (("outbox_processed", self._relay_outbox),
+                             ("reservations_expired", self._expire_reservations),
+                             ("retention_purged", self._apply_retention)):
                 try:
                     totals[key] += await job(tenant_id)
                 except Exception as exc:  # noqa: BLE001 - logged and counted, cycle continues
@@ -86,7 +121,7 @@ class PlatformWorker:
         logger.info(f"[{self.worker_id}] started (poll {self.poll_interval}s)")
         while not self._stop.is_set():
             totals = await self.run_cycle()
-            if totals["outbox_processed"] or totals["reservations_expired"] or totals["errors"]:
+            if any(totals[k] for k in ("outbox_processed", "reservations_expired", "retention_purged", "errors")):
                 logger.info(f"[{self.worker_id}] cycle: {totals}")
             try:
                 await asyncio.wait_for(self._stop.wait(), timeout=self.poll_interval)

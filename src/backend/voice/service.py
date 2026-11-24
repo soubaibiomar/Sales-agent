@@ -37,7 +37,7 @@ class VoiceSessionNotFoundError(VoiceSecurityError):
 class VoiceSessionService:
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.verification_manager = VoiceIdentityVerificationManager()
+        self.verification_manager = VoiceIdentityVerificationManager(db)
 
     # -------------------------------------------------------------------------
     # 1. SESSION LIFECYCLE
@@ -123,11 +123,11 @@ class VoiceSessionService:
             raise VoiceSessionNotFoundError(f"Voice session '{session_id}' not found.")
         if not session.caller_identifier:
             raise VoiceSecurityError("No caller identifier on file to deliver a verification code to.")
-        code = self.verification_manager.generate_otp(session_id, session.caller_identifier)
+        code = await self.verification_manager.generate_otp(tenant_id, session_id)
         try:
             await get_otp_delivery_adapter().deliver(tenant_id, session.caller_identifier, code, session_id)
         except Exception:
-            self.verification_manager._tokens.pop(session_id, None)
+            await self.verification_manager.discard(tenant_id, session_id)
             raise
 
     async def verify_caller_identity(
@@ -146,7 +146,7 @@ class VoiceSessionService:
 
         # F-05: only a server-issued, out-of-band delivered, single-use OTP is accepted.
         # (The former static '123456' fallback has been removed.)
-        is_valid = self.verification_manager.verify_otp(session_id, otp_code)
+        is_valid = await self.verification_manager.verify_otp(tenant_id, session_id, otp_code)
 
         if is_valid:
             session.is_caller_verified = True

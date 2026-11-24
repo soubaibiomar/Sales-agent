@@ -80,6 +80,11 @@ class Settings(BaseSettings):
     )
     voice_session_token_ttl_seconds: int = 3600
 
+    # Encrypts integration credentials (channel/payment/carrier webhook secrets) at rest (F-30).
+    integration_secret_key: str = Field(default="dev_integration_secret_encryption_key_change_in_prod", min_length=32)
+    # Development-only fallback for carrier webhooks; tenants register their own secret (CARRIER_<CODE>).
+    carrier_webhook_secret: str = "dev_carrier_webhook_secret_change_in_prod"
+
     # Signs public quote acceptance/rejection links (F-14).
     quote_link_secret: str = Field(default="dev_quote_link_signing_secret_change_in_prod_32b", min_length=32)
     quote_link_ttl_days: int = 45
@@ -129,6 +134,7 @@ SECRET_FIELDS = (
     "s3_access_key", "s3_secret_key", "whatsapp_webhook_secret", "whatsapp_verify_token",
     "email_webhook_secret", "voice_telephony_secret", "webchat_shared_token",
     "payment_webhook_secret", "voice_session_secret", "n8n_webhook_secret", "quote_link_secret",
+    "integration_secret_key", "carrier_webhook_secret",
 )
 
 settings = Settings()

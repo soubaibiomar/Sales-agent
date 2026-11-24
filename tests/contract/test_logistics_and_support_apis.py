@@ -317,7 +317,8 @@ async def test_logistics_shipment_and_webhook_api():
             "timestamp": utc_now().isoformat()
         }
         raw_body = json.dumps(webhook_payload).encode("utf-8")
-        secret = "simulated_webhook_secret_default"
+        from src.backend.core.config import settings
+        secret = settings.carrier_webhook_secret  # development-only fallback (no tenant integration seeded)
         sig = SimulatedExpressCarrierAdapter.compute_webhook_signature(raw_body, secret)
 
         wh_resp = await client.post(

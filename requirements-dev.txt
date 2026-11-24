@@ -1,0 +1,9 @@
+# Test and security tooling (F-24/F-25/F-37/F-38)
+-r requirements.txt
+aiosqlite==0.22.1
+openpyxl==3.1.5
+pytest==9.1.1
+pytest-asyncio==1.4.0
+# Security gates used by CI (not installed in the inspected environment)
+pip-audit
+bandit

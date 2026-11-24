@@ -104,14 +104,14 @@ async def test_manager_copilot_high_risk_spoken_rejection_and_action_preview():
 
         # Attempt to confirm WITHOUT valid step-up MFA token fails closed
         with pytest.raises(VoiceSecurityError, match="Step-Up TOTP code required"):
-            copilot.action_guard.consume_action(action_token, tenant_id=tenant_id, user_id=manager_id, step_up_verified=False)
+            await copilot.action_guard.consume_action(action_token, tenant_id=tenant_id, user_id=manager_id, step_up_verified=False)
 
         # Confirmation with valid 6-digit TOTP token succeeds
         # A different user (even with a verified second factor) cannot consume the token
         with pytest.raises(VoiceSecurityError, match="not issued to this user"):
-            copilot.action_guard.consume_action(action_token, tenant_id=tenant_id, user_id="someone_else", step_up_verified=True)
+            await copilot.action_guard.consume_action(action_token, tenant_id=tenant_id, user_id="someone_else", step_up_verified=True)
 
         # Server-verified step-up (TOTP checked against the enrolled seed by the API layer) succeeds
-        confirmed = copilot.action_guard.consume_action(action_token, tenant_id=tenant_id, user_id=manager_id, step_up_verified=True)
+        confirmed = await copilot.action_guard.consume_action(action_token, tenant_id=tenant_id, user_id=manager_id, step_up_verified=True)
         assert confirmed["action_type"] == "APPROVE_PURCHASE_ORDER"
         assert confirmed["user_id"] == manager_id

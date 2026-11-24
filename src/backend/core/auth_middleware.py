@@ -34,6 +34,7 @@ class SecurityContext:
     mfa_verified: bool
     jti: str
     correlation_id: str
+    family_id: Optional[str] = None
 
 async def get_correlation_id(request: Request) -> str:
     """Extracts or mints a correlation ID for end-to-end request tracing."""
@@ -122,7 +123,12 @@ async def get_security_context(
             )
         try:
             # 1. Check token revocation list
-            rev_stmt = select(SessionRevocation).where(SessionRevocation.token_jti == jti)
+            # F-21: a revoked session family (logout, refresh-token reuse) kills every
+            # access token issued in that session, not only the one presented.
+            revoked_ids = [jti]
+            if payload.get("fam"):
+                revoked_ids.append(f"family:{payload['fam']}")
+            rev_stmt = select(SessionRevocation).where(SessionRevocation.token_jti.in_(revoked_ids))
             rev_res = await session.execute(rev_stmt)
             if rev_res.scalars().first():
                 raise HTTPException(
@@ -167,7 +173,8 @@ async def get_security_context(
         permissions=permissions,
         mfa_verified=mfa_verified,
         jti=jti,
-        correlation_id=correlation_id
+        correlation_id=correlation_id,
+        family_id=payload.get("fam")
     )
 
 async def get_optional_security_context(

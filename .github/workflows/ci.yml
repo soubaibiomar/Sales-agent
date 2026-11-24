@@ -1,0 +1,54 @@
+# CI with security gates (inspection findings F-25 / F-26; controls 37, 38, 60-62).
+# Not executed during the inspection (no CI runner is configured for this repo).
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: sales_ai_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sales_ai_db" --health-interval 5s --health-retries 10
+    env:
+      ENVIRONMENT: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - run: pip install -r requirements-dev.txt
+      - name: Initialise schema (RLS, migrations 011-016)
+        run: psql "postgresql://postgres:${{ secrets.CI_POSTGRES_PASSWORD }}@localhost:5432/sales_ai_db" -v ON_ERROR_STOP=1 -f infra/init-db.sql
+      - name: Tests (model-dependent tests need Ollama and are expected to fail closed without it)
+        run: python -m pytest tests -p no:cacheprovider -q
+
+  security:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Dependency vulnerabilities (SCA)
+        run: pip install pip-audit && pip-audit -r requirements.txt
+      - name: Static analysis (SAST)
+        run: pip install bandit && bandit -q -r src -ll
+      - name: Secret scan (full history)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

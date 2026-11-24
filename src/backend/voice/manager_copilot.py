@@ -43,7 +43,7 @@ class ManagerVoiceCopilot:
         self.db = db
         self.tenant_id = tenant_id
         self.manager_user_id = manager_user_id
-        self.action_guard = ManagerPrivilegedActionGuard()
+        self.action_guard = ManagerPrivilegedActionGuard(db)
 
     async def process_manager_command(
         self,
@@ -84,7 +84,7 @@ class ManagerVoiceCopilot:
 
             summary = f"Spoken request to {action_type} for command: '{command_text}'"
 
-            preview = self.action_guard.create_action_preview(
+            preview = await self.action_guard.create_action_preview(
                 tenant_id=self.tenant_id,
                 user_id=self.manager_user_id,
                 action_type=action_type,

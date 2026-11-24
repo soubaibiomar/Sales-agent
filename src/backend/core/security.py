@@ -168,10 +168,13 @@ class SecurityService:
         roles: List[str],
         permissions: List[str],
         mfa_verified: bool = False,
-        expires_delta: Optional[timedelta] = None
+        expires_delta: Optional[timedelta] = None,
+        family_id: Optional[str] = None
     ) -> Tuple[str, str, datetime]:
         """
         Issues a signed JWT access token.
+        `family_id` links the token to its login session so that refresh-token reuse
+        can revoke every token of the session (F-21).
         Returns (token_string, jti, expiration_datetime).
         """
         now = datetime.now(timezone.utc)
@@ -185,12 +188,15 @@ class SecurityService:
             "roles": roles,
             "permissions": permissions,
             "mfa_verified": mfa_verified,
+            "type": "access",
             "jti": jti,
             "iat": int(now.timestamp()),
             "exp": int(expires.timestamp()),
             "iss": "sales-ai-platform",
             "aud": "sales-ai-api"
         }
+        if family_id:
+            payload["fam"] = family_id
         
         token = jwt.encode(
             payload,
@@ -203,9 +209,10 @@ class SecurityService:
     def create_refresh_token(
         user_id: str,
         tenant_id: str,
-        expires_delta: Optional[timedelta] = None
+        expires_delta: Optional[timedelta] = None,
+        family_id: Optional[str] = None
     ) -> Tuple[str, str, datetime]:
-        """Issues a signed refresh token."""
+        """Issues a signed, single-use refresh token belonging to a session family (F-21)."""
         now = datetime.now(timezone.utc)
         expires = now + (expires_delta or timedelta(days=settings.refresh_token_expire_days))
         jti = str(uuid.uuid4())
@@ -214,6 +221,7 @@ class SecurityService:
             "sub": user_id,
             "tenant_id": tenant_id,
             "type": "refresh",
+            "fam": family_id or str(uuid.uuid4()),
             "jti": jti,
             "iat": int(now.timestamp()),
             "exp": int(expires.timestamp()),

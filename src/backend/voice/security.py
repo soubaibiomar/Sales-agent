@@ -116,64 +116,100 @@ class VoicePromptInjectionGuard:
 
 class VoiceIdentityVerificationManager:
     """
-    Manages customer OTP verification tokens and anti-spoofing verification.
-    Prevents caller-ID spoofing attacks (Control SAI-01, SAI-03).
+    Customer OTP challenges for caller verification (Control SAI-01, SAI-03).
+    F-29: stored in PostgreSQL (`voice_otp_challenges`, RLS) so any API worker can verify
+    a code issued by another one, and state survives restarts. Only an HMAC of the code is
+    stored; codes are single-use, expire after 5 minutes and allow 3 attempts.
     """
-    _shared_tokens: Dict[str, Dict[str, Any]] = {}
+    TTL_SECONDS = 300
+    MAX_ATTEMPTS = 3
 
-    def __init__(self):
-        # Shared in-memory token store: {session_id: {"otp": str, "expires_at": float, "attempts": int}}
-        self._tokens: Dict[str, Dict[str, Any]] = self._shared_tokens
+    def __init__(self, db):
+        self.db = db
 
-    def generate_otp(self, session_id: str, caller_id: Optional[str] = None) -> str:
-        """Generates a secure 6-digit verification code with 5-minute validity."""
-        otp = f"{secrets.randbelow(900000) + 100000}"
-        self._tokens[session_id] = {
-            "otp": otp,
-            "caller_id": caller_id,
-            "expires_at": time.time() + 300.0,
-            "attempts": 0
-        }
-        return otp
+    @staticmethod
+    def _code_hash(tenant_id: str, session_id: str, code: str) -> str:
+        from src.backend.core.config import settings
+        msg = f"{tenant_id}:{session_id}:{code.strip()}".encode("utf-8")
+        return hmac.new(settings.voice_session_secret.encode("utf-8"), msg, hashlib.sha256).hexdigest()
 
-    def verify_otp(self, session_id: str, submitted_otp: str) -> bool:
-        """Verifies customer submitted OTP token."""
-        entry = self._tokens.get(session_id)
-        if not entry:
+    async def generate_otp(self, tenant_id: str, session_id: str) -> str:
+        """Creates (or replaces) the session's challenge and returns the plain code for delivery."""
+        from datetime import datetime, timedelta, timezone
+        from sqlalchemy import delete
+        from src.backend.models.entities import VoiceOtpChallenge
+        code = f"{secrets.randbelow(900000) + 100000}"
+        await self.db.execute(delete(VoiceOtpChallenge).where(
+            VoiceOtpChallenge.tenant_id == tenant_id, VoiceOtpChallenge.session_id == session_id))
+        self.db.add(VoiceOtpChallenge(
+            tenant_id=tenant_id, session_id=session_id,
+            code_hash=self._code_hash(tenant_id, session_id, code),
+            expires_at=datetime.now(timezone.utc) + timedelta(seconds=self.TTL_SECONDS)
+        ))
+        await self.db.flush()
+        return code
+
+    async def discard(self, tenant_id: str, session_id: str) -> None:
+        from sqlalchemy import delete
+        from src.backend.models.entities import VoiceOtpChallenge
+        await self.db.execute(delete(VoiceOtpChallenge).where(
+            VoiceOtpChallenge.tenant_id == tenant_id, VoiceOtpChallenge.session_id == session_id))
+
+    async def verify_otp(self, tenant_id: str, session_id: str, submitted_otp: str) -> bool:
+        from datetime import datetime, timezone
+        from sqlalchemy import select
+        from src.backend.models.entities import VoiceOtpChallenge
+        if not submitted_otp or not submitted_otp.strip().isdigit():
             return False
-
-        if time.time() > entry["expires_at"]:
-            del self._tokens[session_id]
+        ch = (await self.db.execute(select(VoiceOtpChallenge).where(
+            VoiceOtpChallenge.tenant_id == tenant_id, VoiceOtpChallenge.session_id == session_id
+        ).with_for_update())).scalars().first()
+        if not ch or ch.consumed_at is not None:
             return False
-
-        entry["attempts"] += 1
-        if entry["attempts"] > 3:
-            del self._tokens[session_id]
+        now = datetime.now(timezone.utc)
+        expires = ch.expires_at if ch.expires_at.tzinfo else ch.expires_at.replace(tzinfo=timezone.utc)
+        if now > expires or ch.attempts >= self.MAX_ATTEMPTS:
             return False
-
-        if hmac.compare_digest(entry["otp"], submitted_otp.strip()):
-            del self._tokens[session_id]
-            return True
-
-        return False
+        ch.attempts += 1
+        ok = hmac.compare_digest(ch.code_hash, self._code_hash(tenant_id, session_id, submitted_otp))
+        if ok:
+            ch.consumed_at = now
+        await self.db.flush()
+        return ok
 
 
 class ManagerPrivilegedActionGuard:
     """
     Guards manager voice commands from executing high-risk mutations without second-factor.
     (Control 55; SAI-02, Invariant 6)
+    F-29: previews live in PostgreSQL (`manager_action_previews`, RLS): single-use,
+    bound to tenant + user, 5-minute expiry, valid across API workers.
     """
     # Thresholds requiring step-up confirmation
     MAX_UNCONFIRMED_DISCOUNT_PERCENT = 25
     MAX_UNCONFIRMED_REFUND_CENTS = 500000       # 5,000 MAD
     MAX_UNCONFIRMED_PO_CENTS = 5000000          # 50,000 MAD
+    TTL_SECONDS = 300
 
-    _shared_pending_actions: Dict[str, Dict[str, Any]] = {}
+    def __init__(self, db):
+        self.db = db
 
-    def __init__(self):
-        self._pending_actions: Dict[str, Dict[str, Any]] = self._shared_pending_actions
+    @staticmethod
+    def _as_dict(p) -> Dict[str, Any]:
+        expires = p.expires_at
+        return {
+            "action_token": p.id,
+            "tenant_id": p.tenant_id,
+            "user_id": p.user_id,
+            "action_type": p.action_type,
+            "requires_step_up_mfa": p.requires_step_up_mfa,
+            "risk_level": p.risk_level,
+            "parameters": p.parameters or {},
+            "summary": p.summary,
+            "expires_at_ms": int(expires.timestamp() * 1000) if expires else None,
+        }
 
-    def create_action_preview(
+    async def create_action_preview(
         self,
         tenant_id: str,
         user_id: str,
@@ -183,34 +219,19 @@ class ManagerPrivilegedActionGuard:
         risk_level: str = "HIGH"
     ) -> Dict[str, Any]:
         """Creates a time-bounded action preview requiring confirmation."""
-        token = str(uuid.uuid4())
-        expires_at_ms = int((time.time() + 300.0) * 1000)
+        from datetime import datetime, timedelta, timezone
+        from src.backend.models.entities import ManagerActionPreview
+        preview = ManagerActionPreview(
+            id=str(uuid.uuid4()), tenant_id=tenant_id, user_id=user_id, action_type=action_type,
+            parameters=parameters or {}, summary=summary, risk_level=risk_level,
+            requires_step_up_mfa=(risk_level == "HIGH"),
+            expires_at=datetime.now(timezone.utc) + timedelta(seconds=self.TTL_SECONDS)
+        )
+        self.db.add(preview)
+        await self.db.flush()
+        return self._as_dict(preview)
 
-        preview = {
-            "action_token": token,
-            "tenant_id": tenant_id,
-            "user_id": user_id,
-            "action_type": action_type,
-            "requires_step_up_mfa": (risk_level == "HIGH"),
-            "risk_level": risk_level,
-            "parameters": parameters,
-            "summary": summary,
-            "expires_at_ms": expires_at_ms
-        }
-
-        self._pending_actions[token] = preview
-        return preview
-
-    def get_pending_action(self, action_token: str) -> Optional[Dict[str, Any]]:
-        entry = self._pending_actions.get(action_token)
-        if not entry:
-            return None
-        if time.time() * 1000 > entry["expires_at_ms"]:
-            del self._pending_actions[action_token]
-            return None
-        return entry
-
-    def consume_action(
+    async def consume_action(
         self,
         action_token: str,
         *,
@@ -219,21 +240,26 @@ class ManagerPrivilegedActionGuard:
         step_up_verified: bool
     ) -> Dict[str, Any]:
         """
-        F-06: consumes a pending high-risk action only when
-          * the token was issued to the same tenant AND the same user, and
-          * the step-up second factor was verified server-side by the caller of this
-            method (TOTP checked against the user's enrolled seed - never a format check).
-        The token is single-use; a failed second factor does not consume it.
+        F-06/F-29: consumes a pending high-risk action only when the token belongs to the
+        same tenant AND user, is unexpired and unused, and the second factor was verified
+        server-side by the caller. A failed second factor does not consume it.
         """
-        action = self.get_pending_action(action_token)
-        if not action:
+        from datetime import datetime, timezone
+        from sqlalchemy import select
+        from src.backend.models.entities import ManagerActionPreview
+        p = (await self.db.execute(select(ManagerActionPreview).where(
+            ManagerActionPreview.id == action_token, ManagerActionPreview.tenant_id == tenant_id
+        ).with_for_update())).scalars().first()
+        now = datetime.now(timezone.utc)
+        if not p or p.consumed_at is not None:
             raise VoiceSecurityError("Action preview not found or expired.")
-
-        if action.get("tenant_id") != tenant_id or action.get("user_id") != user_id:
+        expires = p.expires_at if p.expires_at.tzinfo else p.expires_at.replace(tzinfo=timezone.utc)
+        if now > expires:
+            raise VoiceSecurityError("Action preview not found or expired.")
+        if p.user_id != user_id:
             raise VoiceSecurityError("Action preview was not issued to this user.")
-
-        if action["requires_step_up_mfa"] and not step_up_verified:
+        if p.requires_step_up_mfa and not step_up_verified:
             raise VoiceSecurityError("Valid Step-Up TOTP code required for this high-risk action.")
-
-        del self._pending_actions[action_token]
-        return action
+        p.consumed_at = now
+        await self.db.flush()
+        return self._as_dict(p)

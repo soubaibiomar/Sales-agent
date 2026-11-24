@@ -9,6 +9,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import declarative_base, relationship, synonym
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
+from src.backend.core.crypto_types import EncryptedSecret
 
 Base = declarative_base()
 
@@ -133,6 +134,10 @@ class AuditEvent(Base):
     payload_json = synonym("payload")
     status = Column(String(20), nullable=False, default="SUCCESS")
     timestamp = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    # Tamper-evident chain, filled by a PostgreSQL trigger (migration 014, F-12).
+    chain_seq = Column(BigInteger, nullable=True)
+    prev_hash = Column(String(64), nullable=True)
+    entry_hash = Column(String(64), nullable=True)
 
 AuditLog = AuditEvent
 
@@ -315,7 +320,7 @@ class TenantChannelIntegration(Base):
     channel_type = Column(String(30), nullable=False)  # WHATSAPP, EMAIL, WEB_CHAT, VOICE_SIP
     provider_account_id = Column(String(255), nullable=True)
     provider_asset_id = Column(String(255), nullable=False)  # phone_number_id, email, SIP trunk / caller
-    webhook_secret = Column(String(255), nullable=True)
+    webhook_secret = Column(EncryptedSecret(), nullable=True)  # AES-256-GCM at rest (F-30)
     is_active = Column(Boolean, nullable=False, default=True)
     config_json = Column(Text, nullable=False, default="{}")
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
@@ -1794,3 +1799,48 @@ class SystemMetricSnapshot(Base):
 
 
 
+
+
+# -----------------------------------------------------------------------------
+# Durable voice security state (inspection finding F-29, migration 015).
+# Previously held in per-process dictionaries: lost on restart and inconsistent
+# across workers (an OTP issued by one worker could not be verified by another).
+# -----------------------------------------------------------------------------
+class VoiceOtpChallenge(Base):
+    __tablename__ = "voice_otp_challenges"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    session_id = Column(String(100), nullable=False)
+    code_hash = Column(String(64), nullable=False)  # HMAC-SHA256, never the plain code
+    attempts = Column(Integer, nullable=False, default=0)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    consumed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    __table_args__ = (UniqueConstraint("tenant_id", "session_id", name="uq_voice_otp_tenant_session"),)
+
+
+class ManagerActionPreview(Base):
+    __tablename__ = "manager_action_previews"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)  # the action token
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String(36), nullable=False)
+    action_type = Column(String(100), nullable=False)
+    parameters = Column(JSON().with_variant(JSONB, "postgresql"), default=dict, nullable=False)
+    summary = Column(Text, nullable=True)
+    risk_level = Column(String(20), nullable=False, default="HIGH")
+    requires_step_up_mfa = Column(Boolean, nullable=False, default=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    consumed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class TelephonyReplayNonce(Base):
+    __tablename__ = "telephony_replay_nonces"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    nonce = Column(String(255), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    __table_args__ = (UniqueConstraint("tenant_id", "nonce", name="uq_telephony_nonce_tenant"),)

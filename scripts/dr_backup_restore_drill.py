@@ -20,7 +20,10 @@ DRILL_DB = f"postgresql://postgres:postgres_dev_password_change_in_prod@127.0.0.
 CONTAINER_NAME = "sales-ai-postgres"
 
 OUTPUT_DIR = os.path.abspath("evidence/step-12/dr")
-DUMP_LOCAL_PATH = os.path.join(OUTPUT_DIR, "sales_ai_db_backup.dump")
+# F-22: the plaintext pg_dump must never land in the repository. It is written to the
+# OS temp directory, hashed for the evidence JSON, and deleted when the drill ends.
+import tempfile
+DUMP_LOCAL_PATH = os.path.join(tempfile.gettempdir(), "sales_ai_dr_drill_backup.dump")
 REPORT_JSON_PATH = os.path.join(OUTPUT_DIR, "backup_restore_drill.json")
 DRILL_LOG_PATH = os.path.join(OUTPUT_DIR, "dr_drill.log")
 
@@ -233,6 +236,8 @@ def run_dr_drill():
 
     # Remove temporary dump from container
     subprocess.run(["docker", "exec", CONTAINER_NAME, "rm", "-f", "/tmp/backup_sales_ai_db.dump"])
+    if os.path.exists(DUMP_LOCAL_PATH):
+        os.remove(DUMP_LOCAL_PATH)
 
     total_drill_time = time.time() - drill_start_wall
 

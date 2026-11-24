@@ -46,6 +46,15 @@ from src.backend.domains.conversations.outbox import OutboxService, OutboxStatus
 from src.backend.integrations.base import NormalizedInboundEvent
 
 PG_REAL_URL = "postgresql+psycopg://sales_app_user:sales_app_dev_password@127.0.0.1:5432/sales_ai_db"
+def _admin_conn_str() -> str:
+    """Superuser connection for test setup/teardown only; the app role cannot delete tenants (F-12)."""
+    import re
+    from pathlib import Path
+    compose = (Path(__file__).resolve().parents[2] / "infra" / "docker-compose.yml").read_text(encoding="utf-8")
+    pw = re.search(r"POSTGRES_PASSWORD:-([^}]+)\}", compose).group(1)
+    return f"postgresql://postgres:{pw}@127.0.0.1:5432/sales_ai_db"
+
+
 PG_SYNC_CONN = "postgresql://sales_app_user:sales_app_dev_password@127.0.0.1:5432/sales_ai_db"
 
 @pytest.fixture(scope="module")
@@ -85,7 +94,7 @@ def seed_real_pg_tenant():
         "rep_user_id": rep_id
     }
 
-    with psycopg.connect(PG_SYNC_CONN) as conn:
+    with psycopg.connect(_admin_conn_str()) as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM tenants WHERE id IN (%s, %s);", (t_active, t_inactive))
             conn.commit()
@@ -807,7 +816,7 @@ async def test_real_pg_crit01_cross_tenant_url_swap_rejected_403(seed_real_pg_te
                 convs = (await session.execute(select(Conversation).where(Conversation.tenant_id == tenant_b))).scalars().all()
                 assert len(convs) == 0, "No conversations should be created in Tenant B"
     finally:
-        with psycopg.connect(PG_SYNC_CONN) as conn:
+        with psycopg.connect(_admin_conn_str()) as conn:
             with conn.cursor() as cur:
                 cur.execute("DELETE FROM tenants WHERE id = %s;", (tenant_b,))
                 conn.commit()

@@ -425,7 +425,7 @@ async def confirm_manager_action(
     # manager's enrolled seed (session-level MFA is not enough for the voice channel).
     step_up_ok = await verify_user_totp(db, ctx.tenant_id, ctx.user_id, req.totp_code)
     try:
-        action = copilot.action_guard.consume_action(
+        action = await copilot.action_guard.consume_action(
             req.action_token,
             tenant_id=ctx.tenant_id,
             user_id=ctx.user_id,
@@ -667,8 +667,7 @@ async def _verify_telephony_request(request: Request, db: AsyncSession) -> tuple
             webhook_url=str(request.url),
             params=params,
             signature=signature,
-            timestamp=timestamp,
-            nonce=params.get("CallSid") and f"{params.get('CallSid')}:{request.url.path}:{ts_header}"
+            timestamp=timestamp
         )
     except ReplayAttackDetectedError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -676,6 +675,25 @@ async def _verify_telephony_request(request: Request, db: AsyncSession) -> tuple
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid telephony timestamp.")
     if not valid:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid telephony webhook signature.")
+
+    # F-29: replay protection shared by all API workers and surviving restarts
+    # (unique (tenant_id, nonce) in PostgreSQL instead of a per-process dict).
+    await bind_tenant_context(db, integration.tenant_id)
+    nonce = f"{params.get('CallSid') or ''}:{request.url.path}:{ts_header}:{signature}"
+    from datetime import datetime, timedelta, timezone as _tz
+    from sqlalchemy import delete
+    from sqlalchemy.exc import IntegrityError
+    from src.backend.models.entities import TelephonyReplayNonce
+    now = datetime.now(_tz.utc)
+    await db.execute(delete(TelephonyReplayNonce).where(
+        TelephonyReplayNonce.tenant_id == integration.tenant_id, TelephonyReplayNonce.expires_at < now))
+    try:
+        async with db.begin_nested():
+            db.add(TelephonyReplayNonce(tenant_id=integration.tenant_id, nonce=nonce[:255],
+                                        expires_at=now + timedelta(seconds=telephony_verifier.replay_window_seconds)))
+            await db.flush()
+    except IntegrityError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Telephony webhook replay detected.")
     return params, integration
 
 
