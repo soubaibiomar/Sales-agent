@@ -1,0 +1,36 @@
+# Local verification overlay used for the group F stack run (report 18). Use with -p salesai-verify.
+# Local verification only: isolated container names, fresh volumes, no init-db.sql
+# bootstrap (migrations build the schema from empty), non-privileged host ports.
+services:
+  sales-ai-postgres:
+    container_name: verify-postgres
+    ports: !reset []
+    volumes: !override
+      - verify_pg:/var/lib/postgresql/data
+  sales-ai-redis:
+    container_name: verify-redis
+    ports: !reset []
+    volumes: !override
+      - verify_redis:/data
+  sales-ai-minio:
+    container_name: verify-minio
+    ports: !reset []
+    volumes: !override
+      - verify_minio:/data
+  sales-ai-migrate:
+    build: !reset null
+  sales-ai-proxy:
+    ports: !override
+      - "127.0.0.1:8443:443"
+      - "127.0.0.1:8080:80"
+  sales-ai-prometheus:
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=1d
+      - --web.listen-address=0.0.0.0:9090
+    ports:
+      - "127.0.0.1:9091:9090"
+volumes:
+  verify_pg:
+  verify_redis:
+  verify_minio:

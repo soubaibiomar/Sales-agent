@@ -58,6 +58,28 @@ async def test_ready_ignores_optional_dependency():
 
 
 @pytest.mark.asyncio
+async def test_ready_meets_deadline_even_if_cancellation_hangs():
+    """A check whose cancellation blocks (frozen DB socket) must not stall /ready."""
+    import asyncio, time
+    from src.backend.core import operations
+
+    async def stuck():
+        try:
+            await asyncio.sleep(60)
+        except asyncio.CancelledError:
+            await asyncio.sleep(10)  # cancellation that takes far longer than the budget
+            raise
+
+    with patch.dict(operations.CHECKS, {"database": (stuck, True), "ollama": (stuck, False)}):
+        t = time.perf_counter()
+        result = await operations.readiness(timeout=0.5)
+        elapsed = time.perf_counter() - t
+    assert result["status"] == "NOT_READY"
+    assert result["dependencies"]["database"]["error"] == "TimeoutError"
+    assert elapsed < 2.0
+
+
+@pytest.mark.asyncio
 async def test_liveness_checks_nothing_and_leaks_nothing():
     from src.backend.main import app
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:

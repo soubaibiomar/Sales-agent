@@ -192,8 +192,18 @@ CHECKS = {"database": (_check_database, True), "ollama": (_check_ollama, False)}
 async def readiness(timeout: float = 3.0) -> Dict[str, Any]:
     async def run(name, fn):
         start = time.perf_counter()
+        # asyncio.wait_for() waits for the cancelled check to *finish* cancelling. Against a
+        # frozen database (paused container, network partition) cancelling a query on a
+        # pooled connection can itself hang, so /ready stalled past its budget (observed
+        # in the stack run). Give up at the deadline and let the task cancel in background.
+        task = asyncio.ensure_future(fn())
         try:
-            details = await asyncio.wait_for(fn(), timeout=timeout)
+            done, _ = await asyncio.wait({task}, timeout=timeout)
+            if not done:
+                task.cancel()
+                task.add_done_callback(lambda t: t.cancelled() or t.exception())  # silence late errors
+                raise TimeoutError()
+            details = task.result()
             ok, error = True, None
         except Exception as exc:  # never leak connection strings or hostnames
             details, ok, error = {}, False, type(exc).__name__

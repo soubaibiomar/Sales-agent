@@ -56,11 +56,33 @@ These timings are for this small development dataset on the laptop. They are **n
 - Removing `METRICS_TOKEN` makes it fail with "required variable … is missing a value".
 
 **Tests**
-- `tests/security/test_group_f_regressions.py`: 27 passed. Together with the existing observability and backup tests: 35 passed.
-- Full suite: **792 passed** (`python -m pytest -q`, 343 s, Python 3.14, Windows).
+- `tests/security/test_group_f_regressions.py`: 28 passed (including the readiness-deadline test added after the stack run).
+- Full suite: **793 passed** (`python -m pytest -q`, 404 s, Python 3.14, Windows), after the stack-run fixes.
+
+## Stack run (2026-11-25, downloads approved by the user)
+Evidence: `evidence/claude-inspection/group_f/stack_run_verification.json`. The overlay is `infra/docker-compose.verify.yml`, run as project `salesai-verify`. It used:
+- isolated containers and fresh volumes;
+- no `init-db.sql` bootstrap;
+- random secrets, deleted afterwards;
+- ports 8443 and 8080.
+
+| Check | Result |
+|---|---|
+| **Image build** | 210 s, 950 MB. Runs as uid 10001, with no compiler. The image contains no `.env`, `.git`, tests, evidence, backups or `infra/`. With `ENVIRONMENT=production` and the committed defaults, it **refuses to start**. |
+| **Release gate** | Migrate built the empty database: 19 migrations, exit 0. A re-run applied 0. The API and worker started only after migrate succeeded. |
+| **TLS proxy** | `/ready` over HTTPS: 200 READY (`rls_enforced: true`). `/metrics` and `/api/docs` from outside: **404**. HTTP returns 301 to HTTPS. The HSTS, strict CSP and `X-Frame-Options` headers are present. The API is not published on the host. |
+| **End to end over HTTPS** | Wrong password: 401. Login issued a token. CRM returned only the user's own-tenant account (RLS). An `X-Tenant-ID`-only request: **401**. |
+| **Logs** | The worker writes JSON lines. The API log contains 0 occurrences of the password, token or e-mail. |
+| **Hardening** | API and worker run as uid 10001 with a **read-only root** (a write attempt was refused), all capabilities dropped and `no-new-privileges`. |
+| **Prometheus** | Scrapes the API with the token from a secret (target `up`). All 5 rules loaded. |
+| **Database outage** (`docker pause`) | `/ready` returns **503 in 3.2 s**, measured 3 times. `DatabaseNotReady` was pending at 38 s and **firing at 97 s**. Back to 200 after unpausing. |
+
+**Two bugs found only by running the stack, both fixed:**
+1. Compose cannot mount an environment-sourced secret into a read-only container, so Prometheus failed to start. Prometheus now runs with `read_only: false`; its other hardening options are kept.
+2. The first `/ready` request after the freeze got **no answer within 10 s**. `asyncio.wait_for` waits for cancellation to finish, and cancelling a query on a pooled connection to a frozen server hangs. Readiness now gives up at the deadline and lets the task cancel in the background. A regression test simulates a cancellation that hangs for 10 s and requires an answer in under 2 s.
 
 ## Not done / not verified (not claimed)
-- **Image not built and stack not started.** Building needs downloads (the `python:3.14-slim` base, roughly 0.5 GB of Python wheels for faster-whisper, ctranslate2, onnxruntime and piper, plus the `caddy` and `prometheus` images) that have not been approved. So the Dockerfile, the proxy and Prometheus are validated statically only.
+- **No image vulnerability scan run locally.** Trivy or pip-audit would need further downloads beyond the approved build-and-run scope. The CI `image` job is where that gate runs.
 - **CI not executed.** There is no runner for this repository. Third-party actions are pinned by tag, not SHA. CI needs the secrets `CI_POSTGRES_PASSWORD` and `CI_APP_DB_PASSWORD`.
 - **Off-site storage:** "off-site" was simulated with a separate directory. No cloud bucket or remote site, encryption key escrow or backup schedule exists yet.
 - **RPO and RTO:** RPO equals the backup interval, which is not scheduled yet. The RTO for production volumes is unmeasured.

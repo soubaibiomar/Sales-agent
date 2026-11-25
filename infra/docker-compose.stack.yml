@@ -112,6 +112,10 @@ services:
     secrets: [metrics_token]
     depends_on: [sales-ai-api]
     <<: *hardening
+    # Compose materialises environment-sourced secrets inside the container's filesystem,
+    # which a read-only root forbids (found when the stack was first run). Prometheus
+    # keeps every other hardening option; its data lives on the named volume.
+    read_only: false
 
 secrets:
   metrics_token:
