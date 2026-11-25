@@ -139,6 +139,16 @@
     };
   }
 
+  /** Refresh display fields (e.g. full name) of the cached session user after a profile edit.
+   *  Only presentation data: tokens and claims are untouched; authorisation stays server-side. */
+  function updateUser(fields) {
+    var session = readSession();
+    if (!session) { return; }
+    session.user = session.user || {};
+    if (fields && typeof fields.full_name === 'string') { session.user.full_name = fields.full_name; }
+    writeSession(session);
+  }
+
   /** Small helpers for loading / empty / error states. */
   function renderState(container, kind, message) {
     if (!container) { return; }
@@ -156,6 +166,7 @@
     verifyMfa: verifyMfa,
     logout: logout,
     user: user,
+    updateUser: updateUser,
     isAuthenticated: function () { return !!readSession(); },
     renderState: renderState
   };

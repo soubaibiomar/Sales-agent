@@ -55,13 +55,24 @@ def redact(value: str) -> str:
 class RedactingFilter(logging.Filter):
     """Rewrites each record so no handler or formatter can emit secrets or PII."""
 
+    @staticmethod
+    def _clean(value):
+        return redact(value) if isinstance(value, str) else value
+
     def filter(self, record: logging.LogRecord) -> bool:
-        try:
+        # Keep the record's shape: some formatters (uvicorn's access log) unpack record.args,
+        # so arguments are redacted one by one instead of being merged into the message.
+        record.msg = redact(str(record.msg)) if isinstance(record.msg, str) else record.msg
+        if isinstance(record.args, tuple):
+            record.args = tuple(self._clean(a) for a in record.args)
+        elif isinstance(record.args, dict):
+            record.args = {k: self._clean(v) for k, v in record.args.items()}
+        try:  # verify the final message is still clean (e.g. secrets split across arguments)
             message = record.getMessage()
-        except Exception:  # malformed %-args: fall back to the raw template
-            message = str(record.msg)
-        record.msg = redact(message)
-        record.args = None
+            if redact(message) != message and not isinstance(record.args, tuple):
+                record.msg, record.args = redact(message), None
+        except Exception:  # malformed %-args: fall back to the redacted raw template
+            record.msg, record.args = redact(str(record.msg)), None
         if record.exc_info:
             # Pre-render the traceback so exception messages are redacted too.
             record.exc_text = redact(logging.Formatter().formatException(record.exc_info))

@@ -1,341 +1,300 @@
 /**
- * SALES AI MANAGEMENT PLATFORM — APP SHELL CONTROLLER (V2.0)
- * Handles global navigation, tenant switching, search shortcuts, responsive drawer,
- * notification panel, and unified state across all 28 views.
+ * SELIA — application shell (design delivered by the product owner, 2026-11-25).
+ * Renders, on every authenticated page:
+ *   - the sidebar (logo, main navigation, "Plus de modules", Assistant IA card, user card);
+ *   - the topbar (search, notifications, account menu);
+ *   - on phones: the bottom bar (Accueil, Clients, +, Analyses, Profil) and the
+ *     "Créer rapidement" sheet.
+ * Identity comes from the authenticated session (F-20) - never hardcoded. No inline
+ * handlers or styles (strict CSP); all text is escaped.
  */
-
 (function () {
   'use strict';
 
-  // 1. Identity comes from the authenticated session (F-20) - never hardcoded.
   const sessionUser = (window.SalesApi && window.SalesApi.user()) || null;
   const ROLE_LABELS = {
     super_admin: 'Super administrateur', tenant_admin: 'Administrateur', sales_manager: 'Responsable commercial',
     sales_rep: 'Commercial', sales_representative: 'Commercial', inventory_manager: 'Gestionnaire stock',
     support_agent: 'Agent support', customer: 'Client'
   };
+  const fullName = sessionUser ? (sessionUser.fullName || sessionUser.email || '') : '';
+  const words = fullName.split(/[\s@.]+/).filter(Boolean);
   const AppState = {
     tenantId: sessionUser ? sessionUser.tenantId : '',
     currentUser: {
-      name: sessionUser ? (sessionUser.fullName || sessionUser.email || '') : '',
-      initials: sessionUser ? (sessionUser.fullName || sessionUser.email || '?').split(/[\s@.]+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') : '',
+      name: fullName,
+      firstName: words[0] || '',
+      shortName: words.length > 1 ? words[0] + ' ' + words[1][0].toUpperCase() + '.' : (words[0] || ''),
+      initials: words.slice(0, 2).map(w => w[0].toUpperCase()).join(''),
       email: sessionUser ? sessionUser.email : '',
       role: sessionUser ? (ROLE_LABELS[(sessionUser.roles || [])[0]] || (sessionUser.roles || [])[0] || '') : ''
     }
   };
 
-  // Single navigation definition for every page (replaces 6 inconsistent sidebars).
-  const ICON = (d) => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' + d + '</svg>';
-  const NAV = [
-    { title: 'Pilotage', items: [
-      ['index.html', 'Tableau de bord', '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'],
-      ['analytics_dashboard.html', 'Analytique', '<path d="M18 20V10M12 20V4M6 20v-6"/>']
-    ]},
-    { title: 'Ventes', items: [
-      ['pipeline.html', 'CRM & Pipeline', '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>'],
-      ['inbox.html', 'Boîte de réception', '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'],
-      ['catalog.html', 'Catalogue', '<path d="M21 16V8l-9-5-9 5v8l9 5 9-5z"/>'],
-      ['quote_builder.html', 'Devis', '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'],
-      ['approvals.html', 'Approbations', '<polyline points="20 6 9 17 4 12"/>'],
-      ['orders.html', 'Commandes', '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/>'],
-      ['checkout.html', 'Paiements', '<rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>'],
-      ['invoices.html', 'Factures', '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>']
-    ]},
-    { title: 'Opérations', items: [
-      ['inventory.html', 'Stock & entrepôts', '<rect x="3" y="3" width="18" height="18" rx="2"/>'],
-      ['procurement.html', 'Achats & fournisseurs', '<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>'],
-      ['logistics.html', 'Logistique', '<rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>'],
-      ['support.html', 'Support & SAV', '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/>'],
-      ['schedule.html', 'Rendez-vous', '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>']
-    ]},
-    { title: 'IA & voix', items: [
-      ['agent_workspace.html', 'Espace agents IA', '<polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 16.5 5.5 21 7.5 13.5 2 9 9 9 12 2"/>'],
-      ['voice_agent.html', 'Agent vocal client', '<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/>'],
-      ['voice_copilot.html', 'Copilote vocal manager', '<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>'],
-      ['ai_governance.html', 'Gouvernance IA', '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'],
-      ['ai_operations_dashboard.html', 'Opérations IA', '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>'],
-      ['voice_observability.html', 'Observabilité vocale', '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>']
-    ]},
-    { title: 'Automatisation', items: [
-      ['workflows.html', 'Workflows', '<polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>'],
-      ['workflow_reliability_dashboard.html', 'Fiabilité & DLQ', '<path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/>'],
-      ['notifications.html', 'Notifications', '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>'],
-      ['integrations.html', 'Intégrations', '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/>']
-    ]},
-    { title: 'Administration', items: [
-      ['saas_admin_dashboard.html', 'Abonnement & quotas', '<circle cx="12" cy="12" r="3"/>'],
-      ['release_console.html', 'Console de release', '<polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>']
-    ]}
+  const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const ICON = (d, size) => '<svg width="' + (size || 18) + '" height="' + (size || 18) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
+  const I = {
+    home: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+    users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.3-5.5 6.5-5.5s5.9 2.1 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.9.7 3.2 2.5 3.5 5.2"/>',
+    target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12l7-7M16 5h3v3"/>',
+    doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+    cart: '<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.4 11.2a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.5L21 7H6"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3 10h18"/>',
+    chat: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z"/>',
+    chart: '<path d="M6 20V12M12 20V6M18 20v-9"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+    grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    sparkle: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>',
+    bell: '<path d="M18 9a6 6 0 0 0-12 0c0 7-3 8.5-3 8.5h18S18 16 18 9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    chevron: '<path d="m6 9 6 6 6-6"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6 8-6s7.2 2 8 6"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
+    userPlus: '<circle cx="9" cy="8" r="4"/><path d="M2 21c.7-4 3.6-6 7-6 1.6 0 3 .4 4.2 1.2M19 14v6M16 17h6"/>',
+    arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>'
+  };
+
+  // Main navigation (design) + the platform's other modules, folded under "Plus".
+  const MAIN_NAV = [
+    ['index.html', 'Tableau de bord', I.home],
+    ['clients.html', 'Clients', I.users],
+    ['pipeline.html', 'Opportunités', I.target],
+    ['quotes.html', 'Devis', I.doc],
+    ['orders.html', 'Commandes', I.cart],
+    ['schedule.html', 'Rendez-vous', I.calendar],
+    ['inbox.html', 'Conversations', I.chat],
+    ['analytics_dashboard.html', 'Analyses', I.chart]
+  ];
+  const MORE_NAV = [
+    ['invoices.html', 'Factures'], ['catalog.html', 'Catalogue produits'], ['approvals.html', 'Approbations'],
+    ['checkout.html', 'Paiements'], ['inventory.html', 'Stock & entrepôts'], ['procurement.html', 'Achats & fournisseurs'],
+    ['logistics.html', 'Logistique'], ['support.html', 'Support & SAV'], ['agent_workspace.html', 'Espace agents IA'],
+    ['voice_agent.html', 'Agent vocal client'], ['voice_copilot.html', 'Copilote vocal'], ['ai_governance.html', 'Gouvernance IA'],
+    ['ai_operations_dashboard.html', 'Opérations IA'], ['voice_observability.html', 'Observabilité vocale'],
+    ['workflows.html', 'Workflows'], ['workflow_reliability_dashboard.html', 'Fiabilité & alertes'],
+    ['notifications.html', 'Notifications'], ['integrations.html', 'Intégrations'],
+    ['saas_admin_dashboard.html', 'Abonnement & quotas'], ['release_console.html', 'Console de release']
+  ];
+  // Pages that belong to a main entry for highlighting purposes.
+  const ALIASES = { 'quote_builder.html': 'quotes.html', 'quote_view.html': 'quotes.html' };
+
+  const QUICK_CREATE = [
+    ['clients.html#nouveau', 'Client', I.userPlus],
+    ['pipeline.html#nouveau', 'Opportunité', I.target],
+    ['quote_builder.html', 'Devis', I.doc],
+    ['orders.html', 'Commande', I.cart],
+    ['schedule.html#nouveau', 'Rendez-vous', I.calendar],
+    ['agent_workspace.html', 'Assistant IA', I.sparkle]
   ];
 
-  function escapeHtml(v) {
-    return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const currentPage = () => {
+    const p = window.location.pathname.split('/').pop() || 'index.html';
+    return ALIASES[p] || p;
+  };
+
+  function logoMarkup(size) {
+    const s = size || 30;
+    return '<span class="selia-logo"><svg width="' + s + '" height="' + s + '" viewBox="0 0 32 32" aria-hidden="true">' +
+      '<path d="M25 9.5C22.5 6 17.5 5 13 6.2 8.8 7.3 7.3 10.6 9 13c1.4 2 4.6 2.6 8 3" fill="none" stroke="#D0673A" stroke-width="5.2" stroke-linecap="round"/>' +
+      '<path d="M15 16c3.4.4 7 1.6 7.6 4.4.6 2.9-2.8 5.4-8 5.6-3.6.2-6.6-.8-8.2-2.4" fill="none" stroke="#5F7A2E" stroke-width="5.2" stroke-linecap="round"/>' +
+      '<path d="M13.2 15.4c1-.2 1.4-.2 1.8.6" fill="none" stroke="#EBC9A8" stroke-width="2.4" stroke-linecap="round"/>' +
+      '</svg><span class="selia-wordmark">Selia</span></span>';
   }
 
   function renderNav() {
     const host = document.querySelector('[data-app-nav]');
     if (!host) return;
-    const current = window.location.pathname.split('/').pop() || 'index.html';
-    let html = '<div class="brand-header"><div class="brand-logo-icon">' + ICON('<path d="M18 20V10M12 20V4M6 20v-6"/>') +
-      '</div><div class="brand-text"><span class="title">Sales AI</span><span class="subtitle">Management</span></div></div>';
-    NAV.forEach(group => {
-      html += '<div class="nav-group"><div class="nav-group-title">' + escapeHtml(group.title) + '</div><ul class="nav-list">';
-      group.items.forEach(([href, label, icon]) => {
-        const active = href === current ? ' active' : '';
-        html += '<li><a href="' + href + '" class="nav-item' + active + '"' + (active ? ' aria-current="page"' : '') +
-          '><span class="icon">' + ICON(icon) + '</span><span class="label">' + escapeHtml(label) + '</span></a></li>';
+    const cur = currentPage();
+    const link = ([href, label, icon]) => {
+      const active = href === cur;
+      return '<li><a href="' + href + '" class="nav-item' + (active ? ' active' : '') + '"' + (active ? ' aria-current="page"' : '') +
+        '><span class="icon">' + ICON(icon || I.grid) + '</span><span class="label">' + esc(label) + '</span></a></li>';
+    };
+    const moreOpen = MORE_NAV.some(([h]) => h === cur);
+    host.innerHTML =
+      '<a class="brand-header" href="index.html" aria-label="Selia — accueil">' + logoMarkup(30) + '</a>' +
+      '<nav class="selia-nav" aria-label="Navigation principale"><ul class="nav-list">' + MAIN_NAV.map(link).join('') + '</ul>' +
+      '<details class="nav-more"' + (moreOpen ? ' open' : '') + '><summary class="nav-item"><span class="icon">' + ICON(I.grid) +
+      '</span><span class="label">Plus de modules</span><span class="nav-more-chevron">' + ICON(I.chevron, 14) + '</span></summary>' +
+      '<ul class="nav-list nav-list--sub">' + MORE_NAV.map(([h, l]) => link([h, l, null])).join('') + '</ul></details>' +
+      '<div class="nav-divider"></div><ul class="nav-list">' + link(['profile.html', 'Paramètres', I.settings]) + '</ul></nav>' +
+      '<div class="sidebar-footer">' +
+        '<div class="ai-promo"><span class="ai-promo-icon">' + ICON(I.sparkle, 20) + '</span><strong>Assistant IA</strong>' +
+        '<p>Gagnez du temps sur vos tâches commerciales.</p><a class="btn btn-primary btn-sm" href="agent_workspace.html">Essayer ' + ICON(I.arrow, 14) + '</a></div>' +
+        '<div class="user-profile-card"><span class="user-avatar">' + esc(AppState.currentUser.initials) + '</span>' +
+        '<span class="user-details"><span class="name">' + esc(AppState.currentUser.name) + '</span><span class="role">' + esc(AppState.currentUser.role) + '</span></span>' +
+        '<button type="button" class="btn-logout" data-shell-logout aria-label="Se déconnecter" title="Se déconnecter">' + ICON(I.logout, 16) + '</button></div>' +
+      '</div>';
+  }
+
+  function renderTopbar() {
+    const bar = document.querySelector('header.topbar');
+    if (!bar) return;
+    bar.innerHTML =
+      '<button type="button" class="mobile-menu-btn" id="mobileMenuToggle" aria-label="Ouvrir le menu">' + ICON('<path d="M4 6h16M4 12h16M4 18h16"/>', 20) + '</button>' +
+      '<a class="topbar-brand" href="index.html" aria-label="Selia — accueil">' + logoMarkup(26) + '</a>' +
+      '<form class="search-container" role="search" data-shell-search><span class="search-icon">' + ICON(I.search, 17) + '</span>' +
+      '<input type="search" class="search-input" id="globalSearchInput" placeholder="Rechercher un client, une opportunité, un devis…" aria-label="Rechercher"></form>' +
+      '<div class="topbar-actions">' +
+        '<button type="button" class="icon-btn" id="notifBtn" aria-label="Notifications" aria-haspopup="true">' + ICON(I.bell, 19) + '<span class="notif-dot" hidden></span></button>' +
+        '<button type="button" class="user-topbar-pill" id="accountBtn" aria-haspopup="true" aria-expanded="false"><span class="user-avatar">' + esc(AppState.currentUser.initials) +
+        '</span><span class="user-short">' + esc(AppState.currentUser.shortName) + '</span>' + ICON(I.chevron, 15) + '</button>' +
+      '</div>';
+  }
+
+  function renderMobileChrome() {
+    if (!document.querySelector('.app-container') || document.querySelector('.bottom-nav')) return;
+    const cur = currentPage();
+    const tab = (href, label, icon) => '<a href="' + href + '" class="bottom-nav-item' + (href === cur ? ' active' : '') + '"' +
+      (href === cur ? ' aria-current="page"' : '') + '>' + ICON(icon, 22) + '<span>' + esc(label) + '</span></a>';
+    const nav = document.createElement('nav');
+    nav.className = 'bottom-nav';
+    nav.setAttribute('aria-label', 'Navigation mobile');
+    nav.innerHTML = tab('index.html', 'Accueil', I.home) + tab('clients.html', 'Clients', I.users) +
+      '<button type="button" class="fab" id="fabCreate" aria-label="Créer rapidement" aria-haspopup="dialog">' + ICON(I.plus, 26) + '</button>' +
+      tab('analytics_dashboard.html', 'Analyses', I.chart) + tab('profile.html', 'Profil', I.user);
+    document.body.appendChild(nav);
+
+    const sheet = document.createElement('div');
+    sheet.className = 'sheet-backdrop';
+    sheet.hidden = true;
+    sheet.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"><span class="sheet-handle"></span>' +
+      '<h2 id="sheetTitle">Créer rapidement</h2><div class="sheet-grid">' +
+      QUICK_CREATE.map(([href, label, icon]) => '<a href="' + href + '" class="sheet-action"><span class="sheet-icon">' + ICON(icon, 24) + '</span>' + esc(label) + '</a>').join('') +
+      '</div></div>';
+    document.body.appendChild(sheet);
+    const open = () => { sheet.hidden = false; document.body.classList.add('sheet-open'); sheet.querySelector('.sheet-action').focus(); };
+    const close = () => { sheet.hidden = true; document.body.classList.remove('sheet-open'); };
+    document.getElementById('fabCreate').addEventListener('click', open);
+    sheet.addEventListener('click', (e) => { if (e.target === sheet) close(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sheet.hidden) close(); });
+  }
+
+  function popover(anchor, id, buildHtml) {
+    let panel = document.getElementById(id);
+    const isOpen = panel && !panel.hidden;
+    document.querySelectorAll('.shell-popover').forEach(p => { p.hidden = true; });
+    if (isOpen) return null;
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.id = id;
+      panel.className = 'shell-popover';
+      document.body.appendChild(panel);
+    }
+    panel.innerHTML = buildHtml();
+    const r = anchor.getBoundingClientRect();
+    panel.style.top = (r.bottom + window.scrollY + 8) + 'px';
+    panel.style.right = Math.max(12, document.documentElement.clientWidth - r.right) + 'px';
+    panel.hidden = false;
+    return panel;
+  }
+
+  function setupMenus() {
+    const notifBtn = document.getElementById('notifBtn');
+    if (notifBtn) {
+      notifBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const panel = popover(notifBtn, 'notifPanel', () =>
+          '<div class="popover-head"><strong>Notifications</strong></div><div class="popover-body" data-notif-body><p class="popover-empty">Chargement…</p></div>');
+        if (!panel || !window.SalesViews) return;
+        const res = await window.SalesViews.getJson('/api/v1/notifications/history?limit=8');
+        const body = panel.querySelector('[data-notif-body]');
+        const items = res.ok ? (Array.isArray(res.data) ? res.data : (res.data && res.data.items) || []) : [];
+        body.innerHTML = items.length
+          ? items.slice(0, 8).map(n => '<div class="popover-item"><strong>' + esc(n.subject || n.template_key || n.channel || 'Notification') +
+            '</strong><span>' + esc(window.SalesViews.date(n.created_at || n.sent_at)) + '</span></div>').join('')
+          : '<p class="popover-empty">' + (res.ok ? 'Aucune notification.' : 'Notifications indisponibles.') + '</p>';
       });
-      html += '</ul></div>';
+    }
+    const accountBtn = document.getElementById('accountBtn');
+    if (accountBtn) {
+      accountBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const panel = popover(accountBtn, 'accountPanel', () =>
+          '<div class="popover-head"><strong>' + esc(AppState.currentUser.name) + '</strong><span>' + esc(AppState.currentUser.email) + '</span></div>' +
+          '<a class="popover-link" href="profile.html">' + ICON(I.user, 16) + 'Mon profil</a>' +
+          '<a class="popover-link" href="profile.html#securite">' + ICON(I.settings, 16) + 'Paramètres</a>' +
+          '<button type="button" class="popover-link popover-link--danger" data-shell-logout>' + ICON(I.logout, 16) + 'Se déconnecter</button>');
+        accountBtn.setAttribute('aria-expanded', panel ? 'true' : 'false');
+      });
+    }
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('[data-shell-logout]')) { window.SalesApi && window.SalesApi.logout(); return; }
+      if (!e.target.closest('.shell-popover')) document.querySelectorAll('.shell-popover').forEach(p => { p.hidden = true; });
     });
-    html += '<div class="sidebar-footer"><div class="user-profile-card"><div class="user-avatar">' + escapeHtml(AppState.currentUser.initials) +
-      '</div><div class="user-details"><span class="name">' + escapeHtml(AppState.currentUser.name) + '</span><span class="role">' +
-      escapeHtml(AppState.currentUser.role) + '</span></div><button type="button" class="btn-logout" id="btnLogout" aria-label="Se déconnecter" title="Se déconnecter">' +
-      ICON('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>') + '</button></div></div>';
-    host.innerHTML = html;
-    const logout = document.getElementById('btnLogout');
-    if (logout) logout.addEventListener('click', () => window.SalesApi && window.SalesApi.logout());
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') document.querySelectorAll('.shell-popover').forEach(p => { p.hidden = true; });
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        const s = document.getElementById('globalSearchInput');
+        if (s) { e.preventDefault(); s.focus(); }
+      }
+    });
+    const search = document.querySelector('[data-shell-search]');
+    if (search) {
+      search.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const q = document.getElementById('globalSearchInput').value.trim();
+        if (q) window.location.href = 'clients.html?q=' + encodeURIComponent(q);
+      });
+    }
+  }
+
+  function setupMobileSidebar() {
+    const toggle = document.getElementById('mobileMenuToggle');
+    const sidebar = document.querySelector('.sidebar');
+    if (!toggle || !sidebar) return;
+    toggle.addEventListener('click', (e) => { e.stopPropagation(); sidebar.classList.toggle('mobile-open'); });
+    document.addEventListener('click', (e) => {
+      if (sidebar.classList.contains('mobile-open') && !sidebar.contains(e.target)) sidebar.classList.remove('mobile-open');
+    });
   }
 
   function renderIdentity() {
-    document.querySelectorAll('.user-topbar-pill').forEach(pill => {
-      const avatar = pill.querySelector('.user-avatar');
-      const spans = pill.querySelectorAll('span');
-      if (avatar) avatar.textContent = AppState.currentUser.initials;
-      if (spans[0]) spans[0].textContent = AppState.currentUser.name;
-      if (spans[1]) spans[1].textContent = AppState.currentUser.role;
-    });
-    const tenantLabel = document.getElementById('currentTenantLabel');
-    if (tenantLabel) tenantLabel.textContent = AppState.tenantId || '';
     const greeting = document.getElementById('greetingTitle');
-    if (greeting) {
-      const first = String(AppState.currentUser.name || '').split(/\s+/)[0];
-      greeting.textContent = first ? 'Bonjour ' + first : 'Bonjour';
-    }
+    if (greeting) greeting.textContent = AppState.currentUser.firstName ? 'Bonjour ' + AppState.currentUser.firstName : 'Bonjour';
   }
 
-  // 2. Setup DOM Listeners once loaded
-  document.addEventListener('DOMContentLoaded', () => {
-    renderNav();
-    renderIdentity();
-    highlightActiveNavLink();
-    setupGlobalKeyboardShortcuts();
-    setupTenantSelector();
-    setupMobileSidebar();
-    setupNotificationDropdown();
-    setupNewActionModal();
-  });
-
-  // Highlight the current page in the sidebar
-  function highlightActiveNavLink() {
-    const currentPath = window.location.pathname.split('/').pop() || 'index.html';
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
-      const href = item.getAttribute('href');
-      if (href && (href === currentPath || (currentPath === '' && href === 'index.html'))) {
-        item.classList.add('active');
-      } else if (href && href !== currentPath) {
-        item.classList.remove('active');
-      }
+  // Declarative icons (<button data-icon="plus">) and modal dismissal for every page.
+  function setupDeclarativeUi() {
+    document.querySelectorAll('[data-icon]').forEach(el => {
+      if (el.querySelector('svg')) return;
+      el.insertAdjacentHTML('afterbegin', ICON(I[el.getAttribute('data-icon')] || I.plus, 16));
     });
-  }
-
-  // Ctrl + K Global Hotkey for Search
-  function setupGlobalKeyboardShortcuts() {
+    document.addEventListener('click', (e) => {
+      const closer = e.target.closest('[data-close-modal]');
+      if (closer) { closer.closest('.modal-backdrop').hidden = true; return; }
+      if (e.target.classList && e.target.classList.contains('modal-backdrop')) e.target.hidden = true;
+    });
     document.addEventListener('keydown', (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        const searchInput = document.getElementById('globalSearchInput') || document.querySelector('.search-input');
-        if (searchInput) {
-          searchInput.focus();
-          searchInput.select();
-        }
-      }
-      if (e.key === 'Escape') {
-        closeAllModals();
-      }
+      if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => { m.hidden = true; });
     });
   }
 
-  // Tenant context is fixed by the verified session; switching requires a new login
-  // (the former selector cycled through invented company names locally).
-  function setupTenantSelector() {
-    const selectorPill = document.getElementById('tenantSelectorPill');
-    if (!selectorPill) return;
-    selectorPill.setAttribute('title', 'Tenant de la session authentifiée');
-    selectorPill.addEventListener('click', () => showToast('Tenant actif : ' + (AppState.tenantId || '—') + '. Changer de tenant nécessite une nouvelle connexion.'));
-  }
-
-  // Responsive Mobile Sidebar Toggle
-  function setupMobileSidebar() {
-    const toggleBtn = document.getElementById('mobileMenuToggle');
-    const sidebar = document.querySelector('.sidebar');
-    if (toggleBtn && sidebar) {
-      toggleBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        sidebar.classList.toggle('open');
-      });
-
-      document.addEventListener('click', (e) => {
-        if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
-          sidebar.classList.remove('open');
-        }
-      });
-    }
-  }
-
-  // Notification Panel Dropdown
-  function setupNotificationDropdown() {
-    const notifBtn = document.getElementById('notifBtn');
-    if (!notifBtn) return;
-
-    notifBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      let panel = document.getElementById('notifPanel');
-      if (!panel) {
-        panel = document.createElement('div');
-        panel.id = 'notifPanel';
-        panel.style.cssText = `
-          position: absolute;
-          top: 60px;
-          right: 80px;
-          width: 320px;
-          background: #FFFFFF;
-          border: 1px solid #E4EBE6;
-          border-radius: 12px;
-          box-shadow: 0 10px 25px rgba(10, 58, 42, 0.12);
-          z-index: 1000;
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        `;
-        panel.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #E4EBE6; padding-bottom:8px;">
-            <strong style="color:#17251F; font-size:14px;">Notifications récentes</strong>
-            <span style="font-size:11px; background:#DCFCE7; color:#16A34A; padding:2px 8px; border-radius:999px; font-weight:600;">3 non lues</span>
-          </div>
-          <div style="font-size:12px; color:#17251F; line-height:1.4;">
-            <div style="padding:6px 0; border-bottom:1px solid #F1F5F3;">
-              <span style="color:#16A34A; font-weight:600;">✓ Devis approuvé</span> : DEV-2026-0933 validé par Sara A.
-              <div style="font-size:10px; color:#66756D;">Il y a 10 minutes</div>
-            </div>
-            <div style="padding:6px 0; border-bottom:1px solid #F1F5F3;">
-              <span style="color:#2563EB; font-weight:600;">🛒 Nouvelle commande</span> : CMD-2026-0781 créée pour Atlas Services.
-              <div style="font-size:10px; color:#66756D;">Il y a 27 minutes</div>
-            </div>
-            <div style="padding:6px 0;">
-              <span style="color:#D97706; font-weight:600;">⚠️ Stock bas</span> : 5 unités restantes sur Écran 27" 4K.
-              <div style="font-size:10px; color:#66756D;">Il y a 1 heure</div>
-            </div>
-          </div>
-        `;
-        document.body.appendChild(panel);
-      } else {
-        panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
-      }
-    });
-
-    document.addEventListener('click', () => {
-      const panel = document.getElementById('notifPanel');
-      if (panel) panel.style.display = 'none';
-    });
-  }
-
-  // Quick Action Modal ("+ Nouveau")
-  function setupNewActionModal() {
-    const newBtn = document.getElementById('btnQuickNew');
-    if (!newBtn) return;
-
-    newBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      let modal = document.getElementById('quickNewMenu');
-      if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'quickNewMenu';
-        modal.style.cssText = `
-          position: absolute;
-          top: 60px;
-          right: 24px;
-          width: 220px;
-          background: #FFFFFF;
-          border: 1px solid #E4EBE6;
-          border-radius: 10px;
-          box-shadow: 0 10px 25px rgba(10, 58, 42, 0.12);
-          z-index: 1000;
-          padding: 8px 0;
-          display: flex;
-          flex-direction: column;
-        `;
-        modal.innerHTML = `
-          <a href="quote_builder.html" style="padding:10px 16px; color:#17251F; font-size:13px; text-decoration:none; display:flex; align-items:center; gap:8px;">
-            <span>📝</span> Nouveau devis
-          </a>
-          <a href="orders.html" style="padding:10px 16px; color:#17251F; font-size:13px; text-decoration:none; display:flex; align-items:center; gap:8px;">
-            <span>🛒</span> Nouvelle commande
-          </a>
-          <a href="inbox.html" style="padding:10px 16px; color:#17251F; font-size:13px; text-decoration:none; display:flex; align-items:center; gap:8px;">
-            <span>💬</span> Nouvelle conversation
-          </a>
-          <a href="schedule.html" style="padding:10px 16px; color:#17251F; font-size:13px; text-decoration:none; display:flex; align-items:center; gap:8px;">
-            <span>📅</span> Planifier un appel
-          </a>
-        `;
-        document.body.appendChild(modal);
-      } else {
-        modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
-      }
-    });
-
-    document.addEventListener('click', () => {
-      const modal = document.getElementById('quickNewMenu');
-      if (modal) modal.style.display = 'none';
-    });
-  }
-
-  function closeAllModals() {
-    const notifPanel = document.getElementById('notifPanel');
-    if (notifPanel) notifPanel.style.display = 'none';
-    const quickMenu = document.getElementById('quickNewMenu');
-    if (quickMenu) quickMenu.style.display = 'none';
-  }
-
-  // Toast Notification Helper
   function showToast(message) {
     let toast = document.getElementById('salesAiToast');
     if (!toast) {
       toast = document.createElement('div');
       toast.id = 'salesAiToast';
-      toast.style.cssText = `
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        background: #0A3A2A;
-        color: #FFFFFF;
-        padding: 12px 20px;
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 500;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        z-index: 9999;
-        transition: opacity 0.2s, transform 0.2s;
-        opacity: 0;
-        transform: translateY(10px);
-      `;
+      toast.className = 'toast';
+      toast.setAttribute('role', 'status');
       document.body.appendChild(toast);
     }
     toast.textContent = message;
-    toast.style.opacity = '1';
-    toast.style.transform = 'translateY(0)';
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateY(10px)';
-    }, 2800);
+    toast.classList.add('toast--visible');
+    clearTimeout(showToast.t);
+    showToast.t = setTimeout(() => toast.classList.remove('toast--visible'), 3200);
   }
 
-  // Expose global helper
-  window.SalesAI = {
-    state: AppState,
-    showToast: showToast
-  };
+  document.addEventListener('DOMContentLoaded', () => {
+    renderNav();
+    renderTopbar();
+    renderMobileChrome();
+    renderIdentity();
+    setupMenus();
+    setupMobileSidebar();
+    setupDeclarativeUi();
+  });
 
+  window.SalesAI = { state: AppState, showToast: showToast, openModal: (id) => { const m = document.getElementById(id); if (m) { m.hidden = false; const f = m.querySelector('input,select,textarea,button'); if (f) f.focus(); } }, icon: (name, size) => ICON(I[name] || I.grid, size), logo: logoMarkup };
 })();

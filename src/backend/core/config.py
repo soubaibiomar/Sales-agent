@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     environment: str = Field(default="development")
     log_level: str = Field(default="INFO")
     app_port: int = Field(default=8000)
-    app_host: str = Field(default="0.0.0.0")
+    app_host: str = Field(default="127.0.0.1")  # containers bind explicitly (uvicorn --host)
     cors_allowed_origins: str = Field(default="http://localhost:3000,http://127.0.0.1:3000")
 
     # Database

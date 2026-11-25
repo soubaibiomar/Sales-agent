@@ -5,7 +5,7 @@ Now with cross-process file-locking and live voice call safety guards.
 """
 import os
 import tempfile
-import urllib.request
+import httpx
 import json
 import logging
 import threading
@@ -149,10 +149,9 @@ class ModelLifecycleManager:
     def get_running_ollama_models(self) -> List[Dict[str, Any]]:
         """Queries /api/ps to inspect active models resident in memory."""
         try:
-            req = urllib.request.Request(f"{self.ollama_url}/api/ps", headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=3) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                return data.get("models", [])
+            resp = httpx.get(f"{self.ollama_url}/api/ps", timeout=3)
+            resp.raise_for_status()
+            return resp.json().get("models", [])
         except Exception as e:
             logger.debug(f"Could not connect to Ollama /api/ps: {e}")
             return []
@@ -197,14 +196,7 @@ class ModelLifecycleManager:
 
         logger.info(f"Evicting GPU model: {model_name} from VRAM...")
         try:
-            req_data = json.dumps({"model": model_name, "keep_alive": 0}).encode("utf-8")
-            req = urllib.request.Request(
-                f"{self.ollama_url}/api/generate",
-                data=req_data,
-                headers={"Content-Type": "application/json"}
-            )
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                pass
+            httpx.post(f"{self.ollama_url}/api/generate", json={"model": model_name, "keep_alive": 0}, timeout=5)
         except Exception as e:
             logger.warning(f"Ollama unload request for {model_name} encountered error: {e}")
 

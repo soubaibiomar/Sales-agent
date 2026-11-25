@@ -9,7 +9,7 @@ import time
 import uuid
 import json
 import logging
-import urllib.request
+import httpx
 from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
@@ -204,9 +204,7 @@ class DependencyHealthChecker:
 
         # 3. MinIO Storage Check
         try:
-            req = urllib.request.Request("http://127.0.0.1:9000/minio/health/live")
-            with urllib.request.urlopen(req, timeout=1) as resp:
-                status_code = resp.status
+            status_code = httpx.get("http://127.0.0.1:9000/minio/health/live", timeout=1).status_code
             results["dependencies"]["minio"] = {"status": "HEALTHY" if status_code == 200 else "DEGRADED"}
         except Exception as e:
             results["dependencies"]["minio"] = {"status": "UNHEALTHY", "error": str(e)}
@@ -214,10 +212,8 @@ class DependencyHealthChecker:
 
         # 4. Ollama LLM Runtime Check
         try:
-            req = urllib.request.Request("http://127.0.0.1:11434/api/tags")
-            with urllib.request.urlopen(req, timeout=1.5) as resp:
-                models_data = json.loads(resp.read().decode())
-                models_list = [m.get("name") for m in models_data.get("models", [])]
+            models_data = httpx.get("http://127.0.0.1:11434/api/tags", timeout=1.5).json()
+            models_list = [m.get("name") for m in models_data.get("models", [])]
             results["dependencies"]["ollama"] = {
                 "status": "HEALTHY",
                 "available_models": models_list,

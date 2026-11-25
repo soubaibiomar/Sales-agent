@@ -5,127 +5,66 @@
   <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scheduling & Appointments — Sales AI Platform</title>
+  <title>Selia — Rendez-vous</title>
   <link rel="stylesheet" href="css/design_system.css">
   <link rel="stylesheet" href="css/pages/schedule.css">
-  <script src="js/pages/schedule.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
-    <!-- MASTER SIDEBAR -->
     <aside class="sidebar"><div data-app-nav></div></aside>
-
     <div class="main-wrapper">
-      <header class="topbar">
-        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
-        <div class="search-container">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher des clients, devis, commandes, agents...">
-          <span class="search-shortcut">Ctrl + K</span>
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
+        <div class="page-header">
+          <div class="page-title-group">
+            <h1>Rendez-vous</h1>
+            <p>Planifiez et suivez vos rendez-vous avec vos clients.</p>
+          </div>
+          <div class="page-actions"><button type="button" class="btn btn-primary" id="btnNewAppt" data-icon="plus">Nouveau rendez-vous</button></div>
         </div>
 
-        <div class="topbar-actions">
-          <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel"></span>
-          </div>
+        <section class="kpi-grid kpi-grid--compact" id="kpis" aria-label="Indicateurs"></section>
 
-          <div class="icon-btn-badge" id="notifBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          </div>
-
-          <button class="btn-header-primary" id="btnQuickNew">
-            <span>+</span> Nouveau
-          </button>
-
-          <div class="user-topbar-pill">
-            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;"></div>
-            <div style="display:flex; flex-direction:column; line-height:1.2;">
-              <span style="font-weight:600; font-size:13px; color:#17251F;"></span>
-              <span style="font-size:11px; color:#66756D;"></span>
+        <div class="agenda-grid">
+          <section class="card calendar-card" aria-label="Calendrier">
+            <div class="cal-head">
+              <button type="button" class="icon-btn icon-btn--sm" id="prevMonth" aria-label="Mois précédent">‹</button>
+              <h2 id="monthTitle"></h2>
+              <button type="button" class="icon-btn icon-btn--sm" id="nextMonth" aria-label="Mois suivant">›</button>
             </div>
-          </div>
+            <div class="cal-grid cal-dow" aria-hidden="true"><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span></div>
+            <div class="cal-grid" id="calDays" role="grid"></div>
+          </section>
+          <section class="card day-card" aria-labelledby="dayTitle">
+            <div class="card-header"><h2 class="card-title" id="dayTitle"></h2><span class="card-subtitle" id="dayCount"></span></div>
+            <ul class="agenda" id="agenda"></ul>
+          </section>
         </div>
-      </header>
 
-      <main class="content-wrapper">
-<div class="alert-banner">
-        <span>🛡️</span>
-        <strong>Concurrency Conflict Guard:</strong> Appointment bookings are verified against staff availability with atomic serialization. Double-booking attempts within identical intervals fail closed with HTTP 409 Conflict.
-      </div>
-
-      <!-- Appointments Ledger -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Scheduled Appointments</div>
-          <button class="btn btn-primary" data-on-click="h2">+ Book Appointment</button>
-        </div><div class="table-responsive"><table class="data-table">
-          <thead>
-            <tr>
-              <th>Booking #</th>
-              <th>Service Type</th>
-              <th>Staff Member</th>
-              <th>Start Time</th>
-              <th>End Time</th>
-              <th>Channel</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>APT-20261118-0001</strong></td>
-              <td>SALES_DEMO</td>
-              <td>Youssef Mansouri</td>
-              <td>2026-11-19 10:00 UTC</td>
-              <td>2026-11-19 10:30 UTC</td>
-              <td>VIDEO_CALL</td>
-              <td><span class="badge badge-confirmed">CONFIRMED</span></td>
-              <td>
-                <button class="btn btn-outline" data-on-click="h3">View</button>
-              </td>
-            </tr>
-            <tr>
-              <td><strong>APT-20261118-0002</strong></td>
-              <td>ON_SITE_INSTALLATION</td>
-              <td>Mehdi Benjelloun</td>
-              <td>2026-11-20 14:00 UTC</td>
-              <td>2026-11-20 15:30 UTC</td>
-              <td>ON_SITE</td>
-              <td><span class="badge badge-confirmed">CONFIRMED</span></td>
-              <td>
-                <button class="btn btn-outline">View</button>
-              </td>
-            </tr>
-          </tbody>
-        </table></div>
-      </div>
-
-      <!-- Calendar Slot Availability Viewer -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Calendar Availability Slots (Tomorrow: 2026-11-19)</div>
-          <span style="font-size:0.8rem; color:var(--text-muted);">Working Hours: 09:00 - 18:00 UTC</span>
+        <div class="modal-backdrop" id="apptModal" hidden>
+          <form class="modal" id="apptForm" novalidate aria-labelledby="apptTitle">
+            <h2 id="apptTitle">Nouveau rendez-vous</h2>
+            <div class="form-grid">
+              <div class="field span-2"><label for="aAccount">Client</label><select class="form-control" id="aAccount"></select></div>
+              <div class="field"><label for="aType">Type</label><select class="form-control" id="aType">
+                <option value="SALES_DEMO">Réunion commerciale</option><option value="ON_SITE_INSTALLATION">Visite sur site</option>
+                <option value="HARDWARE_SUPPORT">Support</option><option value="DELIVERY_SLOT">Livraison</option></select></div>
+              <div class="field"><label for="aLoc">Lieu</label><select class="form-control" id="aLoc">
+                <option value="VIDEO_CALL">Visioconférence</option><option value="ON_SITE">Sur site</option><option value="PHONE">Téléphone</option></select></div>
+              <div class="field"><label for="aDate">Date *</label><input class="form-control" id="aDate" type="date" required></div>
+              <div class="field"><label for="aTime">Heure *</label><input class="form-control" id="aTime" type="time" value="10:00" required></div>
+              <div class="field"><label for="aDur">Durée</label><select class="form-control" id="aDur"><option value="30">30 min</option><option value="60" selected>1 h</option><option value="90">1 h 30</option><option value="120">2 h</option></select></div>
+              <div class="field span-2"><label for="aNotes">Objet</label><input class="form-control" id="aNotes" maxlength="255" placeholder="Présentation du devis, visite site…"></div>
+            </div>
+            <p class="form-error" id="apptError" role="alert"></p>
+            <div class="modal-actions"><button type="button" class="btn btn-outline" data-close-modal>Annuler</button><button type="submit" class="btn btn-primary">Planifier</button></div>
+          </form>
         </div>
-        <div class="slots-grid">
-          <div class="slot-card">09:00 - 09:30</div>
-          <div class="slot-card">09:30 - 10:00</div>
-          <div class="slot-card occupied">10:00 - 10:30 (Booked)</div>
-          <div class="slot-card">10:30 - 11:00</div>
-          <div class="slot-card">11:00 - 11:30</div>
-          <div class="slot-card">11:30 - 12:00</div>
-          <div class="slot-card">14:00 - 14:30</div>
-          <div class="slot-card">14:30 - 15:00</div>
-          <div class="slot-card">15:00 - 15:30</div>
-          <div class="slot-card">15:30 - 16:00</div>
-          <div class="slot-card">16:00 - 16:30</div>
-          <div class="slot-card">16:30 - 17:00
       </main>
     </div>
   </div>
-
-
   <script src="js/app_shell.js"></script>
-
+  <script src="js/list_page.js"></script>
+  <script src="js/pages/schedule.js"></script>
 </body>
-<!-- csp-build: migrated -->
 </html>

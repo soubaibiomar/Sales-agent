@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <script src="js/api_client.js"></script>
+  <script src="js/data_views.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selia — Clients</title>
+  <link rel="stylesheet" href="css/design_system.css">
+  <link rel="stylesheet" href="css/pages/clients.css">
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar"><div data-app-nav></div></aside>
+    <div class="main-wrapper">
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
+        <div class="page-header">
+          <div class="page-title-group">
+            <h1>Clients <span class="count" id="clientCount"></span></h1>
+            <p>Liste de vos clients et prospects.</p>
+          </div>
+          <div class="page-actions">
+            <button type="button" class="btn btn-primary" id="btnNewClient" data-icon="plus">Nouveau client</button>
+          </div>
+        </div>
+
+        <section class="card list-card">
+          <div class="list-toolbar">
+            <div class="chip-row" role="group" aria-label="Filtrer par type">
+              <button type="button" class="chip" data-filter="all" aria-pressed="true">Tous</button>
+              <button type="button" class="chip" data-filter="CUSTOMER" aria-pressed="false">Clients</button>
+              <button type="button" class="chip" data-filter="PROSPECT" aria-pressed="false">Prospects</button>
+            </div>
+            <label class="search-inline"><span class="visually-hidden">Rechercher un client</span>
+              <input type="search" class="form-control" id="clientSearch" placeholder="Rechercher par nom, secteur, ville…">
+            </label>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table responsive-table">
+              <thead>
+                <tr><th>Client</th><th>Secteur</th><th>Ville</th><th class="num">CA (MAD)</th><th>Statut</th><th>Dernière activité</th></tr>
+              </thead>
+              <tbody id="clientRows"><tr><td colspan="6" class="data-state" role="status">Chargement des clients…</td></tr></tbody>
+            </table>
+          </div>
+          <nav class="pager" id="pager" aria-label="Pagination"></nav>
+        </section>
+
+        <div class="modal-backdrop" id="clientModal" hidden>
+          <form class="modal" id="clientForm" novalidate aria-labelledby="clientModalTitle">
+            <h2 id="clientModalTitle">Nouveau client</h2>
+            <div class="form-grid">
+              <div class="field span-2"><label for="cName">Nom ou raison sociale *</label><input class="form-control" id="cName" required maxlength="255" autocomplete="organization"></div>
+              <div class="field"><label for="cType">Type</label><select class="form-control" id="cType"><option value="CUSTOMER">Client</option><option value="PROSPECT">Prospect</option></select></div>
+              <div class="field"><label for="cIndustry">Secteur</label><input class="form-control" id="cIndustry" maxlength="100"></div>
+              <div class="field"><label for="cPhone">Téléphone</label><input class="form-control" id="cPhone" maxlength="50" inputmode="tel" autocomplete="tel"></div>
+              <div class="field"><label for="cTax">ICE</label><input class="form-control" id="cTax" maxlength="100"></div>
+              <div class="field span-2"><label for="cCity">Ville / adresse de facturation</label><input class="form-control" id="cCity" autocomplete="address-level2"></div>
+            </div>
+            <p class="form-error" id="clientFormError" role="alert"></p>
+            <div class="modal-actions">
+              <button type="button" class="btn btn-outline" data-close-modal>Annuler</button>
+              <button type="submit" class="btn btn-primary">Créer le client</button>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="js/app_shell.js"></script>
+  <script src="js/pages/clients.js"></script>
+</body>
+</html>

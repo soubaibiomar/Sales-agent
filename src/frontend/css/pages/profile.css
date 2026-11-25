@@ -1,0 +1,23 @@
+/* Selia — Profil & Paramètres */
+.tabs { display: flex; gap: 6px; padding: 4px; border-radius: 14px; background: var(--s-surface-2); border: 1px solid var(--s-border); margin-bottom: 18px; overflow-x: auto; }
+.tabs [role="tab"] { display: inline-flex; align-items: center; gap: 8px; border: 0; background: transparent; padding: 10px 18px; border-radius: 11px;
+  font-family: inherit; font-size: 0.88rem; font-weight: 600; color: var(--s-text-2); cursor: pointer; white-space: nowrap; }
+.tabs [role="tab"][aria-selected="true"] { background: var(--s-olive); color: #FFFFFF; box-shadow: 0 4px 12px rgba(93, 122, 45, 0.25); }
+.profile-grid { display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); gap: 18px; align-items: start; }
+.profile-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; }
+.profile-card .card-title { align-self: flex-start; margin-bottom: 10px; }
+.profile-avatar { width: 96px; height: 96px; border-radius: 50%; background: var(--s-olive); color: #FFFFFF; font-size: 2rem; font-weight: 800;
+  display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(93, 122, 45, 0.3); }
+.profile-card strong { font-size: 1.15rem; }
+.form-rows { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+.field-row { display: grid; grid-template-columns: 140px minmax(0, 1fr); align-items: center; gap: 12px; }
+.field-row label { font-size: 0.86rem; font-weight: 600; color: var(--s-text-2); }
+.form-control[readonly] { background: var(--s-surface-2); color: var(--s-text-2); }
+.info-list { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 12px 16px; margin-top: 12px; }
+.info-list dt { color: var(--s-text-2); font-size: 0.86rem; font-weight: 600; }
+.info-list dd { margin: 0; font-weight: 600; }
+.setting-list { list-style: none; margin: 10px 0 0; padding: 0; }
+.setting-list li { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--s-border); flex-wrap: wrap; }
+.setting-list li:last-child { border-bottom: 0; }
+.setting-list li > span:first-child { display: flex; flex-direction: column; }
+@media (max-width: 860px) { .profile-grid { grid-template-columns: minmax(0, 1fr); } .field-row, .info-list { grid-template-columns: minmax(0, 1fr); } }

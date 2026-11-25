@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <script src="js/api_client.js"></script>
+  <script src="js/data_views.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selia — Paramètres</title>
+  <link rel="stylesheet" href="css/design_system.css">
+  <link rel="stylesheet" href="css/pages/profile.css">
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar"><div data-app-nav></div></aside>
+    <div class="main-wrapper">
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
+        <div class="page-header">
+          <div class="page-title-group">
+            <h1>Paramètres</h1>
+            <p>Gérez votre compte, votre entreprise et votre équipe.</p>
+          </div>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="Sections des paramètres">
+          <button type="button" role="tab" id="tab-profil" aria-controls="panel-profil" aria-selected="true" data-tab="profil" data-icon="user">Profil</button>
+          <button type="button" role="tab" id="tab-entreprise" aria-controls="panel-entreprise" aria-selected="false" data-tab="entreprise" data-icon="home">Entreprise</button>
+          <button type="button" role="tab" id="tab-equipe" aria-controls="panel-equipe" aria-selected="false" data-tab="equipe" data-icon="users">Équipe</button>
+          <button type="button" role="tab" id="tab-securite" aria-controls="panel-securite" aria-selected="false" data-tab="securite" data-icon="settings">Sécurité</button>
+        </div>
+
+        <section class="tab-panel" id="panel-profil" role="tabpanel" aria-labelledby="tab-profil">
+          <div class="profile-grid">
+            <div class="card profile-card">
+              <h2 class="card-title">Mon profil</h2>
+              <span class="profile-avatar" id="pAvatar"></span>
+              <strong id="pName"></strong>
+              <span class="cell-sub" id="pRole"></span>
+            </div>
+            <form class="card" id="profileForm" novalidate>
+              <h2 class="card-title">Informations personnelles</h2>
+              <div class="form-rows">
+                <div class="field-row"><label for="fName">Nom complet</label><input class="form-control" id="fName" maxlength="120" autocomplete="name" required></div>
+                <div class="field-row"><label for="fEmail">E-mail</label><input class="form-control" id="fEmail" type="email" readonly></div>
+                <div class="field-row"><label for="fRole">Rôle</label><input class="form-control" id="fRole" readonly></div>
+              </div>
+              <p class="form-error" id="profileError" role="alert"></p>
+              <div class="modal-actions"><button type="submit" class="btn btn-primary">Enregistrer les modifications</button></div>
+            </form>
+          </div>
+        </section>
+
+        <section class="tab-panel" id="panel-entreprise" role="tabpanel" aria-labelledby="tab-entreprise" hidden>
+          <div class="card"><h2 class="card-title">Entreprise</h2><dl class="info-list" id="tenantInfo"><dt>Chargement…</dt></dl></div>
+        </section>
+
+        <section class="tab-panel" id="panel-equipe" role="tabpanel" aria-labelledby="tab-equipe" hidden>
+          <div class="card list-card">
+            <h2 class="card-title">Équipe</h2>
+            <div class="table-responsive">
+              <table class="data-table responsive-table">
+                <thead><tr><th>Membre</th><th>E-mail</th><th>Rôle</th><th>Statut</th></tr></thead>
+                <tbody id="teamRows"><tr><td colspan="4" class="data-state">Chargement…</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="tab-panel" id="panel-securite" role="tabpanel" aria-labelledby="tab-securite" hidden>
+          <div class="card security-card">
+            <h2 class="card-title">Sécurité du compte</h2>
+            <ul class="setting-list">
+              <li><span><strong>Vérification en deux étapes</strong><span class="cell-sub" id="mfaText"></span></span><span id="mfaPill"></span></li>
+              <li><span><strong>Session</strong><span class="cell-sub">La session expire automatiquement ; fermez-la sur les appareils partagés.</span></span>
+                <button type="button" class="btn btn-outline" data-shell-logout data-icon="logout">Se déconnecter</button></li>
+            </ul>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="js/app_shell.js"></script>
+  <script src="js/pages/profile.js"></script>
+</body>
+</html>

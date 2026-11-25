@@ -5,459 +5,72 @@
   <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sales AI Management — Boîte de réception IA Omnicanal</title>
+  <title>Selia — Conversations</title>
   <link rel="stylesheet" href="css/design_system.css">
   <link rel="stylesheet" href="css/pages/inbox.css">
-  <script src="js/pages/inbox.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
-    <!-- 1. LEFT SIDEBAR (Identical Master Shell) -->
     <aside class="sidebar"><div data-app-nav></div></aside>
-
-    <!-- 2. MAIN APPLICATION WRAPPER -->
     <div class="main-wrapper">
-      <!-- TOPBAR HEADER -->
-      <header class="topbar">
-        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
-        
-        <div class="search-container">
-          <span class="search-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          </span>
-          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher un client, une conversation, un devis...">
-          <span class="search-shortcut">Ctrl + K</span>
-        </div>
-
-        <div class="topbar-actions">
-          <button class="btn-header-primary" id="btnQuickNew">
-            <span>+</span> Nouveau
-          </button>
-
-          <div class="icon-btn-badge" title="Calendrier" data-on-click="h2">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-          </div>
-
-          <div class="icon-btn-badge" id="notifBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          </div>
-
-          <div class="icon-btn-badge" title="Applications">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-          </div>
-
-          <div class="user-topbar-pill">
-            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;">OS</div>
-            <div style="display:flex; flex-direction:column; line-height:1.2;">
-              <span style="font-weight:600; font-size:13px; color:#17251F;"></span>
-              <span style="font-size:11px; color:#66756D;"></span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <!-- 3. INBOX 3-COLUMN WORKSPACE (REFERENCE B) -->
-      <div class="inbox-workspace">
-        <!-- COLUMN 1: Thread List -->
-        <div class="threads-col">
-          <div class="threads-header">
-            <h2>Boîte de réception IA</h2>
-            <p>Gérez vos conversations clients sur tous les canaux</p>
-            <div class="filter-pills-row">
-              <span class="filter-pill active">Toutes (42)</span>
-              <span class="filter-pill">Non lues (8)</span>
-              <span class="filter-pill">Mes conversations</span>
-              <button class="btn btn-outline" style="padding:0.25rem 0.5rem; font-size:11px; border-radius:999px;">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-              </button>
-            </div>
-          </div>
-
-          <ul class="threads-list">
-            <!-- Thread 1 (Selected) -->
-            <li class="thread-item active">
-              <div class="thread-avatar" style="background:#10B981;">
-                AC
-                <span class="channel-badge-icon" title="WhatsApp">🟢</span>
-              </div>
-              <div class="thread-content">
-                <div class="thread-top">
-                  <span class="thread-name">Atlas Construction</span>
-                  <span class="thread-time">10:24</span>
-                </div>
-                <div class="thread-snippet">Bonjour, pourriez-vous m'envoyer...</div>
-                <div class="thread-bottom">
-                  <div class="thread-tags">
-                    <span class="badge badge-info">Prospect</span>
-                    <span class="badge badge-success">Devis</span>
-                  </div>
-                  <span class="thread-unread-badge">3</span>
-                </div>
-              </div>
-            </li>
-
-            <!-- Thread 2 -->
-            <li class="thread-item">
-              <div class="thread-avatar" style="background:#2563EB;">
-                SB
-                <span class="channel-badge-icon" title="Email">✉️</span>
-              </div>
-              <div class="thread-content">
-                <div class="thread-top">
-                  <span class="thread-name">Services BTP</span>
-                  <span class="thread-time">09:47</span>
-                </div>
-                <div class="thread-snippet">Nous souhaitons un devis pour...</div>
-                <div class="thread-bottom">
-                  <div class="thread-tags">
-                    <span class="badge badge-info">Opportunité</span>
-                  </div>
-                  <span class="thread-unread-badge">1</span>
-                </div>
-              </div>
-            </li>
-
-            <!-- Thread 3 -->
-            <li class="thread-item">
-              <div class="thread-avatar" style="background:#059669;">
-                IN
-                <span class="channel-badge-icon" title="Web">💬</span>
-              </div>
-              <div class="thread-content">
-                <div class="thread-top">
-                  <span class="thread-name">Innov Solutions</span>
-                  <span class="thread-time">Hier</span>
-                </div>
-                <div class="thread-snippet">Est-il possible d'avoir un tarif...</div>
-                <div class="thread-bottom">
-                  <div class="thread-tags">
-                    <span class="badge badge-success">Client</span>
-                  </div>
-                </div>
-              </div>
-            </li>
-
-            <!-- Thread 4 -->
-            <li class="thread-item">
-              <div class="thread-avatar" style="background:#D97706;">
-                LG
-                <span class="channel-badge-icon" title="WhatsApp">🟢</span>
-              </div>
-              <div class="thread-content">
-                <div class="thread-top">
-                  <span class="thread-name">LogiTech MAR</span>
-                  <span class="thread-time">Hier</span>
-                </div>
-                <div class="thread-snippet">Merci pour le devis, nous validons...</div>
-                <div class="thread-bottom">
-                  <div class="thread-tags">
-                    <span class="badge badge-warning">Négociation</span>
-                  </div>
-                </div>
-              </div>
-            </li>
-
-            <!-- Thread 5 -->
-            <li class="thread-item">
-              <div class="thread-avatar" style="background:#0284C7;">
-                MT
-                <span class="channel-badge-icon" title="WhatsApp">🟢</span>
-              </div>
-              <div class="thread-content">
-                <div class="thread-top">
-                  <span class="thread-name">MarocTrans</span>
-                  <span class="thread-time">16 nov.</span>
-                </div>
-                <div class="thread-snippet">Avez-vous la disponibilité en stock ?</div>
-                <div class="thread-bottom">
-                  <div class="thread-tags">
-                    <span class="badge badge-info">Support</span>
-                  </div>
-                </div>
-              </div>
-            </li>
-
-            <!-- Thread 6 -->
-            <li class="thread-item">
-              <div class="thread-avatar" style="background:#16A34A;">
-                EL
-                <span class="channel-badge-icon" title="Web">💬</span>
-              </div>
-              <div class="thread-content">
-                <div class="thread-top">
-                  <span class="thread-name">ElectroLine</span>
-                  <span class="thread-time">15 nov.</span>
-                </div>
-                <div class="thread-snippet">Pouvez-vous confirmer la livraison ?</div>
-                <div class="thread-bottom">
-                  <div class="thread-tags">
-                    <span class="badge badge-success">Commande</span>
-                  </div>
-                </div>
-              </div>
-            </li>
-          </ul>
-
-          <div class="threads-footer">
-            <span>1 – 6 sur 42</span>
-            <div style="display:flex; gap:0.25rem;">
-              <button class="btn btn-outline" style="padding:0.2rem 0.5rem; font-size:11px;">‹</button>
-              <button class="btn btn-outline" style="padding:0.2rem 0.5rem; font-size:11px;">›</button>
-            </div>
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
+        <div class="page-header">
+          <div class="page-title-group">
+            <h1>Conversations</h1>
+            <p>Gérez les conversations clients WhatsApp, Web, e-mail et téléphone dans une seule boîte.</p>
           </div>
         </div>
 
-        <!-- COLUMN 2: Active Chat Stream -->
-        <div class="chat-col">
-          <div class="chat-header">
-            <div class="chat-header-user">
-              <div class="thread-avatar" style="background:#10B981; width:36px; height:36px;">AC</div>
-              <div>
-                <div class="chat-header-title">Atlas Construction</div>
-                <div class="chat-header-meta">
-                  <span class="status-badge-online">En ligne</span>
-                  <span>•</span>
-                  <span>WhatsApp</span>
-                  <span class="badge badge-info">Prospect</span>
-                  <span class="badge badge-neutral">BTP</span>
-                </div>
-              </div>
-            </div>
-
-            <div style="display:flex; gap:0.5rem; align-items:center;">
-              <button class="icon-btn-badge" title="Appel téléphonique" data-on-click="h3">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-              </button>
-              <button class="icon-btn-badge" title="Visioconférence">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
-              </button>
-              <button class="icon-btn-badge" title="Plus d'actions">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Chat Messages Body -->
-          <div class="chat-stream" id="chatStream">
-            <div class="date-separator">Aujourd'hui</div>
-
-            <!-- Inbound Message 1 -->
-            <div class="msg-group inbound">
-              <div class="thread-avatar" style="background:#10B981; width:28px; height:28px; font-size:11px;">AC</div>
-              <div>
-                <div class="msg-bubble">
-                  Bonjour, pourriez-vous m'envoyer un devis pour 50 unités du produit PR-480 (panneaux isolants) ?
-                </div>
-                <div class="msg-meta">10:12</div>
-              </div>
-            </div>
-
-            <!-- AI Intent Analysis Card (High-Confidence) -->
-            <div class="ai-analysis-banner">
-              <div class="ai-analysis-top">
-                <span class="ai-analysis-title">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                  Analyse IA — Demande détectée
-                </span>
-                <span class="ai-confidence-pill">Confiance : 98%</span>
-              </div>
-              <div class="ai-analysis-bullets">
-                <div>✓ <strong>Intention :</strong> Demande de devis</div>
-                <div>✓ <strong>Produit :</strong> PR-480 (Panneaux isolants)</div>
-                <div>✓ <strong>Quantité :</strong> 50 unités</div>
-              </div>
-            </div>
-
-            <!-- Outbound AI / Agent Message (Deep Forest Green) -->
-            <div class="msg-group outbound">
-              <div>
-                <div class="msg-bubble">
-                  Bonjour,<br>
-                  Merci pour votre demande. Je vous prépare un devis pour 50 unités du PR-480 avec le meilleur tarif disponible. Souhaitez-vous également la livraison sur chantier ?
-                </div>
-                <div class="msg-meta">10:18 • Envoyé par IA ✓✓</div>
-              </div>
-            </div>
-
-            <!-- Inbound Message 2 -->
-            <div class="msg-group inbound">
-              <div class="thread-avatar" style="background:#10B981; width:28px; height:28px; font-size:11px;">AC</div>
-              <div>
-                <div class="msg-bubble">
-                  Oui la livraison sur notre chantier à Casablanca est incluse.
-                </div>
-                <div class="msg-meta">10:22</div>
-              </div>
-            </div>
-
-            <!-- Typing indicator -->
-            <div class="msg-group inbound" style="align-items:center;">
-              <div class="thread-avatar" style="background:#10B981; width:28px; height:28px; font-size:11px;">AC</div>
-              <div class="msg-bubble" style="padding:0.4rem 0.8rem; font-size:12px; color:#66756D;">
-                <span style="letter-spacing:2px;">• • •</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- AI Response Suggestions Bar -->
-          <div class="ai-suggestions-container">
-            <div class="ai-suggestions-header">
-              <span style="display:flex; align-items:center; gap:0.35rem;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                Suggestions de réponse (IA)
-              </span>
-              <button class="btn btn-outline" style="padding:0.15rem 0.4rem; font-size:10px;" title="Rafraîchir les suggestions">🔄</button>
-            </div>
-
-            <div class="ai-chips-grid">
-              <!-- Suggestion 1 (Active) -->
-              <div class="ai-chip active" data-on-click="h4">
-                <strong>Confirmer le devis ✓</strong>
-                <span>Je prépare le devis complet avec livraison incluse.</span>
-              </div>
-              <!-- Suggestion 2 -->
-              <div class="ai-chip" data-on-click="h5">
-                <strong>Demander des précisions</strong>
-                <span>Avez-vous une date de livraison souhaitée ?</span>
-              </div>
-              <!-- Suggestion 3 -->
-              <div class="ai-chip" data-on-click="h6">
-                <strong>Proposer une alternative</strong>
-                <span>Souhaitez-vous une version renforcée du PR-480 ?</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Message Composer -->
-          <div class="chat-composer">
-            <div style="display:flex; gap:0.4rem; color:#66756D;">
-              <button class="icon-btn-badge" style="width:34px; height:34px;" title="Pièce jointe">📎</button>
-              <button class="icon-btn-badge" style="width:34px; height:34px;" title="Émojis">😊</button>
-              <button class="icon-btn-badge" style="width:34px; height:34px;" title="Modèle de document">📄</button>
-            </div>
-
-            <input type="text" class="composer-input" id="chatInput" placeholder="Écrire un message...">
-
-            <button class="btn-send" id="btnSendChat" title="Envoyer le message">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-            </button>
-          </div>
+        <div class="inbox-filters">
+          <select class="select-pill" id="channelFilter" aria-label="Canal">
+            <option value="">Tous les canaux</option><option value="WHATSAPP">WhatsApp</option><option value="WEBCHAT">Web</option>
+            <option value="EMAIL">E-mail</option><option value="VOICE">Téléphone</option>
+          </select>
+          <select class="select-pill" id="statusFilter" aria-label="Statut">
+            <option value="">Tous les statuts</option><option value="OPEN">Ouvertes</option><option value="PENDING">En attente</option><option value="CLOSED">Fermées</option>
+          </select>
+          <span class="live-pill" id="liveCount"><span class="live-dot"></span> Boîte en direct</span>
         </div>
 
-        <!-- COLUMN 3: Client & Deal Context -->
-        <aside class="context-col">
-          <div class="context-tabs-bar">
-            <button class="context-tab-btn active">Client & Deal</button>
-            <button class="context-tab-btn">Historique</button>
-            <button class="context-tab-btn">Fichiers</button>
-          </div>
+        <div class="inbox-grid">
+          <section class="card inbox-list" aria-label="Liste des conversations">
+            <h2 class="card-title">Conversations <span class="count" id="convCount"></span></h2>
+            <ul class="conv-list" id="convList"><li class="data-state">Chargement…</li></ul>
+          </section>
 
-          <div class="context-body">
-            <!-- Customer Hero Card -->
-            <div class="client-card-hero">
-              <div class="client-hero-top">
-                <div class="thread-avatar" style="background:#10B981; width:44px; height:44px; font-size:16px;">AC</div>
-                <div>
-                  <div style="font-size:1rem; font-weight:700; color:#17251F;">Atlas Construction</div>
-                  <span class="badge badge-success" style="font-size:10px;">Client potentiel</span>
-                </div>
-              </div>
-              <div style="font-size:11px; color:#66756D;">Entreprise • BTP & Construction</div>
+          <section class="card thread" aria-label="Fil de la conversation">
+            <header class="thread-head" id="threadHead"><p class="data-state">Sélectionnez une conversation.</p></header>
+            <div class="messages" id="messages" aria-live="polite"></div>
+            <form class="composer" id="composer">
+              <label class="visually-hidden" for="replyInput">Votre message</label>
+              <textarea class="form-control" id="replyInput" rows="2" placeholder="Écrivez votre message…" disabled></textarea>
+              <div class="composer-actions"><span class="cell-sub" id="composerHint"></span><button type="submit" class="btn btn-primary" id="sendBtn" data-icon="arrow" disabled>Envoyer</button></div>
+            </form>
+          </section>
 
-              <div class="client-info-list" style="margin-top:0.5rem;">
-                <div class="client-info-row">
-                  <span>📞</span> <span>+212 6 61 23 45 67</span>
-                </div>
-                <div class="client-info-row">
-                  <span>✉️</span> <span>contact@atlasconstruction.ma</span>
-                </div>
-                <div class="client-info-row">
-                  <span>📍</span> <span>Casablanca, Maroc</span>
-                </div>
-                <div class="client-info-row">
-                  <span>🏢</span> <span>ICE : 001234567000089</span>
-                </div>
+          <aside class="card ai-panel" aria-label="Assistant IA">
+            <h2 class="card-title"><span class="ai-spark" data-icon="sparkle"></span> Assistant IA</h2>
+            <div class="ai-block">
+              <h3>Réponse suggérée</h3>
+              <div id="aiSuggestion" class="ai-suggestion"><p class="cell-sub">Générez une suggestion à partir de l'historique de la conversation.</p></div>
+              <div class="ai-actions">
+                <button type="button" class="btn btn-outline btn-sm" id="aiGenerate" data-icon="sparkle" disabled>Générer</button>
+                <button type="button" class="btn btn-primary btn-sm" id="aiUse" disabled>Utiliser</button>
               </div>
             </div>
-
-            <!-- Opportunity In Progress Card -->
-            <div class="opp-block">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:0.82rem; font-weight:700; color:#17251F; display:flex; align-items:center; gap:0.35rem;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                  Opportunité en cours
-                </span>
-                <span style="font-size:11px; color:#66756D;">›</span>
-              </div>
-
-              <div class="opp-row">
-                <span class="opp-label">Objet</span>
-                <span class="opp-val">Devis — PR-480 (50 unités)</span>
-              </div>
-              <div class="opp-row">
-                <span class="opp-label">Valeur estimée</span>
-                <span class="opp-val" style="color:#0A3A2A; font-size:0.95rem;">84 500,00 MAD</span>
-              </div>
-              <div class="opp-row">
-                <span class="opp-label">Étape</span>
-                <select class="form-control" style="width:120px; padding:0.2rem 0.4rem; font-size:11px;">
-                  <option selected>Qualification</option>
-                  <option>Proposition</option>
-                  <option>Négociation</option>
-                  <option>Gagné</option>
-                </select>
-              </div>
-              <div class="opp-row">
-                <span class="opp-label">Probabilité</span>
-                <span class="opp-val" style="color:#16A34A;">70%</span>
-              </div>
-              <div class="progress-bar-bg">
-                <div class="progress-bar-fill" style="width:70%;"></div>
-              </div>
-              <div class="opp-row">
-                <span class="opp-label">Échéance</span>
-                <span class="opp-val">📅 25 nov. 2026</span>
-              </div>
-              <div class="opp-row">
-                <span class="opp-label">Assigné à</span>
-                <span class="opp-val" style="display:flex; align-items:center; gap:4px;">
-                  <span style="width:18px; height:18px; border-radius:50%; background:#082C22; color:#FFFFFF; font-size:9px; display:inline-flex; align-items:center; justify-content:center;">OS</span>
-                  Conseiller
-                </span>
-              </div>
+            <div class="ai-tiles">
+              <div class="ai-tile"><span class="cell-sub">Sentiment</span><span id="aiSentiment">—</span></div>
+              <div class="ai-tile"><span class="cell-sub">Objections</span><span id="aiObjections">—</span></div>
             </div>
-
-            <!-- Actions Rapides -->
-            <div class="actions-grid">
-              <div style="font-size:0.82rem; font-weight:700; color:#17251F; display:flex; align-items:center; gap:0.35rem; margin-bottom:0.25rem;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                Actions rapides
-              </div>
-
-              <button class="btn btn-primary" style="width:100%;" data-on-click="h7">
-                <span>📝</span> Créer un devis
-              </button>
-              <button class="btn btn-outline" style="width:100%;">
-                <span>👤</span> Convertir en opportunité
-              </button>
-
-              <div class="actions-dual-row">
-                <button class="btn btn-outline" style="font-size:11px; padding:0.4rem 0.2rem;" data-on-click="h8">
-                  <span>📅</span> Planifier appel
-                </button>
-                <button class="btn btn-outline" style="font-size:11px; padding:0.4rem 0.2rem;">
-                  <span>✓</span> Ajouter tâche
-                </button>
-              </div>
-            </div>
-          </div>
-        </aside>
-      </div>
+            <div class="ai-block"><h3>Résumé client</h3><p class="cell-sub" id="aiSummary">—</p></div>
+            <p class="ai-note">Les suggestions sont des brouillons : elles ne sont jamais envoyées sans votre validation.</p>
+          </aside>
+        </div>
+      </main>
     </div>
   </div>
-
   <script src="js/app_shell.js"></script>
   <script src="js/pages/inbox.js"></script>
 </body>
-<!-- csp-build: migrated -->
 </html>

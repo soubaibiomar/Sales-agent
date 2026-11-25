@@ -74,6 +74,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         )
         response.headers["Permissions-Policy"] = "microphone=(self), camera=(), geolocation=()"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        # Frontend assets are revalidated on every load (cheap 304 via ETag) so a deploy
+        # never leaves users on a stale mix of old scripts and new pages.
+        if request.url.path.startswith("/app/") and "Cache-Control" not in response.headers:
+            response.headers["Cache-Control"] = "no-cache"
         response.headers["X-Correlation-ID"] = correlation_id
         
         return response

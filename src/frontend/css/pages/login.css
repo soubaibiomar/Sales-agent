@@ -1,57 +1,36 @@
-/* Login page (F-20). Uses the design tokens from design_system.css. */
-.login-body {
-  min-height: 100vh;
-  margin: 0;
-  background: #F8FAF9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  box-sizing: border-box;
-}
-.login-shell {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  width: 100%;
-  max-width: 920px;
-  min-height: 520px;
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-.login-brand {
-  background: #0A3A2A;
-  color: #FFFFFF;
-  padding: 48px 40px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  gap: 12px;
-}
-.login-brand h2 { margin: 0; font-size: 26px; line-height: 1.2; }
-.login-brand p { margin: 0; color: #CFE8DD; font-size: 15px; line-height: 1.5; }
-.login-brand .brand-logo-icon { width: 44px; height: 44px; border-radius: 12px; background: #10B981; display: flex; align-items: center; justify-content: center; margin-bottom: auto; }
-.login-card { padding: 48px 40px; display: flex; flex-direction: column; justify-content: center; }
-.login-card h1 { margin: 0 0 6px; font-size: 24px; color: #17251F; }
-.login-sub { margin: 0 0 22px; color: #4A5A52; font-size: 14px; line-height: 1.5; }
+/* Selia — Connexion */
+.login-body { min-height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; }
+.login-shell { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); width: 100%; max-width: 960px; min-height: 560px;
+  background: var(--s-surface); border: 1px solid var(--s-border); border-radius: 24px; overflow: hidden; box-shadow: var(--s-shadow-lg); }
+.login-brand { position: relative; overflow: hidden; padding: 44px 40px; display: flex; flex-direction: column; gap: 14px;
+  background: linear-gradient(165deg, #FBEFE3 0%, #F4E3D1 55%, #EFE2CC 100%); }
+.login-brand::after { content: ""; position: absolute; left: -60px; bottom: -80px; width: 320px; height: 200px; border-radius: 50%; background: rgba(93, 122, 45, 0.18); }
+.login-brand::before { content: ""; position: absolute; right: -70px; bottom: 40px; width: 220px; height: 140px; border-radius: 50%; background: rgba(207, 102, 57, 0.16); }
+.login-brand .selia-wordmark { font-size: 2.1rem; }
+.login-tagline { margin: -6px 0 18px; letter-spacing: 0.18em; text-transform: uppercase; font-size: 0.8rem; font-weight: 600; color: var(--s-text-2); }
+.login-brand h2 { margin: auto 0 0; font-size: 1.7rem; line-height: 1.25; color: var(--s-text); position: relative; z-index: 1; }
+.login-points { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 8px; position: relative; z-index: 1; }
+.login-points li { font-size: 0.92rem; color: var(--s-text-2); padding-left: 24px; position: relative; }
+.login-points li::before { content: ""; position: absolute; left: 0; top: 5px; width: 12px; height: 7px; border-left: 2px solid var(--s-olive); border-bottom: 2px solid var(--s-olive); transform: rotate(-45deg); }
+.login-card { padding: 48px 44px; display: flex; flex-direction: column; justify-content: center; }
+.login-card h1 { margin: 0 0 6px; font-size: 1.6rem; color: var(--s-text); }
+.login-sub { margin: 0 0 22px; color: var(--s-text-2); font-size: 0.92rem; line-height: 1.5; }
 .login-card form { display: flex; flex-direction: column; gap: 8px; }
 .login-card form[hidden] { display: none; }
-.login-card label { font-size: 13px; font-weight: 600; color: #17251F; margin-top: 8px; }
-.login-card input {
-  height: 42px; padding: 0 12px; border: 1px solid #CBD5E1; border-radius: 8px; font-size: 15px; color: #17251F; background: #FFFFFF;
-}
-.login-card input:focus { outline: 3px solid rgba(16, 185, 129, 0.35); border-color: #10B981; }
-.login-advanced { margin-top: 6px; font-size: 13px; color: #4A5A52; }
+.login-card label { font-size: 0.84rem; font-weight: 600; color: var(--s-text); margin-top: 8px; }
+.login-card input { height: 46px; padding: 0 14px; border: 1px solid var(--s-border); border-radius: 12px; font-size: 0.95rem; color: var(--s-text); background: #FFFDFA; }
+.login-card input:focus { outline: none; border-color: var(--s-olive); box-shadow: 0 0 0 3px rgba(93, 122, 45, 0.18); }
+.login-advanced { margin-top: 6px; font-size: 0.84rem; color: var(--s-text-2); }
 .login-advanced summary { cursor: pointer; }
-.login-submit { margin-top: 18px; height: 44px; border: 0; border-radius: 8px; background: #0A3A2A; color: #FFFFFF; font-weight: 600; font-size: 15px; cursor: pointer; }
-.login-submit:hover { background: #064E3B; }
+.login-submit { margin-top: 18px; height: 48px; border: 0; border-radius: 12px; background: var(--s-olive); color: #FFFFFF; font-weight: 700; font-size: 0.95rem;
+  cursor: pointer; box-shadow: 0 6px 16px rgba(93, 122, 45, 0.28); }
+.login-submit:hover { background: var(--s-olive-600); }
 .login-submit:disabled { opacity: 0.7; cursor: progress; }
-.login-message { min-height: 22px; margin-top: 14px; color: #B91C1C; font-size: 14px; font-weight: 500; }
-@media (max-width: 720px) {
+.login-message { min-height: 22px; margin-top: 14px; color: var(--s-danger); font-size: 0.9rem; font-weight: 500; }
+@media (max-width: 760px) {
   .login-shell { grid-template-columns: minmax(0, 1fr); min-height: 0; }
-  .login-brand { padding: 28px 24px; }
-  .login-brand .brand-logo-icon { margin-bottom: 8px; }
-  .login-card { padding: 28px 24px; }
+  .login-brand { padding: 26px 24px; gap: 8px; }
+  .login-brand h2, .login-points { display: none; }
+  .login-tagline { margin-bottom: 0; }
+  .login-card { padding: 26px 24px 32px; }
 }

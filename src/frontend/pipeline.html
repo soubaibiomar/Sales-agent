@@ -5,121 +5,81 @@
   <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sales AI Management — Pipeline Commercial & Opportunités</title>
+  <title>Selia — Opportunités</title>
   <link rel="stylesheet" href="css/design_system.css">
   <link rel="stylesheet" href="css/pages/pipeline.css">
-  <script src="js/pages/pipeline.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
-    <!-- 1. MASTER SIDEBAR -->
     <aside class="sidebar"><div data-app-nav></div></aside>
-
-    <!-- 2. MAIN APPLICATION WRAPPER -->
     <div class="main-wrapper">
-      <header class="topbar">
-        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
-        <div class="search-container">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher des opportunités, comptes, montants...">
-          <span class="search-shortcut">Ctrl + K</span>
-        </div>
-
-        <div class="topbar-actions">
-          <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel"></span>
-          </div>
-          <button class="btn-header-primary" data-on-click="h2">+ Nouvelle Opportunité</button>
-        </div>
-      </header>
-
-      <main class="content-wrapper">
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
         <div class="page-header">
           <div class="page-title-group">
-            <h1>Pipeline Commercial & Opportunités CRM</h1>
-            <p>Visualisez l'avancement des deals et optimisez les taux de conversion commerciale.</p>
+            <h1>Opportunités <span class="count" id="oppCount"></span></h1>
+            <p>Suivez l'avancement de vos opportunités commerciales.</p>
           </div>
-
-          <div style="display:flex; gap:0.5rem;">
-            <button class="btn btn-outline" data-on-click="h3">🔄 Actualiser</button>
-            <button class="btn btn-emerald" data-on-click="h4">+ Nouveau Deal</button>
-          </div>
-        </div>
-
-        <!-- Funnel Summary Metrics -->
-        <div class="kpi-grid kpi-grid--4">
-          <div class="kpi-card" style="padding:1rem;">
-            <span class="kpi-title">Total Pipeline</span>
-            <div class="kpi-value" style="font-size:1.35rem; color:#0A3A2A;">4 760 000 MAD</div>
-            <span class="kpi-trend">↑ +14.8% vs. M-1</span>
-          </div>
-          <div class="kpi-card" style="padding:1rem;">
-            <span class="kpi-title">Deals Actifs</span>
-            <div class="kpi-value" style="font-size:1.35rem;">174</div>
-            <span class="badge badge-info">5 étapes actives</span>
-          </div>
-          <div class="kpi-card" style="padding:1rem;">
-            <span class="kpi-title">Taux de Signature</span>
-            <div class="kpi-value" style="font-size:1.35rem; color:#16A34A;">38.4%</div>
-            <span class="kpi-trend">↑ +4.2%</span>
-          </div>
-          <div class="kpi-card" style="padding:1rem;">
-            <span class="kpi-title">Cycle Moyen de Vente</span>
-            <div class="kpi-value" style="font-size:1.35rem;">18 jours</div>
-            <span class="badge badge-success">Optimisé par IA</span>
+          <div class="page-actions">
+            <div class="segmented" role="group" aria-label="Affichage">
+              <button type="button" data-view="board" aria-pressed="true">Pipeline</button>
+              <button type="button" data-view="list" aria-pressed="false">Liste</button>
+            </div>
+            <button type="button" class="btn btn-primary" id="btnNewOpp" data-icon="plus">Nouvelle opportunité</button>
           </div>
         </div>
 
-        <!-- Kanban Board Container -->
-        <div class="kanban-board-container" id="kanbanBoard">
-          <!-- Dynamically Populated by JavaScript -->
+        <section class="board" id="board" aria-label="Pipeline par étape"><p class="data-state" role="status">Chargement du pipeline…</p></section>
+
+        <section class="card list-card" id="listView" hidden>
+          <div class="table-responsive">
+            <table class="data-table responsive-table">
+              <thead><tr><th>Opportunité</th><th>Client</th><th>Étape</th><th class="num">Montant (MAD)</th><th class="num">Probabilité</th></tr></thead>
+              <tbody id="oppRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <div class="modal-backdrop" id="oppModal" hidden>
+          <form class="modal" id="oppForm" novalidate aria-labelledby="oppModalTitle">
+            <h2 id="oppModalTitle">Nouvelle opportunité</h2>
+            <div class="form-grid">
+              <div class="field span-2"><label for="oTitle">Intitulé *</label><input class="form-control" id="oTitle" required maxlength="255"></div>
+              <div class="field span-2"><label for="oAccount">Client *</label><select class="form-control" id="oAccount" required></select></div>
+              <div class="field"><label for="oAmount">Montant (MAD)</label><input class="form-control" id="oAmount" type="number" min="0" step="0.01" inputmode="decimal"></div>
+              <div class="field"><label for="oStage">Étape</label><select class="form-control" id="oStage">
+                <option value="DISCOVERY">Prospection</option><option value="QUALIFICATION">Qualification</option>
+                <option value="PROPOSAL">Proposition</option><option value="NEGOTIATION">Négociation</option></select></div>
+              <div class="field"><label for="oProb">Probabilité (%)</label><input class="form-control" id="oProb" type="number" min="0" max="100" value="20"></div>
+              <div class="field"><label for="oClose">Clôture prévue</label><input class="form-control" id="oClose" type="date"></div>
+            </div>
+            <p class="form-error" id="oppFormError" role="alert"></p>
+            <div class="modal-actions">
+              <button type="button" class="btn btn-outline" data-close-modal>Annuler</button>
+              <button type="submit" class="btn btn-primary">Créer l'opportunité</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="modal-backdrop" id="dealModal" hidden>
+          <form class="modal" id="dealForm" aria-labelledby="dealTitle">
+            <h2 id="dealTitle">Opportunité</h2>
+            <p class="deal-meta" id="dealMeta"></p>
+            <div class="field"><label for="dealStage">Déplacer vers l'étape</label><select class="form-control" id="dealStage">
+              <option value="DISCOVERY">Prospection</option><option value="QUALIFICATION">Qualification</option><option value="PROPOSAL">Proposition</option>
+              <option value="NEGOTIATION">Négociation</option><option value="CLOSED_WON">Gagnée</option><option value="CLOSED_LOST">Perdue</option></select></div>
+            <div class="field" id="lostReasonField" hidden><label for="dealLost">Motif de perte</label><input class="form-control" id="dealLost" maxlength="255"></div>
+            <p class="form-error" id="dealError" role="alert"></p>
+            <div class="modal-actions">
+              <a class="btn btn-outline" id="dealQuote" href="quote_builder.html">Créer un devis</a>
+              <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </div>
+          </form>
         </div>
       </main>
     </div>
   </div>
-
-  <!-- Create New Opportunity Modal -->
-  <div class="modal-overlay" id="oppModal">
-    <div class="modal-card">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="font-size:1.1rem; font-weight:700; color:#17251F;">Créer une Nouvelle Opportunité</h3>
-        <button data-on-click="h5" style="background:none; border:none; font-size:18px; cursor:pointer;">✕</button>
-      </div>
-
-      <div class="form-group">
-        <label style="font-size:12px; font-weight:600; color:#66756D; margin-bottom:4px;">Titre de l'opportunité</label>
-        <input type="text" id="oppTitle" class="form-control" placeholder="ex. Déploiement Cloud Casablanca" />
-      </div>
-
-      <div class="form-group">
-        <label style="font-size:12px; font-weight:600; color:#66756D; margin-bottom:4px;">Compte Client / Entreprise</label>
-        <input type="text" id="oppAccount" class="form-control" placeholder="Nom ou ID client" />
-      </div>
-
-      <div class="form-group">
-        <label style="font-size:12px; font-weight:600; color:#66756D; margin-bottom:4px;">Montant Estimé (MAD)</label>
-        <input type="number" id="oppAmount" class="form-control" placeholder="ex. 120000" />
-      </div>
-
-      <div class="form-group">
-        <label style="font-size:12px; font-weight:600; color:#66756D; margin-bottom:4px;">Étape Initiale</label>
-        <select id="oppStage" class="form-control">
-          <option value="DISCOVERY">1. Prospection & Découverte</option>
-          <option value="QUALIFICATION">2. Qualification</option>
-          <option value="PROPOSAL">3. Proposition Commerciale</option>
-          <option value="NEGOTIATION">4. Négociation</option>
-        </select>
-      </div>
-
-      <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.5rem;">
-        <button class="btn btn-outline" data-on-click="h6">Annuler</button>
-        <button class="btn btn-primary" data-on-click="h7">Créer le Deal</button>
-      </div>
-    </div>
-  </div>
-
   <script src="js/app_shell.js"></script>
   <script src="js/pages/pipeline.js"></script>
 </body>
-<!-- csp-build: migrated -->
 </html>

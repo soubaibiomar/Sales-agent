@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <script src="js/api_client.js"></script>
+  <script src="js/data_views.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selia — Devis</title>
+  <link rel="stylesheet" href="css/design_system.css">
+  <link rel="stylesheet" href="css/pages/quotes.css">
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar"><div data-app-nav></div></aside>
+    <div class="main-wrapper">
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
+        <div class="page-header">
+          <div class="page-title-group">
+            <h1>Devis</h1>
+            <p>Créez, suivez et relancez vos devis.</p>
+          </div>
+          <div class="page-actions"><a class="btn btn-primary" href="quote_builder.html" data-icon="plus">Nouveau devis</a></div>
+        </div>
+
+        <section class="kpi-grid kpi-grid--compact" id="kpis" aria-label="Indicateurs"></section>
+
+        <section class="card list-card">
+          <div class="list-toolbar">
+            <div class="chip-row" role="group" aria-label="Filtrer par statut" id="chips"></div>
+            <div class="toolbar-right">
+              <label class="search-inline"><span class="visually-hidden">Rechercher</span><input type="search" class="form-control" id="search" placeholder="Rechercher un devis, un client…"></label>
+              <select class="select-pill" id="yearSelect" aria-label="Période"><option value="year" selected>Cette année</option><option value="all">Toutes les dates</option></select>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table responsive-table">
+              <thead><tr><th>N° devis</th><th>Client</th><th class="num">Montant (MAD)</th><th>Date</th><th>Échéance</th><th>Statut</th></tr></thead>
+              <tbody id="rows"><tr><td colspan="6" class="data-state" role="status">Chargement…</td></tr></tbody>
+            </table>
+          </div>
+          <nav class="pager" id="pager" aria-label="Pagination"></nav>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="js/app_shell.js"></script>
+  <script src="js/list_page.js"></script>
+  <script src="js/pages/quotes.js"></script>
+</body>
+</html>

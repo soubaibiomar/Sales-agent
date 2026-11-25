@@ -1,33 +1,10 @@
-/* Extracted from index.html by scripts/frontend_csp_build.py */
-/* Specific dashboard enhancements */
-    .dashboard-layout-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 340px;
-      gap: 1.5rem;
-      align-items: start;
-    }
-    .dashboard-left-col {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-    .dashboard-right-col {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-    .charts-dual-row {
-      display: grid;
-      grid-template-columns: 1.4fr minmax(0, 1fr);
-      gap: 1.5rem;
-    }
-    .tables-dual-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 1fr;
-      gap: 1.5rem;
-    }
-    @media (max-width: 1200px) {
-      .dashboard-layout-grid { grid-template-columns: minmax(0, 1fr); }
-      .charts-dual-row { grid-template-columns: minmax(0, 1fr); }
-      .tables-dual-row { grid-template-columns: minmax(0, 1fr); }
-    }
+/* Selia — Tableau de bord */
+.dash-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 18px; }
+.dash-grid .card { min-width: 0; }
+#revenueChart { min-height: 220px; }
+#oppDonut .donut-wrap { justify-content: center; }
+@media (max-width: 1100px) { .dash-grid { grid-template-columns: minmax(0, 1fr); } }
+.top-row { display: flex; justify-content: space-between; gap: 10px; }
+.top-row .top-amount { font-size: 0.84rem; font-weight: 700; color: var(--s-text); white-space: nowrap; overflow: visible; }
+.feed a.feed-main { text-decoration: none; color: inherit; }
+.feed a.feed-main:hover strong { color: var(--s-olive-700); }

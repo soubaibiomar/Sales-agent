@@ -14,7 +14,7 @@ from src.backend.core.auth_middleware import (
     get_security_context, SecurityContext, require_permission, require_privileged_mfa
 )
 from src.backend.schemas.identity import (
-    UserCreateRequest, UserResponse, UserUpdateRequest
+    UserCreateRequest, UserResponse, UserUpdateRequest, MyProfileUpdateRequest
 )
 from src.backend.models.entities import User, Role, UserRole
 
@@ -45,6 +45,34 @@ async def get_my_profile(
         roles=context.roles,
         created_at=user.created_at
     )
+
+@router.patch("/me", response_model=UserResponse)
+async def update_my_profile(
+    req: MyProfileUpdateRequest,
+    context: SecurityContext = Depends(get_security_context),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Updates the signed-in user's display name (Selia profile page). Own record only."""
+    name = " ".join(req.full_name.split())
+    if not name:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="full_name must not be blank")
+    stmt = select(User).where(User.id == context.user_id, User.tenant_id == context.tenant_id)
+    user = (await db.execute(stmt)).scalars().first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail={"error": "User profile not found", "correlation_id": context.correlation_id})
+    user.full_name = name
+    await db.flush()
+    # Build the response inside the transaction: the tenant RLS context is transaction-local,
+    # so re-reading the row after commit would not see it.
+    response = UserResponse(
+        id=user.id, tenant_id=user.tenant_id, email=user.email, full_name=user.full_name,
+        is_active=user.is_active, is_verified=user.is_verified, mfa_enabled=user.mfa_enabled,
+        roles=context.roles, created_at=user.created_at
+    )
+    await db.commit()
+    return response
+
 
 @router.get("", response_model=List[UserResponse])
 async def list_users(

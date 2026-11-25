@@ -3,7 +3,7 @@ Identity, Tenancy, and RBAC Management Pydantic Schemas.
 """
 from typing import List, Optional
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import ConfigDict, BaseModel, EmailStr, Field
 
 class TenantCreateRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
@@ -39,6 +39,12 @@ class UserCreateRequest(BaseModel):
     password: str = Field(..., min_length=8)
     full_name: str = Field(..., min_length=2)
     roles: List[str] = Field(default_factory=lambda: ["sales_representative"])
+
+class MyProfileUpdateRequest(BaseModel):
+    """Self-service profile edit: only the display name. Roles, status, e-mail and tenant
+    are never accepted here (no privilege change through the profile page)."""
+    model_config = ConfigDict(extra="forbid")
+    full_name: str = Field(..., min_length=1, max_length=120)
 
 class UserUpdateRequest(BaseModel):
     full_name: Optional[str] = None

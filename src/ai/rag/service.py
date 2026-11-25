@@ -44,13 +44,13 @@ def deterministic_embedding(text: str, dim: int = 768) -> List[float]:
         return vec
 
     for i, word in enumerate(words):
-        h = int(hashlib.md5(word.encode("utf-8")).hexdigest(), 16)
+        h = int(hashlib.md5(word.encode("utf-8"), usedforsecurity=False).hexdigest(), 16)
         idx = h % dim
         # Position-weighted signal
         vec[idx] += 1.0 / math.sqrt(i + 1)
         # Bigram signal if exists
         if i > 0:
-            bi_h = int(hashlib.md5(f"{words[i-1]}_{word}".encode("utf-8")).hexdigest(), 16)
+            bi_h = int(hashlib.md5(f"{words[i-1]}_{word}".encode("utf-8"), usedforsecurity=False).hexdigest(), 16)
             vec[bi_h % dim] += 0.5
 
     # L2 normalize

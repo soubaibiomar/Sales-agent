@@ -154,7 +154,7 @@ def test_active_generation_lease_blocks_eviction():
     # 3. After lease release, lease count drops to 0 and eviction is permitted
     assert manager.get_active_lease_count(model) == 0
     with patch.object(manager, "get_running_ollama_models", return_value=[]):
-        with patch("urllib.request.urlopen"):
+        with patch("src.ai.model_lifecycle.httpx.post"):
             success = manager.evict_gpu_model(model, verify=False)
             assert success is True
 

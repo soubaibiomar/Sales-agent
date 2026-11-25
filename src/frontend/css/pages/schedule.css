@@ -1,28 +1,23 @@
-/* Extracted from schedule.html by scripts/frontend_csp_build.py */
-.content { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
-    
-    .panel { background: var(--bg-neutral); border-radius: 8px; border: 1px solid var(--border-muted); padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-muted); padding-bottom: 0.75rem; }
-    .panel-title { font-size: 1rem; font-weight: 700; color: var(--primary); }
-    
-    table { width: 100%; border-collapse: collapse; }
-    th { background: #F8FAFC; padding: 0.75rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); text-align: left; }
-    td { padding: 0.85rem 0.75rem; border-bottom: 1px solid var(--border-muted); font-size: 0.85rem; }
-    tr:hover { background: #F1F5F9; }
-    
-    .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 700; font-size: 0.75rem; }
-    .badge-confirmed { background: #DCFCE7; color: var(--status-success); }
-    .badge-requested { background: #FEF3C7; color: var(--status-warning); }
-    .badge-completed { background: #E0E7FF; color: var(--status-info); }
-    .badge-cancelled { background: #FEE2E2; color: var(--status-danger); }
-    
-    .btn { padding: 0.45rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; }
-    .btn-primary { background: var(--primary); color: #fff; }
-    .btn-outline { background: transparent; border: 1px solid var(--border-muted); color: var(--text-main); }
-
-    .slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 130px), 1fr)); gap: 0.75rem; margin-top: 1rem; }
-    .slot-card { padding: 0.75rem; border: 1px solid var(--border-muted); border-radius: 6px; text-align: center; cursor: pointer; font-size: 0.85rem; background: #FFFFFF; }
-    .slot-card:hover { border-color: var(--primary); background: var(--primary-tint); }
-    .slot-card.occupied { background: #F1F5F9; color: var(--text-muted); cursor: not-allowed; text-decoration: line-through; border-color: transparent; }
-
-    .alert-banner { padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.85rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; background: #EFF6FF; border: 1px solid #BFDBFE; color: #1E40AF; }
+/* Selia — Rendez-vous */
+.agenda-grid { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: 18px; align-items: start; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.cal-head h2 { font-size: 1rem; text-transform: capitalize; }
+.icon-btn--sm { width: 34px; height: 34px; font-size: 1.1rem; box-shadow: none; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+.cal-dow span { font-size: 0.74rem; font-weight: 600; color: var(--s-text-3); padding: 4px 0; }
+.cal-day { position: relative; aspect-ratio: 1; border: 0; border-radius: 10px; background: transparent; font-family: inherit; font-size: 0.86rem;
+  color: var(--s-text); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.cal-day:hover { background: var(--s-surface-2); }
+.cal-day.is-out { color: var(--s-text-3); }
+.cal-day.is-today { box-shadow: inset 0 0 0 1.5px var(--s-olive); }
+.cal-day[aria-selected="true"] { background: var(--s-olive); color: #FFFFFF; font-weight: 700; }
+.cal-day.has-events::after { content: ""; position: absolute; bottom: 5px; width: 5px; height: 5px; border-radius: 50%; background: var(--s-terra); }
+.cal-day[aria-selected="true"].has-events::after { background: #FFFFFF; }
+.agenda { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.agenda li { display: grid; grid-template-columns: 64px 38px minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--s-border); }
+.agenda li:last-child { border-bottom: 0; }
+.agenda .time { font-weight: 700; font-variant-numeric: tabular-nums; }
+.agenda .loc { color: var(--s-text-2); display: inline-flex; }
+@media (max-width: 1000px) { .agenda-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) { .agenda li { grid-template-columns: 52px minmax(0, 1fr) auto; } .agenda li .feed-icon, .agenda li .loc { display: none; } }
+.agenda li.data-state { display: block; text-align: center; }
