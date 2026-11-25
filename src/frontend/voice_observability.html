@@ -101,25 +101,24 @@
       </div>
     </div>
 
-    <!-- Latency Pipeline Visual Breakdown -->
+    <!-- Latency Pipeline Visual Breakdown (measured, group D benchmark) -->
     <div class="card">
       <div class="card-title">
-        <span>Measured Voice Turn Latency Breakdown ($t_{\text{total}} = 518.3\text{ ms}$)</span>
-        <span style="font-size:0.8rem; color:var(--status-success); font-weight:700;">MEETS_TARGET SLO</span>
+        <span>Latence mesurée d'un tour vocal complet (médiane 6 859 ms)</span>
+        <span class="status-text-critical">Objectif 600 ms NON atteint</span>
       </div>
       <div class="latency-bar-container">
-        <div class="latency-seg" style="width: 2%; background: #64748B;" title="VAD: ~0.03ms">VAD</div>
-        <div class="latency-seg" style="width: 22%; background: #2563EB;" title="ASR Whisper CPU: 110.0ms">ASR (110ms)</div>
-        <div class="latency-seg" style="width: 71%; background: #0A3A2A;" title="LLM TTFT qwen3.5:4b: 380.0ms">LLM TTFT (380ms)</div>
-        <div class="latency-seg" style="width: 5%; background: #10B981;" title="TTS Kokoro CPU: 28.3ms">TTS (28ms)</div>
+        <div class="latency-seg" style="width: 24%; background: #2563EB;" title="ASR faster-whisper small, CPU : 1 591 ms">ASR</div>
+        <div class="latency-seg" style="width: 71%; background: #0A3A2A;" title="Réponse qwen3.5:4b (48 jetons) : 4 879 ms">LLM</div>
+        <div class="latency-seg" style="width: 5%; background: #10B981;" title="TTS Piper, CPU : 194 ms">TTS</div>
       </div>
-      <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--text-muted);">
-        <span>1. Audio VAD (0.03ms)</span>
-        <span>2. Whisper ASR (110.0ms)</span>
-        <span>3. Ollama 4B TTFT (380.0ms)</span>
-        <span>4. Kokoro/Piper TTS (28.3ms)</span>
-        <span>Total: ~518ms</span>
+      <div class="latency-legend">
+        <span>1. ASR faster-whisper (1 591 ms)</span>
+        <span>2. LLM qwen3.5:4b (4 879 ms)</span>
+        <span>3. TTS Piper (194 ms)</span>
+        <span>Total médian : 6 859 ms</span>
       </div>
+      <p class="kpi-caption">Mesuré le 2026-11-24 : 6 tours audio→audio (fr, en, ar), i7-13620H, scripts/benchmark_real_voice_turn.py. Ce bloc est statique ; relancez le script pour actualiser.</p>
     </div>
 
     <!-- Stage-by-Stage Latency Table -->
@@ -137,13 +136,7 @@
           </tr>
         </thead>
         <tbody id="componentTableBody">
-          <tr><td>Voice Activity Detection (VAD)</td><td>Energy RMS Threshold (50ms)</td><td>0.031 ms</td><td>0.051 ms</td><td>&lt; 5.0 ms</td><td><strong style="color:var(--status-success);">PASS</strong></td></tr>
-          <tr><td>Barge-In Cancellation</td><td>BargeInManager (Playback Abort)</td><td>0.025 ms</td><td>0.034 ms</td><td>&lt; 200.0 ms</td><td><strong style="color:var(--status-success);">PASS</strong></td></tr>
-          <tr><td>G.711 Telephony Codec</td><td>Pure-Python Lookup Table (8k/16k)</td><td>0.065 ms</td><td>0.118 ms</td><td>&lt; 1.0 ms</td><td><strong style="color:var(--status-success);">PASS</strong></td></tr>
-          <tr><td>Language ID & Dialect</td><td>MultilingualVoiceEngine</td><td>0.183 ms</td><td>0.293 ms</td><td>&lt; 10.0 ms</td><td><strong style="color:var(--status-success);">PASS</strong></td></tr>
-          <tr><td>PII Redaction & Injection Guard</td><td>VoicePIIRedactor + Guard</td><td>0.009 ms</td><td>0.012 ms</td><td>&lt; 5.0 ms</td><td><strong style="color:var(--status-success);">PASS</strong></td></tr>
-          <tr><td>Speech Synthesis (TTS)</td><td>Kokoro-82M (CPU Emulation)</td><td>28.28 ms</td><td>50.68 ms</td><td>RTF &lt; 0.3x</td><td><strong style="color:var(--status-success);">PASS (138x RT)</strong></td></tr>
-          <tr><td>LLM Time-To-First-Token</td><td>Resident qwen3.5:4b (GPU)</td><td>380.0 ms</td><td>450.0 ms</td><td>&lt; 500.0 ms</td><td><strong style="color:var(--status-success);">PASS</strong></td></tr>
+          <tr><td colspan="6" class="data-state data-state--empty" role="status">Lancez le benchmark pour mesurer les étapes locales (VAD, identification de langue, TTS, interruption).</td></tr>
         </tbody>
       </table>
     </div>

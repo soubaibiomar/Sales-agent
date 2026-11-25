@@ -1,4 +1,8 @@
 """
+LEGACY partial export (kept for its Step 02 tests). NOT a disaster-recovery backup:
+it covers only the 10 identity tables listed below. Use scripts/pg_backup.py
+(full pg_dump, dedicated key, verified restore drill) - inspection finding F-26.
+
 Automated Encrypted Database Backup Utility.
 Performs:
 1. Extraction of complete relational database records across all 10 core tables:

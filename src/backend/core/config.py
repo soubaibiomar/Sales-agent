@@ -99,6 +99,10 @@ class Settings(BaseSettings):
     # measured ~15 s cold start (F-16).
     ai_warmup_on_startup: bool = False
 
+    # F-26: operator token for GET /metrics (Prometheus scrape). Required outside
+    # development; in development /metrics is open on the loopback interface.
+    metrics_token: str = ""
+
     # Peripheral n8n outbound signing secret.
     n8n_webhook_secret: str = "dev_n8n_webhook_secret_change_in_prod"
 
@@ -123,6 +127,8 @@ class Settings(BaseSettings):
             name for name in SECRET_FIELDS
             if getattr(self, name) == type(self).model_fields[name].default
         ]
+        if len(self.metrics_token) < 24:
+            problems.append("metrics_token (set a random token of at least 24 characters)")
         if self.database_url.startswith("sqlite"):
             problems.append("database_url (SQLite has no Row-Level Security)")
         if problems:

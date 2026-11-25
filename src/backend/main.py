@@ -11,7 +11,8 @@ import logging
 import uuid
 import os
 from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
+import hmac
+from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -19,6 +20,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from src.backend.core.config import settings
 from contextlib import asynccontextmanager
 from src.backend.core.database import init_db, assert_rls_enforced_connection
+from src.backend.core.operations import configure_logging, MetricsMiddleware, readiness, render_metrics
 from src.backend.api.auth import router as auth_router
 from src.backend.api.tenants import router as tenants_router
 from src.backend.api.users import router as users_router
@@ -47,6 +49,7 @@ from src.backend.api.analytics import router as analytics_router
 from src.backend.api.observability import router as observability_router
 from src.backend.api.saas_admin import router as saas_router
 
+configure_logging()
 logger = logging.getLogger("SalesAI.API")
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -77,6 +80,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    configure_logging()  # again, after uvicorn installed its own handlers
     # F-09: never serve traffic on a connection that silently bypasses tenant RLS.
     warning = await assert_rls_enforced_connection()
     if warning:
@@ -98,6 +102,7 @@ app = FastAPI(
 
 # Attach Middlewares
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(MetricsMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -122,11 +127,27 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Health & Readiness Probes
 @app.get("/health", tags=["Monitoring"])
 async def health_check():
-    return {"status": "HEALTHY", "environment": settings.environment}
+    """Liveness: the process is up and serving. Deliberately checks no dependency."""
+    return {"status": "ALIVE"}
 
 @app.get("/ready", tags=["Monitoring"])
 async def readiness_check():
-    return {"status": "READY", "services": {"database": "UP", "redis": "UP", "storage": "UP"}}
+    """F-26 readiness: real dependency checks; 503 when a required dependency is down."""
+    result = await readiness()
+    code = status.HTTP_200_OK if result["status"] == "READY" else status.HTTP_503_SERVICE_UNAVAILABLE
+    return JSONResponse(status_code=code, content=result, headers={"Cache-Control": "no-store"})
+
+@app.get("/metrics", tags=["Monitoring"], include_in_schema=False)
+async def metrics(request: Request):
+    """Prometheus scrape endpoint. Outside development it requires the operator token."""
+    expected = settings.metrics_token
+    if expected or not settings.is_development:
+        supplied = request.headers.get("Authorization", "")
+        if not expected or not hmac.compare_digest(supplied.encode(), f"Bearer {expected}".encode()):
+            return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"error": "unauthorized"})
+    await readiness()  # refresh dependency gauges on every scrape
+    body, content_type = render_metrics()
+    return Response(content=body, media_type=content_type)
 
 # Mount Routers
 app.include_router(auth_router, prefix="/api/v1")

@@ -1,0 +1,24 @@
+# Keep the build context (and therefore the image) free of secrets, data and tooling.
+.git
+.github
+.env
+.env.*
+!.env.example
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.venv
+venv
+node_modules
+tests
+evidence
+reports
+docs
+security
+backups
+infra/**/data
+*.dump
+*.sql.gz
+*.enc
+*.log
+STEP_*_REPORT.md

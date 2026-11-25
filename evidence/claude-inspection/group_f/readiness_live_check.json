@@ -1,0 +1,14 @@
+{
+ "date": "2026-11-25",
+ "setup": "uvicorn on 127.0.0.1:8765, DATABASE_URL as sales_app_user (RLS-bound), METRICS_TOKEN set",
+ "health": {"http": 200, "body": {"status": "ALIVE"}},
+ "ready_database_up": {"http": 200, "status": "READY", "database": {"status": "UP", "latency_ms": 65.7, "rls_enforced": true, "required": true}, "ollama": {"status": "UP", "latency_ms": 317.7, "required": false}},
+ "metrics_without_token": {"http": 401},
+ "metrics_with_token_sample": [
+  "salesai_http_requests_total{method=\"GET\",route=\"/health\",status=\"2xx\"} 2.0",
+  "salesai_http_requests_total{method=\"GET\",route=\"/metrics\",status=\"4xx\"} 1.0",
+  "salesai_dependency_up{dependency=\"database\"} 1.0"
+ ],
+ "ready_with_postgres_container_stopped": {"http": 503, "status": "NOT_READY", "database": {"status": "DOWN", "latency_ms": 3004.7, "error": "TimeoutError"}},
+ "note": "Stopping the container coincided with Docker Desktop exiting on this 16 GB laptop; Docker was relaunched and the database came back with data and the migration ledger intact."
+}

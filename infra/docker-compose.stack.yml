@@ -1,0 +1,123 @@
+# Full application stack (inspection finding F-26). Layered on top of docker-compose.yml:
+#
+#   docker compose -f infra/docker-compose.yml -f infra/docker-compose.stack.yml \
+#                  --env-file infra/stack.env up -d --build
+#
+# Release order is enforced by depends_on: postgres healthy -> migrate (exits 0) ->
+# api + worker -> proxy. Only the TLS proxy publishes ports; the API is reachable
+# exclusively through it. Every secret is required (`:?`), so a missing value fails the
+# deployment instead of silently falling back to a committed development default.
+x-app-env: &app-env
+  ENVIRONMENT: ${ENVIRONMENT:-production}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  DATABASE_URL: postgresql+psycopg://sales_app_user:${APP_DB_PASSWORD:?set APP_DB_PASSWORD}@sales-ai-postgres:5432/${POSTGRES_DB:-sales_ai_db}
+  POSTGRES_HOST: sales-ai-postgres
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+  REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD}
+  REDIS_URL: redis://:${REDIS_PASSWORD}@sales-ai-redis:6379/0
+  S3_ENDPOINT_URL: http://sales-ai-minio:9000
+  S3_ACCESS_KEY: ${S3_ACCESS_KEY:?set S3_ACCESS_KEY}
+  S3_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY}
+  CORS_ALLOWED_ORIGINS: https://${SITE_ADDRESS:?set SITE_ADDRESS}
+  OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+  JWT_SECRET_KEY: ${JWT_SECRET_KEY:?}
+  MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:?}
+  VOICE_SESSION_SECRET: ${VOICE_SESSION_SECRET:?}
+  QUOTE_LINK_SECRET: ${QUOTE_LINK_SECRET:?}
+  INTEGRATION_SECRET_KEY: ${INTEGRATION_SECRET_KEY:?}
+  WHATSAPP_WEBHOOK_SECRET: ${WHATSAPP_WEBHOOK_SECRET:?}
+  WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:?}
+  EMAIL_WEBHOOK_SECRET: ${EMAIL_WEBHOOK_SECRET:?}
+  VOICE_TELEPHONY_SECRET: ${VOICE_TELEPHONY_SECRET:?}
+  WEBCHAT_SHARED_TOKEN: ${WEBCHAT_SHARED_TOKEN:?}
+  PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET:?}
+  CARRIER_WEBHOOK_SECRET: ${CARRIER_WEBHOOK_SECRET:?}
+  N8N_WEBHOOK_SECRET: ${N8N_WEBHOOK_SECRET:?}
+  METRICS_TOKEN: ${METRICS_TOKEN:?}
+
+x-hardening: &hardening
+  read_only: true
+  tmpfs: ["/tmp"]
+  cap_drop: ["ALL"]
+  security_opt: ["no-new-privileges:true"]
+  restart: unless-stopped
+  networks: [sales_ai_internal]
+
+services:
+  sales-ai-migrate:
+    image: ${APP_IMAGE:-sales-ai-platform:local}
+    build: { context: .., dockerfile: Dockerfile }
+    command: ["python", "-m", "src.backend.migrations.runner"]
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      MIGRATION_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?}@sales-ai-postgres:5432/${POSTGRES_DB:-sales_ai_db}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?}
+    depends_on:
+      sales-ai-postgres: { condition: service_healthy }
+    <<: *hardening
+    restart: "no"
+
+  sales-ai-api:
+    image: ${APP_IMAGE:-sales-ai-platform:local}
+    environment:
+      <<: *app-env
+      FORWARDED_ALLOW_IPS: "*"   # only the proxy can reach the API on the internal network
+    volumes:
+      - ${MODELS_DIR:-./models}:/models:ro
+    depends_on:
+      sales-ai-migrate: { condition: service_completed_successfully }
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    deploy: { resources: { limits: { cpus: "4.0", memory: 4096M } } }
+    <<: *hardening
+
+  sales-ai-worker:
+    image: ${APP_IMAGE:-sales-ai-platform:local}
+    command: ["python", "-m", "src.backend.worker"]
+    environment: *app-env
+    healthcheck: { disable: true }
+    depends_on:
+      sales-ai-migrate: { condition: service_completed_successfully }
+    deploy: { resources: { limits: { cpus: "1.0", memory: 1024M } } }
+    <<: *hardening
+
+  sales-ai-proxy:
+    image: caddy:2.8.4-alpine
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?}
+      TLS_MODE: ${TLS_MODE:-internal}
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [sales-ai-api]
+    cap_drop: ["ALL"]
+    cap_add: ["NET_BIND_SERVICE"]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    networks: [sales_ai_internal]
+
+  sales-ai-prometheus:
+    image: prom/prometheus:v3.1.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+      - --web.listen-address=127.0.0.1:9090
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    secrets: [metrics_token]
+    depends_on: [sales-ai-api]
+    <<: *hardening
+
+secrets:
+  metrics_token:
+    environment: METRICS_TOKEN
+
+volumes:
+  caddy_data:
+  caddy_config:
+  prometheus_data:

@@ -155,7 +155,8 @@ if __name__ == "__main__":
     parser.add_argument("--once", action="store_true", help="run a single cycle and exit")
     parser.add_argument("--poll", type=float, default=5.0, help="seconds between cycles")
     args = parser.parse_args()
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+    from src.backend.core.operations import configure_logging
+    configure_logging()  # F-26: redacted (JSON outside development) logs
     try:
         asyncio.run(_main(args.once, args.poll), loop_factory=asyncio.SelectorEventLoop)
     except KeyboardInterrupt:

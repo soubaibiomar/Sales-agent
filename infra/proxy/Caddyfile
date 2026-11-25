@@ -1,0 +1,41 @@
+# TLS reverse proxy for the Sales AI platform (inspection finding F-26).
+# SITE_ADDRESS: public host name (e.g. sales.example.ma). With a real public DNS name and
+# TLS_MODE unset, set `tls you@example.com` instead of `tls internal` to get an ACME
+# certificate. `tls internal` issues a certificate from Caddy's local CA (staging / LAN).
+{
+	admin off
+	servers {
+		protocols h1 h2
+	}
+}
+
+{$SITE_ADDRESS} {
+	tls {$TLS_MODE}
+
+	encode zstd gzip
+	request_body {
+		max_size 10MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains"
+		-Server
+	}
+
+	# Operator-only endpoints never leave the internal network.
+	@internal path /metrics /api/docs* /openapi.json
+	respond @internal 404
+
+	# WebSocket upgrades (voice stream) are proxied transparently.
+	reverse_proxy sales-ai-api:8000 {
+		header_up X-Forwarded-Proto {scheme}
+		health_uri /ready
+		health_interval 15s
+		health_timeout 3s
+	}
+}
+
+# Plain HTTP only redirects to HTTPS.
+http://{$SITE_ADDRESS} {
+	redir https://{host}{uri} permanent
+}

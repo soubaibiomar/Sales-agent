@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.backend.core.database import get_db_session
 from src.backend.core.auth_middleware import get_security_context, SecurityContext
-from src.backend.core.observability import DependencyHealthChecker, MetricsCollector
+from src.backend.core.observability import MetricsCollector
 from src.backend.core.alerting import AlertingService
 from src.ai.model_observability import ModelObservabilityTracker
 from src.ai.voice.voice_observability import VoiceObservabilityHarness
@@ -19,9 +19,19 @@ router = APIRouter(prefix="/observability", tags=["Observability"])
 
 
 @router.get("/health")
-async def get_system_health():
-    """Returns deep health checks across PostgreSQL, Redis, MinIO, Ollama, and GPU VRAM."""
-    return await DependencyHealthChecker.check_all_dependencies()
+async def get_system_health(
+    ctx: SecurityContext = Depends(get_security_context)
+):
+    """Authenticated dependency health (F-26): the same real checks as /ready, plus host telemetry.
+    Previously unauthenticated, with hardcoded latencies and raw error strings."""
+    from src.backend.core.operations import readiness
+    from src.ai.resource_monitor import HardwareTelemetry
+    result = await readiness()
+    try:
+        result["hardware"] = {"ram_mb": HardwareTelemetry.get_system_ram_mb(), "vram_mb": HardwareTelemetry.get_gpu_vram_mb()}
+    except Exception:
+        result["hardware"] = {"status": "unavailable"}
+    return result
 
 
 @router.get("/ai-metrics")
@@ -34,9 +44,13 @@ async def get_ai_metrics(
 
 
 @router.get("/voice-metrics")
-async def get_voice_metrics():
+async def get_voice_metrics(
+    ctx: SecurityContext = Depends(get_security_context)
+):
     """Returns voice turn latency profiles, VAD/ASR/TTS benchmarks, and barge-in stats."""
-    return VoiceObservabilityHarness.run_benchmark_suite(iterations=10)
+    # Runs real TTS synthesis: authenticated, small sample, off the event loop.
+    import asyncio
+    return await asyncio.to_thread(VoiceObservabilityHarness.run_benchmark_suite, 2)
 
 
 @router.get("/traces")

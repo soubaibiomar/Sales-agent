@@ -67,3 +67,6 @@ backups/
 *.dump
 *.sql.gz
 *.backup
+infra/stack.env
+backups/
+*.enc

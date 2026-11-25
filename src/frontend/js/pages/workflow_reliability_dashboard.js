@@ -29,20 +29,20 @@ async function fetchHealthAndAlerts() {
       if (!health || !health.dependencies) return;
       const deps = health.dependencies;
       
-      if (deps.postgres) {
-        document.getElementById('statusPostgres').textContent = deps.postgres.status;
-        document.getElementById('statusPostgres').className = `status-badge ${deps.postgres.status === 'UP' ? 'status-up' : 'status-down'}`;
-        document.getElementById('metaPostgres').textContent = `Port 5432 • Latency: ${deps.postgres.latency_ms}ms`;
+      const db = deps.database;
+      if (db) {
+        document.getElementById('statusPostgres').textContent = db.status;
+        document.getElementById('statusPostgres').className = `status-badge ${db.status === 'UP' ? 'status-up' : 'status-down'}`;
+        document.getElementById('metaPostgres').textContent = `Latence : ${SalesViews.esc(db.latency_ms)} ms • RLS ${db.rls_enforced ? 'appliquée' : 'NON appliquée'}`;
       }
-      if (deps.redis) {
-        document.getElementById('statusRedis').textContent = deps.redis.status;
-        document.getElementById('statusRedis').className = `status-badge ${deps.redis.status === 'UP' ? 'status-up' : 'status-down'}`;
-        document.getElementById('metaRedis').textContent = `Port 6379 • Latency: ${deps.redis.latency_ms}ms`;
-      }
+      // Redis is not used by the platform today (caches/locks are in PostgreSQL); say so.
+      document.getElementById('statusRedis').textContent = 'N/A';
+      document.getElementById('statusRedis').className = 'status-badge';
+      document.getElementById('metaRedis').textContent = 'Non utilisé par la plateforme';
       if (deps.ollama) {
         document.getElementById('statusOllama').textContent = deps.ollama.status;
         document.getElementById('statusOllama').className = `status-badge ${deps.ollama.status === 'UP' ? 'status-up' : 'status-down'}`;
-        document.getElementById('metaOllama').textContent = `Port 11434 • ${deps.ollama.active_model || 'qwen3.5:4b'}`;
+        document.getElementById('metaOllama').textContent = `Latence : ${SalesViews.esc(deps.ollama.latency_ms)} ms • optionnel`;
       }
     }
 

@@ -136,9 +136,12 @@ class VoiceObservabilityHarness:
                 t9 = time.perf_counter()
                 barge_ms = (t9 - t8) * 1000.0
 
-                # ASR & LLM TTFT based on verified measured baselines
-                asr_ms = 110.0  # Whisper-base CPU chunk latency
-                llm_ms = 380.0  # Resident qwen3.5:4b measured TTFT
+                # F-26/F-23: ASR and LLM are NOT exercised by this harness. They used to be
+                # filled with invented constants (110 ms / 380 ms) and flagged as measured.
+                # They are now excluded; use scripts/benchmark_real_voice_turn.py for
+                # end-to-end audio-in -> audio-out timings.
+                asr_ms = 0.0
+                llm_ms = 0.0
 
                 meas = VoiceTurnMeasurement(
                     session_id=f"bench_sess_{i}_{lang}",
@@ -150,8 +153,8 @@ class VoiceObservabilityHarness:
                     output_guard_ms=guard_ms,
                     tts_first_chunk_ms=tts_ms,
                     barge_in_cancel_ms=barge_ms,
-                    is_simulated_asr=False,
-                    is_simulated_llm=False
+                    is_simulated_asr=True,
+                    is_simulated_llm=True
                 )
                 measurements.append(meas)
 
@@ -199,13 +202,20 @@ class VoiceObservabilityHarness:
                 "resident_llm": "qwen3.5:4b",
                 "gpu": gpu_telemetry
             },
-            "total_turn_latency": stats(totals),
+            # Sum of the stages this harness really runs (VAD, LID, guard, TTS, barge-in).
+            # It is NOT a full turn: ASR and LLM are excluded (see measurement_scope).
+            "measured_stages_latency": stats(totals),
+            "measurement_scope": {
+                "measured": ["vad", "language_id", "output_guard", "tts_first_chunk", "barge_in"],
+                "not_measured": ["asr", "llm"],
+                "end_to_end_reference": "scripts/benchmark_real_voice_turn.py",
+            },
             "vad_latency": stats(vads),
             "lid_latency": stats(lids),
             "tts_first_chunk_latency": stats(ttss),
             "barge_in_latency": stats(barges),
             "target_turn_latency_ms": 600.0,
-            "status": "PASS" if statistics.mean(totals) < 600.0 else "DEGRADED",
+            "status": "END_TO_END_NOT_MEASURED",
             "recent_turns": [m.to_dict() for m in measurements[-10:]]
         }
 

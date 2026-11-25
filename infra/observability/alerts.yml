@@ -1,0 +1,40 @@
+# Alert rules (inspection finding F-26). Route them with Alertmanager (not included here:
+# the receiver - e-mail, Slack, PagerDuty - is an operator decision).
+groups:
+  - name: sales-ai-availability
+    rules:
+      - alert: ApiDown
+        expr: up{job="sales-ai-api"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "API scrape failing for 2 minutes"
+      - alert: DatabaseNotReady
+        expr: salesai_dependency_up{dependency="database"} == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: "PostgreSQL readiness check failing (or connection bypasses RLS)"
+      - alert: ModelRuntimeDown
+        expr: salesai_dependency_up{dependency="ollama"} == 0
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "Ollama unreachable: AI turns degrade to no-evidence replies"
+  - name: sales-ai-latency-errors
+    rules:
+      - alert: High5xxRate
+        expr: |
+          sum(rate(salesai_http_requests_total{status="5xx"}[5m]))
+            / clamp_min(sum(rate(salesai_http_requests_total[5m])), 1e-9) > 0.02
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "More than 2% of requests fail with 5xx"
+      - alert: ApiLatencyP95AboveTarget
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(salesai_http_request_duration_seconds_bucket{route!~"/api/v1/voice.*|/api/v1/ai.*"}[10m]))) > 0.2
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Non-AI API p95 latency above the 200 ms target SLO"

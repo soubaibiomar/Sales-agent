@@ -1,5 +1,9 @@
-# CI with security gates (inspection findings F-25 / F-26; controls 37, 38, 60-62).
-# Not executed during the inspection (no CI runner is configured for this repo).
+# CI/CD with security gates (inspection findings F-25 / F-26; controls 37, 38, 60-62).
+# Gates: tests on PostgreSQL built by the migration runner, SCA, SAST, secret scan,
+# container build + vulnerability scan + SBOM; on main the image is pushed to GHCR and
+# signed keylessly with cosign (Sigstore OIDC), so deployments can verify provenance and
+# roll back by digest. Third-party actions are pinned by major tag here; pin them to
+# commit SHAs in the repository settings policy for production.
 name: ci
 
 on:
@@ -8,6 +12,9 @@ on:
 
 permissions:
   contents: read
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/sales-ai-platform
 
 jobs:
   test:
@@ -30,8 +37,13 @@ jobs:
         with:
           python-version: "3.14"
       - run: pip install -r requirements-dev.txt
-      - name: Initialise schema (RLS, migrations 011-016)
-        run: psql "postgresql://postgres:${{ secrets.CI_POSTGRES_PASSWORD }}@localhost:5432/sales_ai_db" -v ON_ERROR_STOP=1 -f infra/init-db.sql
+      - name: Migrate (release step, versioned + checksummed)
+        env:
+          MIGRATION_DATABASE_URL: postgresql://postgres:${{ secrets.CI_POSTGRES_PASSWORD }}@localhost:5432/sales_ai_db
+          APP_DB_PASSWORD: ${{ secrets.CI_APP_DB_PASSWORD }}
+        run: |
+          python -m src.backend.migrations.runner
+          python -m src.backend.migrations.runner --status
       - name: Tests (model-dependent tests need Ollama and are expected to fail closed without it)
         run: python -m pytest tests -p no:cacheprovider -q
 
@@ -52,3 +64,56 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Deployment manifests are valid and fail closed without secrets
+        run: |
+          sed 's/=$/=ci_placeholder_value_0123456789abcdef/' infra/stack.env.example > /tmp/stack.env
+          docker compose -f infra/docker-compose.yml -f infra/docker-compose.stack.yml --env-file /tmp/stack.env config --quiet
+          sed -i '/^JWT_SECRET_KEY=/d' /tmp/stack.env
+          ! docker compose -f infra/docker-compose.yml -f infra/docker-compose.stack.yml --env-file /tmp/stack.env config --quiet
+
+  image:
+    needs: [test, security]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write     # push to GHCR (main only)
+      id-token: write     # keyless cosign signing (main only)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
+      - name: Vulnerability scan (fail on fixable HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE }}:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: SBOM (SPDX)
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.IMAGE }}:${{ github.sha }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.spdx.json
+      - name: Push to GHCR
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push "${IMAGE}:${GITHUB_SHA}"
+          echo "DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "${IMAGE}:${GITHUB_SHA}")" >> "$GITHUB_ENV"
+      - uses: sigstore/cosign-installer@v3
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      - name: Sign image and attach SBOM attestation (keyless)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          cosign sign --yes "${DIGEST}"
+          cosign attest --yes --type spdxjson --predicate sbom.spdx.json "${DIGEST}"

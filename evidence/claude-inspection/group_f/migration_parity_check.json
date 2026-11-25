@@ -1,0 +1,66 @@
+{
+ "runner_applied": 19,
+ "rerun_applied": 0,
+ "diff": {
+  "columns": {
+   "runner_only": [],
+   "initsql_only": [],
+   "count": 1061
+  },
+  "rls": {
+   "runner_only": [],
+   "initsql_only": [],
+   "count": 87
+  },
+  "policies": {
+   "runner_only": [],
+   "initsql_only": [],
+   "count": 82
+  },
+  "constraints": {
+   "runner_only": [],
+   "initsql_only": [],
+   "count": 526
+  },
+  "functions": {
+   "runner_only": [],
+   "initsql_only": [],
+   "count": 239
+  },
+  "triggers": {
+   "runner_only": [],
+   "initsql_only": [],
+   "count": 2
+  },
+  "grants": {
+   "runner_only": [],
+   "initsql_only": [],
+   "count": 335
+  },
+  "indexes": {
+   "runner_only": [],
+   "initsql_only": [],
+   "count": 287
+  },
+  "seed_permissions": {
+   "runner_only": [],
+   "initsql_only": [],
+   "count": 40
+  },
+  "seed_roles": {
+   "runner_only": [],
+   "initsql_only": [],
+   "count": 6
+  }
+ },
+ "tamper_rejected": true,
+ "broken_stops_release": true,
+ "broken_rolled_back": true,
+ "broken_not_recorded": true,
+ "app_role_flags": [
+  [
+   false,
+   false
+  ]
+ ]
+}
