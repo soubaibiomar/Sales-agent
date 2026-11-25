@@ -58,11 +58,6 @@
       setCard(clients, '—', V.errorText(acc), 'error');
     }
 
-    // Remaining widgets are not yet connected to live data: label them honestly.
-    document.querySelectorAll('.pipeline-funnel-card, .dashboard-layout-grid .card, .ai-assistant-card').forEach(function (w) {
-      var header = w.querySelector('.card-header, .ai-card-header') || w;
-      V.markDemo(header);
-    });
   }
 
   if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', load); } else { load(); }

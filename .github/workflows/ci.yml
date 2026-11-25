@@ -25,22 +25,24 @@ jobs:
         env:
           POSTGRES_DB: sales_ai_db
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
+          # Throwaway database on the CI runner: it uses the public development defaults
+          # that the integration tests (and infra/docker-compose.yml) expect. Not a secret.
+          POSTGRES_PASSWORD: postgres_dev_password_change_in_prod
         ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U postgres -d sales_ai_db" --health-interval 5s --health-retries 10
     env:
       ENVIRONMENT: test
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
       - run: pip install -r requirements-dev.txt
       - name: Migrate (release step, versioned + checksummed)
         env:
-          MIGRATION_DATABASE_URL: postgresql://postgres:${{ secrets.CI_POSTGRES_PASSWORD }}@localhost:5432/sales_ai_db
-          APP_DB_PASSWORD: ${{ secrets.CI_APP_DB_PASSWORD }}
+          MIGRATION_DATABASE_URL: postgresql://postgres:postgres_dev_password_change_in_prod@localhost:5432/sales_ai_db
+          APP_DB_PASSWORD: sales_app_dev_password
         run: |
           python -m src.backend.migrations.runner
           python -m src.backend.migrations.runner --status
@@ -50,10 +52,10 @@ jobs:
   security:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
       - name: Dependency vulnerabilities (SCA)
@@ -79,7 +81,7 @@ jobs:
       packages: write     # push to GHCR (main only)
       id-token: write     # keyless cosign signing (main only)
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: docker/setup-buildx-action@v3
       - name: Build image
         uses: docker/build-push-action@v6

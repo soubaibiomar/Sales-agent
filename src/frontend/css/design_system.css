@@ -1097,10 +1097,6 @@ html, body {
 .data-state--error { color: #B91C1C; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; }
 td.data-state { padding: 2rem 1rem; }
 
-.demo-chip {
-  display: inline-block; margin: 0 0.5rem 0.5rem 0; padding: 2px 8px; border-radius: 999px;
-  font-size: 11px; font-weight: 600; color: #92400E; background: #FEF3C7; border: 1px solid #FDE68A;
-}
 .kpi-caption { font-size: 12px; font-weight: 500; color: #4A5A52; }
 .kpi-value--muted { color: #66756D; }
 
@@ -1159,4 +1155,3 @@ table { max-width: 100%; }
   .content-wrapper code { word-break: break-all; }
 }
 
-.demo-page-banner { margin: 0 0 16px; padding: 10px 14px; border: 1px solid #F5D08A; background: #FFFBEB; color: #78350F; border-radius: 8px; font-size: 13px; font-weight: 600; }

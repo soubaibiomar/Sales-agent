@@ -101,10 +101,6 @@
         if (li) { select({ id: li.getAttribute('data-conversation'), contact_name: li.querySelector('.thread-name').textContent }); }
       });
     }
-    // The client/deal context panel and AI suggestions are not yet connected to live data.
-    var ctx = document.querySelector('.context-col');
-    if (ctx) { V.markDemo(ctx); }
-    document.querySelectorAll('.suggestion-header, .ai-suggestions, .chat-suggestions').forEach(function (el) { V.markDemo(el); });
     loadList();
   }
 

@@ -144,19 +144,13 @@ def test_quote_builder_never_computes_money_client_side():
         assert demo not in html
 
 
-@pytest.mark.parametrize("page", [p for p in PAGES if p.name != "login.html"], ids=lambda p: p.name)
-def test_pages_without_api_calls_are_labelled_as_demo(page):
-    """A page that never calls the API must not pass off its static content as live data."""
-    stem = page.stem
-    scripts = [read(p) for p in (FRONTEND / "js" / "pages").glob(stem + "*.js")]
-    calls_api = any(re.search(r"SalesApi\.fetch\(|getJson\(", s) for s in scripts)
-    if not calls_api:
-        assert "<body data-demo-page>" in read(page), f"{page.name} shows static data without a demo label"
-
-
-def test_demo_widgets_are_labelled():
-    views = read(FRONTEND / "js" / "data_views.js")
-    assert "markDemo" in views and "Données d'exemple" in views
+@pytest.mark.parametrize("path", [*PAGES, *SCRIPTS, *sorted((FRONTEND / "css").rglob("*.css"))], ids=lambda p: p.name)
+def test_no_demo_labelling(path):
+    """Product decision (2026-11-25): pages and widgets are not labelled as demo while the
+    UI is on hold awaiting the owner's design."""
+    text = read(path)
+    for needle in ("data-demo-page", "data-demo-panel", "markDemo", "demo-chip", "demo-page-banner", "Données d'exemple"):
+        assert needle not in text, f"{needle!r} in {path.name}"
 
 
 @pytest.mark.asyncio

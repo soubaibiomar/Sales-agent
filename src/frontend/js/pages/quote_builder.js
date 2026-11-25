@@ -222,9 +222,6 @@
     $('qbSave').addEventListener('click', save);
     $('qbIssue').addEventListener('click', issue);
 
-    var demo = document.querySelector('[data-demo-panel]');
-    if (demo) { V.markDemo(demo); }
-
     renderBanner(); renderLines(); renderTotals(); loadKpis();
 
     V.getJson('/api/v1/crm/accounts?limit=200&is_active=true').then(function (res) {

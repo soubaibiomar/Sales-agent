@@ -83,7 +83,7 @@ Evidence: `evidence/claude-inspection/group_f/stack_run_verification.json`. The 
 
 ## Not done / not verified (not claimed)
 - **No image vulnerability scan run locally.** Trivy or pip-audit would need further downloads beyond the approved build-and-run scope. The CI `image` job is where that gate runs.
-- **CI not executed.** There is no runner for this repository. Third-party actions are pinned by tag, not SHA. CI needs the secrets `CI_POSTGRES_PASSWORD` and `CI_APP_DB_PASSWORD`.
+- **CI:** it runs on every push. Runs #1–#5 failed: the test job had no Postgres password (now uses the public dev defaults the tests expect, so no repository secrets are needed). The security job failure is under investigation (its logs require a GitHub sign-in).
 - **Off-site storage:** "off-site" was simulated with a separate directory. No cloud bucket or remote site, encryption key escrow or backup schedule exists yet.
 - **RPO and RTO:** RPO equals the backup interval, which is not scheduled yet. The RTO for production volumes is unmeasured.
 - **Tracing and dashboards:** no OpenTelemetry trace export, no Grafana dashboards and no Alertmanager receiver (the receiver is an operator decision).

@@ -67,3 +67,8 @@
 - **Tests (report 11, E.5):** no Playwright E2E, visual regression or axe accessibility suite yet. Verification here was a manual browser sweep plus static tests.
 - **Product decision on permissions:** `sales_rep` can create quote drafts but cannot price them (`quotes:write`). Decide whether reps should price their own drafts.
 - **Tenant switcher:** it only shows a notice. Switching organisation means signing in again with that organisation's ID.
+
+## Update 2026-11-25 — owner decision
+- UI work is **on hold**: the owner will provide the design.
+- At the owner's request, the "Données d'exemple" chips and the demonstration-page banner were **removed**. The 8 unwired pages (catalog, checkout, logistics, procurement, quote_view, release_console, schedule, support) and the remaining static widgets still show static content, but are no longer labelled.
+- The regression test now asserts that no demo labelling exists (`test_no_demo_labelling`).
