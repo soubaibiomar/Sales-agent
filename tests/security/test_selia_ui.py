@@ -85,3 +85,103 @@ def test_profile_endpoint_builds_response_before_commit():
     body = src[src.index("async def update_my_profile"):src.index('@router.get("", response_model=List[UserResponse])')]
     assert "db.refresh(user)" not in body
     assert body.index("response = UserResponse(") < body.index("await db.commit()")
+
+
+# ---------------------------------------------------------------- module pages (batches 1-3)
+ALL_PAGES = sorted(FRONTEND.glob("*.html"))
+
+
+@pytest.mark.parametrize("page", ALL_PAGES, ids=lambda p: p.name)
+def test_every_page_is_selia_and_has_no_legacy_handlers(page):
+    html = read(page)
+    assert "<title>Selia" in html
+    assert ".handlers.js" not in html
+    assert "alert(" not in html
+
+
+def test_no_legacy_handler_scripts_or_alerts_left():
+    assert not list((FRONTEND / "js" / "pages").glob("*.handlers.js"))
+    for js in (FRONTEND / "js").rglob("*.js"):
+        assert "alert(" not in read(js), f"alert() in {js.name}"
+
+
+def test_integrations_page_uses_existing_endpoints():
+    js = read(FRONTEND / "js" / "pages" / "integrations.js")
+    assert "/api/v1/integrations/outbox/dlq" in js and "/api/v1/integrations/status" in js
+    assert not re.search(r"/integrations/outbox['\"]", js)
+
+
+def test_public_quote_page_performs_real_decisions():
+    js = read(FRONTEND / "js" / "pages" / "quote_view.js")
+    assert "/public?token=" in js and "'/' + kind" in js and "acceptance_token" in js
+
+
+def test_quota_adjustment_requires_admin_and_mfa():
+    src = read(ROOT / "src" / "backend" / "api" / "saas_admin.py")
+    body = src[src.index('@router.post("/quotas/adjust")'):]
+    assert 'require_permission("saas:manage")' in body.split("):")[0] + "):"
+    assert "require_privileged_mfa" in body.split('"""')[0]
+
+
+def test_ai_health_is_not_public():
+    src = read(ROOT / "src" / "backend" / "api" / "ai_governance.py")
+    sig = src[src.index('@router.get("/health")'):src.index('@router.post("/generate"')]
+    assert 'require_permission("ai:manage")' in sig
+
+
+@pytest.mark.asyncio
+async def test_public_quote_view_rejects_bad_links_and_quota_needs_auth():
+    from src.backend.main import app
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
+        bad = await c.get("/api/v1/quotes/q_does_not_exist/public", params={"token": "not-a-valid-signed-token"})
+        quota = await c.post("/api/v1/saas/quotas/adjust", json={"max_seats": 999})
+    assert bad.status_code == 401
+    assert quota.status_code == 401
+
+
+def test_role_matrix_has_no_manage_without_read_gaps():
+    """A role that can manage/create a domain must also be able to read and create in it."""
+    from src.backend.core.policy_service import DEFAULT_ROLE_PERMISSIONS as R
+    assert {"procurement:read", "quotes:create"} <= set(R["tenant_admin"])
+    assert "quotes:create" in R["sales_manager"]
+    for role, perms in R.items():
+        for p in perms:
+            if p.endswith(":manage"):
+                domain = p.split(":")[0]
+                if domain in ("procurement", "logistics", "support", "workflows"):
+                    assert any(q in perms for q in (domain + ":read", domain + ":manage")), (role, domain)
+
+
+def test_procurement_api_only_calls_existing_service_methods():
+    """The list endpoints used to call ProcurementService methods that did not exist (500s)."""
+    from src.backend.domains.procurement.service import ProcurementService
+    api = read(ROOT / "src" / "backend" / "api" / "procurement.py")
+    for meth in set(re.findall(r"service\.([a-z_]+)\(", api)):
+        assert hasattr(ProcurementService, meth), meth
+
+
+@pytest.mark.asyncio
+async def test_duplicate_key_is_a_409_not_a_500():
+    from sqlalchemy.exc import IntegrityError
+    from src.backend.main import integrity_error_handler
+
+    class _Orig(Exception):
+        sqlstate = "23505"
+
+    class _OrigFk(Exception):
+        sqlstate = "23503"
+
+    dup = await integrity_error_handler(None, IntegrityError("INSERT", {}, _Orig("violates unique constraint uq_secret_name")))
+    fk = await integrity_error_handler(None, IntegrityError("INSERT", {}, _OrigFk("violates foreign key fk_secret")))
+    assert dup.status_code == 409 and b"uq_secret_name" not in dup.body
+    assert fk.status_code == 422 and b"fk_secret" not in fk.body
+
+
+@pytest.mark.asyncio
+async def test_agent_activity_route_is_not_shadowed_by_role_lookup():
+    from src.backend.main import app
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
+        r = await c.get("/api/v1/agents/activity")
+    assert r.status_code == 401  # reaches the activity endpoint's auth, not "role 'activity' not found"
+    src = read(ROOT / "src" / "backend" / "api" / "agent_ecosystem.py")
+    assert src.index('@router.get("/activity"') < src.index('@router.get("/{role_id}"')

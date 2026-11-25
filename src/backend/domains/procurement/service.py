@@ -112,11 +112,15 @@ class ProcurementService:
         res = await self.db.execute(stmt)
         return res.scalars().first()
 
-    async def list_suppliers(self, tenant_id: str, is_active: Optional[bool] = None) -> List[Supplier]:
+    async def list_suppliers(self, tenant_id: str, is_active: Optional[bool] = None, active_only: Optional[bool] = None,
+                             limit: int = 50, offset: int = 0) -> List[Supplier]:
+        # The API passes `active_only` (only filter when True); `is_active` keeps the old call style.
+        if is_active is None and active_only:
+            is_active = True
         stmt = select(Supplier).where(Supplier.tenant_id == tenant_id)
         if is_active is not None:
             stmt = stmt.where(Supplier.is_active == is_active)
-        stmt = stmt.order_by(Supplier.name.asc())
+        stmt = stmt.order_by(Supplier.name.asc()).limit(limit).offset(offset)
         res = await self.db.execute(stmt)
         return list(res.scalars().all())
 
@@ -206,6 +210,28 @@ class ProcurementService:
         await self.db.flush()
         return await self.get_rfq(tenant_id, rfq.id)
 
+    async def list_rfqs(self, tenant_id: str, status: Optional[str] = None, supplier_id: Optional[str] = None,
+                        limit: int = 50, offset: int = 0) -> List[RFQ]:
+        stmt = select(RFQ).options(selectinload(RFQ.items)).where(RFQ.tenant_id == tenant_id)
+        if status:
+            stmt = stmt.where(RFQ.status == status)
+        if supplier_id:
+            stmt = stmt.where(RFQ.supplier_id == supplier_id)
+        stmt = stmt.order_by(RFQ.created_at.desc()).limit(limit).offset(offset)
+        return list((await self.db.execute(stmt)).scalars().all())
+
+    async def send_rfq(self, tenant_id: str, rfq_id: str) -> RFQ:
+        """DRAFT -> SENT. Sending twice is idempotent; closed/cancelled RFQs cannot be sent."""
+        rfq = await self.get_rfq(tenant_id, rfq_id)
+        if not rfq:
+            raise RFQNotFoundError(f"RFQ {rfq_id} not found")
+        if rfq.status in ("CLOSED", "CANCELLED"):
+            raise ProcurementError(f"RFQ {rfq.rfq_number} is {rfq.status} and cannot be sent")
+        if rfq.status == "DRAFT":
+            rfq.status = "SENT"
+            await self.db.flush()
+        return rfq
+
     async def get_rfq(self, tenant_id: str, rfq_id: str) -> Optional[RFQ]:
         stmt = select(RFQ).options(selectinload(RFQ.items)).where(
             and_(RFQ.tenant_id == tenant_id, RFQ.id == rfq_id)
@@ -284,6 +310,44 @@ class ProcurementService:
 
         await self.db.flush()
         return await self.get_purchase_order(tenant_id, po.id)
+
+    async def list_purchase_orders(self, tenant_id: str, status: Optional[str] = None, supplier_id: Optional[str] = None,
+                                   warehouse_id: Optional[str] = None, limit: int = 50, offset: int = 0) -> List[PurchaseOrder]:
+        stmt = select(PurchaseOrder).options(selectinload(PurchaseOrder.items)).where(PurchaseOrder.tenant_id == tenant_id)
+        if status:
+            stmt = stmt.where(PurchaseOrder.status == status)
+        if supplier_id:
+            stmt = stmt.where(PurchaseOrder.supplier_id == supplier_id)
+        if warehouse_id:
+            stmt = stmt.where(PurchaseOrder.warehouse_id == warehouse_id)
+        stmt = stmt.order_by(PurchaseOrder.created_at.desc()).limit(limit).offset(offset)
+        return list((await self.db.execute(stmt)).scalars().all())
+
+    async def list_goods_receipts(self, tenant_id: str, purchase_order_id: Optional[str] = None,
+                                  warehouse_id: Optional[str] = None, limit: int = 50, offset: int = 0) -> List[GoodsReceipt]:
+        stmt = select(GoodsReceipt).options(selectinload(GoodsReceipt.items)).where(GoodsReceipt.tenant_id == tenant_id)
+        if purchase_order_id:
+            stmt = stmt.where(GoodsReceipt.purchase_order_id == purchase_order_id)
+        if warehouse_id:
+            stmt = stmt.where(GoodsReceipt.warehouse_id == warehouse_id)
+        stmt = stmt.order_by(GoodsReceipt.created_at.desc()).limit(limit).offset(offset)
+        return list((await self.db.execute(stmt)).scalars().all())
+
+    async def get_goods_receipt(self, tenant_id: str, receipt_id: str) -> GoodsReceipt:
+        stmt = select(GoodsReceipt).options(selectinload(GoodsReceipt.items)).where(
+            and_(GoodsReceipt.tenant_id == tenant_id, GoodsReceipt.id == receipt_id))
+        receipt = (await self.db.execute(stmt)).scalars().first()
+        if not receipt:
+            raise ProcurementError(f"Goods receipt {receipt_id} not found")
+        return receipt
+
+    async def list_stock_transfers(self, tenant_id: str, status: Optional[str] = None,
+                                   limit: int = 50, offset: int = 0) -> List[StockTransfer]:
+        stmt = select(StockTransfer).options(selectinload(StockTransfer.items)).where(StockTransfer.tenant_id == tenant_id)
+        if status:
+            stmt = stmt.where(StockTransfer.status == status)
+        stmt = stmt.order_by(StockTransfer.created_at.desc()).limit(limit).offset(offset)
+        return list((await self.db.execute(stmt)).scalars().all())
 
     async def get_purchase_order(self, tenant_id: str, po_id: str) -> Optional[PurchaseOrder]:
         stmt = select(PurchaseOrder).options(selectinload(PurchaseOrder.items)).where(

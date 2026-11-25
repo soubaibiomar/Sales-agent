@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.backend.core.database import get_db_session
-from src.backend.core.auth_middleware import get_security_context, SecurityContext
+from src.backend.core.auth_middleware import get_security_context, SecurityContext, require_permission, require_privileged_mfa
 from src.backend.domains.saas.service import SaaSAdminService, QuotaExhaustedError
 
 router = APIRouter(prefix="/saas", tags=["SaaS Administration"])
@@ -84,10 +84,13 @@ async def get_quota_dashboard(
 @router.post("/quotas/adjust")
 async def adjust_tenant_quotas(
     payload: QuotaAdjustmentRequest,
-    ctx: SecurityContext = Depends(get_security_context),
+    ctx: SecurityContext = Depends(require_permission("saas:manage")),
+    _mfa: SecurityContext = Depends(require_privileged_mfa),
     db: AsyncSession = Depends(get_db_session)
 ):
-    """Allows tenant administrators to upgrade or customize resource quotas."""
+    """Allows tenant administrators (step-up MFA) to customise resource quotas.
+    Previously any authenticated user of the tenant could raise its own token, voice,
+    API and seat limits, bypassing the plan."""
     service = SaaSAdminService(db, ctx.tenant_id)
     sub = await service.get_or_create_subscription()
 

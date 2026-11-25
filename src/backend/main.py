@@ -115,6 +115,19 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+# Integrity errors are client conflicts, not server faults: a duplicate code/SKU used to
+# surface as a 500. Constraint and table names are not echoed.
+from sqlalchemy.exc import IntegrityError
+
+@app.exception_handler(IntegrityError)
+async def integrity_error_handler(request: Request, exc: IntegrityError):
+    pgcode = getattr(getattr(exc, "orig", None), "sqlstate", None) or getattr(getattr(exc, "orig", None), "pgcode", None)
+    if pgcode == "23505":
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT,
+                            content={"detail": "Un élément avec cet identifiant existe déjà."})
+    return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        content={"detail": "Données incohérentes : vérifiez les éléments liés et les champs obligatoires."})
+
 # Exception Handler: Mask unhandled exceptions to prevent information disclosure
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

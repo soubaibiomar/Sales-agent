@@ -52,7 +52,8 @@
     plus: '<path d="M12 5v14M5 12h14"/>',
     logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
     userPlus: '<circle cx="9" cy="8" r="4"/><path d="M2 21c.7-4 3.6-6 7-6 1.6 0 3 .4 4.2 1.2M19 14v6M16 17h6"/>',
-    arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>'
+    arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+    mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/>'
   };
 
   // Main navigation (design) + the platform's other modules, folded under "Plus".
@@ -74,7 +75,7 @@
     ['ai_operations_dashboard.html', 'Opérations IA'], ['voice_observability.html', 'Observabilité vocale'],
     ['workflows.html', 'Workflows'], ['workflow_reliability_dashboard.html', 'Fiabilité & alertes'],
     ['notifications.html', 'Notifications'], ['integrations.html', 'Intégrations'],
-    ['saas_admin_dashboard.html', 'Abonnement & quotas'], ['release_console.html', 'Console de release']
+    ['saas_admin_dashboard.html', 'Abonnement & quotas'], ['release_console.html', 'État de la plateforme']
   ];
   // Pages that belong to a main entry for highlighting purposes.
   const ALIASES = { 'quote_builder.html': 'quotes.html', 'quote_view.html': 'quotes.html' };

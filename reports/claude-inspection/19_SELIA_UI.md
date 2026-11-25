@@ -66,3 +66,63 @@
   - MD5 feature hashing marked `usedforsecurity=False`;
   - the default bind address is now `127.0.0.1`.
 - **Not verified:** whether the remaining CI gates (gitleaks, the image build and Trivy) pass is not known yet.
+
+
+## Module pages redesign (2026-11-25, commits afbc7e6 and following)
+
+All 31 pages now use the Selia design and live data.
+
+**Sales and operations** (shared controller `js/list_page.js`):
+- **Factures:** computed paid / to collect / overdue status; invoice an order.
+- **Catalogue:** product creation.
+- **Paiements:** payment transactions.
+- **Stock & entrepôts:** stock levels with low-stock and out-of-stock flags; article and warehouse creation.
+- **Achats & fournisseurs:** purchase orders and suppliers; supplier creation.
+- **Logistique:** shipments with tracking.
+- **Support & SAV:** tickets (with creation) and returns (RMA).
+- **Approbations:** cards; approval with an MFA code, refusal with a reason.
+- **Nouveau devis:** new layout. Added "Envoyer au client", which issues the real signed acceptance link. Removed a static "AI recommendations" panel and an invented approval timeline.
+- **Public quote page** (customer, no login):
+  - It used to be fake: its buttons showed `alert()` messages claiming acceptance and order creation without any server call.
+  - It now reads the new read-only `GET /api/v1/quotes/{id}/public?token=` (signed-link verified, customer-facing fields only) and calls the real accept/reject endpoints.
+
+**Automation and administration:**
+- **Workflows:** executions, relaunch of stuck workflows, automation rules.
+- **Notifications:** history with masked recipients, templates, manual send, STOP opt-out.
+- **Intégrations:** outbox health and the dead-letter queue with retry. The old page called `/integrations/outbox`, which does not exist.
+- **Fiabilité & alertes:** real dependency checks, alerts with acknowledge/resolve, traces.
+- **Abonnement & quotas:** plan, period, consumption bars, quota adjustment.
+- **État de la plateforme:** replaces the static "release console" whose figures were hardcoded.
+
+**AI and voice:**
+- **Espace agents IA:** catalogue of the 19 agent roles and their activity.
+- **Gouvernance IA:** gateway health, knowledge-base documents (ingestion), offline evaluations.
+- **Opérations IA:** measured model telemetry.
+- **Agent vocal / Copilote vocal / Observabilité vocale:** re-laid out with their element ids and logic kept. The copilot MFA dialog now uses the shared modal, and the observability page shows the measured 6.9 s turn (target not met).
+
+### Backend defects found and fixed while wiring the pages
+
+| Defect | Fix |
+|---|---|
+| `POST /saas/quotas/adjust` accepted **any authenticated user**: a sales rep could raise the tenant's token, voice, API and seat limits, bypassing the plan. | Now requires `saas:manage` plus verified MFA. `saas:manage` is granted to tenant admins only. |
+| `GET /api/v1/ai/health` was **public** and exposed model names and host memory. | Now requires `ai:manage`. The contract test was tightened: anonymous gets 401, customer gets 403. |
+| **Procurement list endpoints always returned 500.** The API called `list_purchase_orders`, `list_rfqs`, `list_goods_receipts`, `list_stock_transfers`, `get_goods_receipt` and `send_rfq`, none of which existed, and passed `active_only` to `list_suppliers`. Unnoticed because no role could read procurement. | All six methods implemented; `list_suppliers` signature fixed. |
+| Role matrix gaps: `tenant_admin` had `procurement:manage` but not `procurement:read`, and no `quotes:create`. `sales_manager` could price quotes but not create them. | Permissions added. A regression test guards against similar manage-without-read gaps. |
+| Subscription / usage meter "get or create" **raced**: the page's two parallel calls on a new tenant both inserted, so one returned 500. | Insert inside a savepoint and re-read on conflict. Verified live: four parallel calls on a fresh tenant all returned 200. |
+| Any **duplicate code/SKU** returned a 500. | Global handler: unique violation → **409** with a clear message, other integrity errors → 422. Constraint names are never echoed. |
+| `GET /api/v1/agents/activity` was **unreachable** (404): it was shadowed by `GET /agents/{role_id}`. | Route order fixed. |
+
+### Verification
+- **Browser:** throwaway tenant, deleted afterwards; signed in as a manager, then as tenant admin with MFA.
+  - All 22 module pages load without unexpected errors.
+  - Expected RBAC refusals are explained on the page.
+- **Created through the UI:** a supplier (a duplicate is refused with the 409 message), a product, a warehouse and stock article, a support ticket, an invoice from an order, and a knowledge-base document.
+- **Full quote cycle:** priced (10 200,00 MAD), issued, sent (signed link generated), then opened in a tab with no session and **accepted by the customer**; the status became "Accepté".
+- **Mobile (390 px):** 0 px horizontal overflow on the pages checked.
+- **Tests:** `tests/security/test_selia_ui.py` covers all of the above.
+
+### Still open / decisions for the owner
+- **Quota policy:** should a tenant admin be allowed to raise their own plan limits at all (billing policy), or should only the platform do it?
+- **Quote approvals:** should tenant admins be able to approve quotes (`quotes:approve`)? Today only sales managers can.
+- **Unauthenticated-for-role mutations left as is:** `/analytics/aggregate` and the alert acknowledge/resolve endpoints only require authentication. They are low risk, but they could be restricted to ops roles.
+- Full suite after the module redesign: **911 passed** (python -m pytest -q, 307 s).

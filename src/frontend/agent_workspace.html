@@ -5,212 +5,23 @@
   <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Selia — Agent Ecosystem & Sales Copilot</title>
+  <title>Selia — Espace agents IA</title>
   <link rel="stylesheet" href="css/design_system.css">
   <link rel="stylesheet" href="css/pages/agent_workspace.css">
-  <script src="js/pages/agent_workspace.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
-    <!-- MASTER SIDEBAR -->
     <aside class="sidebar"><div data-app-nav></div></aside>
-
     <div class="main-wrapper">
-      <header class="topbar">
-        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
-        <div class="search-container">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher des clients, devis, commandes, agents...">
-          <span class="search-shortcut">Ctrl + K</span>
-        </div>
-
-        <div class="topbar-actions">
-          <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel"></span>
-          </div>
-
-          <div class="icon-btn-badge" id="notifBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          </div>
-
-          <button class="btn-header-primary" id="btnQuickNew">
-            <span>+</span> Nouveau
-          </button>
-
-          <div class="user-topbar-pill">
-            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;"></div>
-            <div style="display:flex; flex-direction:column; line-height:1.2;">
-              <span style="font-weight:600; font-size:13px; color:#17251F;"></span>
-              <span style="font-size:11px; color:#66756D;"></span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main class="content-wrapper">
-<div class="page-header">
-        <div>
-          <h1 class="page-title">Agent Ecosystem & Sales Representative Copilot</h1>
-          <p class="page-desc">Complete 18-Role Orchestration Catalog, Real-Time Copilot Briefings, and Governed Autonomous Background Dispatches.</p>
-        </div>
-        <div style="display: flex; gap: 0.5rem;">
-          <button class="btn btn-outline btn-sm" data-on-click="h2">🔄 Refresh Catalog</button>
-          <button class="btn btn-primary btn-sm" data-on-click="h3">⚡ Run Ops Triage</button>
-        </div>
-      </div>
-
-      <!-- Hardware & VRAM Telemetry Strip -->
-      <div class="hardware-bar">
-        <div class="metric-card">
-          <span class="metric-label">Active GPU Model</span>
-          <span class="metric-val" id="telemetryActiveModel">qwen3.5:4b</span>
-          <span class="metric-tag">● Resident in VRAM (3.8GB)</span>
-        </div>
-        <div class="metric-card">
-          <span class="metric-label">On-Demand High Complexity</span>
-          <span class="metric-val" id="telemetryHighModel">qwen3.5:9b-q4</span>
-          <span class="metric-tag" style="color: var(--status-warning);">● Eviction Lease Ready (0 VRAM)</span>
-        </div>
-        <div class="metric-card">
-          <span class="metric-label">Auxiliary CPU Models</span>
-          <span class="metric-val">3 Engines</span>
-          <span class="metric-tag">● DarijaLID, Moulsot, Gemma</span>
-        </div>
-        <div class="metric-card">
-          <span class="metric-label">Active Agent Roles</span>
-          <span class="metric-val" id="telemetryRolesCount">18 Roles</span>
-          <span class="metric-tag">● 1 Shared Gateway (Zero Conflict)</span>
-        </div>
-      </div>
-
-      <!-- Tab Navigation -->
-      <div class="tabs-header">
-        <button class="tab-btn active" data-on-click="h4">
-          <span>📚</span> Agent Catalog (18 Roles)
-        </button>
-        <button class="tab-btn" data-on-click="h5">
-          <span>💼</span> Sales Rep Copilot Workspace
-        </button>
-        <button class="tab-btn" data-on-click="h6">
-          <span>📈</span> Agent Operations & Activity Monitor
-        </button>
-      </div>
-
-      <!-- TAB 1: AGENT CATALOG -->
-      <div id="pane-catalog" class="tab-pane active">
-        <div class="card">
-          <div class="card-title">
-            <span>Authoritative 18-Role Capability Matrix</span>
-            <span class="badge badge-primary">Tenant-Scoped RLS Governed</span>
-          </div>
-          <div class="card-subtitle">
-            Single shared Model Gateway instance across all 18 roles. Every turn bounded by strict token caps, least-privilege tool definitions, and OutputGuard verification.
-          </div><div class="table-responsive"><table class="data-table">
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Role Category</th>
-                <th>Role ID & Name</th>
-                <th>Model Tier</th>
-                <th>Token Cap</th>
-                <th>Allowed Tools (Least Privilege)</th>
-                <th>Delegation Policy</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="agentCatalogBody">
-              <!-- Dynamically populated or static baseline -->
-            </tbody>
-          </table></div>
-        </div>
-      </div>
-
-      <!-- TAB 2: COPILOT WORKSPACE -->
-      <div id="pane-copilot" class="tab-pane">
-        <div class="copilot-grid">
-          <!-- Left Column: Context & Takeover -->
-          <div class="card">
-            <h3 class="card-title" style="font-size: 1rem;">Customer Context</h3>
-            <div class="card-subtitle">Select active prospect conversation:</div>
-            
-            <div style="margin-bottom: 1rem;">
-              <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted);">ACTIVE CONVERSATION</label>
-              <select id="copilotConvSelect" class="tenant-selector" style="width: 100%; border: 1px solid var(--border-dark); margin-top: 0.25rem;">
-                <option value="conv-casablanca-solar-01">Société Maghrébine de Plastique (Casablanca)</option>
-                <option value="conv-atlas-farm-02">Domaine Agricole Atlas (Marrakech)</option>
-                <option value="conv-rabat-tech-03">Rabat CleanTech Solutions (Rabat)</option>
-              </select>
-            </div>
-
-            <!-- Human Takeover Silencing Control (Invariant 6) -->
-            <div style="background: var(--primary-tint); border: 1px solid #A7F3D0; border-radius: 6px; padding: 0.75rem; margin-bottom: 1rem;">
-              <div class="switch-wrap" style="justify-content: space-between;">
-                <div>
-                  <strong style="color: var(--primary); font-size: 0.85rem;">Human Takeover Mode</strong>
-                  <div style="font-size: 0.7rem; color: var(--text-muted);">Silences AI autonomous answers</div>
-                </div>
-                <label class="switch">
-                  <input type="checkbox" id="takeoverToggle" data-on-change="h7">
-                  <span class="slider"></span>
-                </label>
-              </div>
-              <div id="takeoverStatusPill" style="margin-top: 0.5rem; font-size: 0.75rem; font-weight: 600; color: var(--status-success);">
-                ● AI Autonomous Assistance Active
-              </div>
-            </div>
-
-            <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted);">RECENT TRANSCRIPT SNIPPET</label>
-            <div class="chat-snippet-box" id="transcriptSnippet">
-              <strong>Client:</strong> Bonjour Karim, nous avons étudié votre devis pour les 50 panneaux solaires. Votre prix unitaire est à 2 400 MAD, mais un fournisseur espagnol nous propose 2 150 MAD avec livraison comprise sous 10 jours.<br><br>
-              <strong>Client:</strong> Si vous pouvez vous aligner ou proposer une garantie sur site de 5 ans, nous signons le bon de commande cette semaine.
-            </div>
-
-            <button class="btn btn-primary" style="width: 100%;" data-on-click="h8">
-              <span>✨</span> Generate Live Copilot Brief
-            </button>
-          </div>
-
-          <!-- Center Column: Deal Brief & Objections -->
-          <div class="card">
-            <div class="card-title">
-              <span>Deal Intelligence & Strategy Brief</span>
-              <span id="briefIdBadge" class="badge badge-info">Waiting for generation</span>
-            </div>
-            <div class="card-subtitle">AI synthesis backed by fresh PostgreSQL catalog data and approved objections playbooks.</div>
-
-            <div style="margin-bottom: 1.25rem;">
-              <h4 style="font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.35rem;">Customer Summary & Intent</h4>
-              <p id="copilotSummary" style="font-size: 0.9rem; line-height: 1.5; background: var(--bg-page); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-muted);">
-                Click "Generate Live Copilot Brief" to analyze conversation, extract competitor price anchors, and produce objection rebuttals.
-              </p>
-            </div>
-
-            <div style="margin-bottom: 1.25rem;">
-              <h4 style="font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.35rem;">Key Objections & Defenses</h4>
-              <ul id="copilotObjections" style="list-style: none; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem;">
-                <li style="padding: 0.5rem; background: #FEF3C7; border-left: 3px solid var(--status-warning); border-radius: 4px;">
-                  <strong>Prix Concurrent (2 150 MAD):</strong> Mentionner que le produit concurrent exclut le dédouanement et le SAV sur site au Maroc.
-                </li>
-                <li style="padding: 0.5rem; background: #FEF3C7; border-left: 3px solid var(--status-warning); border-radius: 4px;">
-                  <strong>Garantie 5 Ans Demandée:</strong> Notre contrat standard inclut 2 ans; extension 5 ans disponible sur validation manager.
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 style="font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.35rem;">Suggested Rep Replies</h4>
-              <div id="copilotSuggestedReplies" style="display: flex; flex-direction: column; gap: 0.5rem;">
-                <div style="background: var(--bg-page); border: 1px solid var(--border-muted); border-radius: 6px; padding: 0.75rem; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
-                  <span>"Notre tarif comprend l'installation certifiée et le remplacement garanti sous 48h partout à Casablanca."</span>
-                  <button class="btn btn-outline btn-sm" data-on-click="h9">Copy</button>
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
+        <div class="page-header"><div class="page-title-group"><h1>Espace agents IA</h1><p>Le catalogue des 18 rôles d'agents, leurs outils autorisés et leur activité récente.</p></div><div class="page-actions"></div></div><section class="kpi-grid kpi-grid--compact" id="kpis" aria-label="Indicateurs"><p class="data-state" role="status">Chargement…</p></section><div class="chip-row agent-filters" id="groupChips" role="group" aria-label="Filtrer par famille"></div><section class="agent-grid" id="agents" aria-live="polite"></section><section class="card list-card sub-card"><div class="card-header"><h2 class="card-title">Activité récente des agents</h2></div>
+          <div class="table-responsive"><table class="data-table responsive-table"><thead><tr><th>Agent</th><th>Classe d'exécution</th><th>Conversation</th><th>Quand</th></tr></thead>
+          <tbody id="activityRows"><tr><td colspan="4" class="data-state">Chargement…</td></tr></tbody></table></div></section>
       </main>
     </div>
   </div>
-
-
   <script src="js/app_shell.js"></script>
   <script src="js/pages/agent_workspace.js"></script>
-
 </body>
-<!-- csp-build: migrated -->
 </html>

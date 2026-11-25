@@ -117,10 +117,14 @@ async def get_ai_gov_api_env():
 
 @pytest.mark.asyncio
 async def test_ai_health_endpoint():
-    """GET /api/v1/ai/health returns health telemetry and model statuses."""
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        res = await client.get("/api/v1/ai/health")
+    """GET /api/v1/ai/health returns health telemetry and model statuses to AI managers only
+    (it exposes model names and host memory, so it is no longer public)."""
+    async with get_ai_gov_api_env() as env:
+      transport = ASGITransport(app=app)
+      async with AsyncClient(transport=transport, base_url="http://test") as client:
+        assert (await client.get("/api/v1/ai/health")).status_code == 401
+        assert (await client.get("/api/v1/ai/health", headers=env["cust_headers"])).status_code == 403
+        res = await client.get("/api/v1/ai/health", headers=env["admin_headers"])
         assert res.status_code == 200
         data = res.json()
         assert data["status"] == "HEALTHY"

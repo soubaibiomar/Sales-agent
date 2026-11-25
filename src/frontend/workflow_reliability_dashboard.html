@@ -5,213 +5,26 @@
   <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Selia — Workflow Reliability & System Health</title>
+  <title>Selia — Fiabilité & alertes</title>
   <link rel="stylesheet" href="css/design_system.css">
   <link rel="stylesheet" href="css/pages/workflow_reliability_dashboard.css">
-  <script src="js/pages/workflow_reliability_dashboard.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
-    <!-- MASTER SIDEBAR -->
     <aside class="sidebar"><div data-app-nav></div></aside>
-
     <div class="main-wrapper">
-      <header class="topbar">
-        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
-        <div class="search-container">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher des clients, devis, commandes, agents...">
-          <span class="search-shortcut">Ctrl + K</span>
-        </div>
-
-        <div class="topbar-actions">
-          <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel"></span>
-          </div>
-
-          <div class="icon-btn-badge" id="notifBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          </div>
-
-          <button class="btn-header-primary" id="btnQuickNew">
-            <span>+</span> Nouveau
-          </button>
-
-          <div class="user-topbar-pill">
-            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;"></div>
-            <div style="display:flex; flex-direction:column; line-height:1.2;">
-              <span style="font-weight:600; font-size:13px; color:#17251F;"></span>
-              <span style="font-size:11px; color:#66756D;"></span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main class="content-wrapper">
-<div class="sidebar">
-    <div class="brand-title">🛡️ Sales AI</div>
-    <div class="brand-subtitle">Enterprise SaaS Core</div>
-    <ul class="nav-list">
-      <li class="nav-item"><a href="index.html">🏠 Home Console</a></li>
-      <li class="nav-item"><a href="analytics_dashboard.html">📈 Executive Analytics</a></li>
-      <li class="nav-item"><a href="ai_operations_dashboard.html">🤖 AI Model Operations</a></li>
-      <li class="nav-item"><a href="voice_observability.html">🎙️ Voice Observability</a></li>
-      <li class="nav-item"><a href="saas_admin_dashboard.html">🏢 SaaS Admin & Quotas</a></li>
-      <li class="nav-item active"><a href="workflow_reliability_dashboard.html">🩺 Reliability & Alerts</a></li>
-    </ul>
-  </div>
-
-  <div class="main-content">
-    <div class="header-bar">
-      <div>
-        <h1 class="page-title">Workflow Reliability & System Health</h1>
-        <p class="page-desc">Real-time dependency health checks, OpenTelemetry trace spans, and operational alert lifecycle management.</p>
-      </div>
-      <div class="controls-bar">
-        <button class="btn btn-secondary" data-on-click="h2">🔁 Replay DLQ</button>
-        <button class="btn" data-on-click="h3">🔄 Refresh</button>
-      </div>
-    </div>
-
-    <!-- Deep Dependency Health Check Matrix -->
-    <h2 style="font-size:1.15rem; font-weight:700; margin-bottom:1rem; color:var(--text-main);">Infrastructure Dependency Health</h2>
-    <div class="grid-health">
-      <div class="health-card" id="cardPostgres">
-        <div class="health-header">
-          <span class="health-name">🐘 PostgreSQL 16</span>
-          <span class="status-badge status-up" id="statusPostgres">UP</span>
-        </div>
-        <div class="health-meta" id="metaPostgres">Port 5432 • Latency: 1.8ms</div>
-      </div>
-
-      <div class="health-card" id="cardRedis">
-        <div class="health-header">
-          <span class="health-name">⚡ Redis 7</span>
-          <span class="status-badge status-up" id="statusRedis">UP</span>
-        </div>
-        <div class="health-meta" id="metaRedis">Port 6379 • Latency: 0.5ms</div>
-      </div>
-
-      <div class="health-card" id="cardMinIO">
-        <div class="health-header">
-          <span class="health-name">🪣 MinIO S3</span>
-          <span class="status-badge status-up" id="statusMinIO">UP</span>
-        </div>
-        <div class="health-meta" id="metaMinIO">Port 9000 • Latency: 2.1ms</div>
-      </div>
-
-      <div class="health-card" id="cardOllama">
-        <div class="health-header">
-          <span class="health-name">🧠 Ollama LLM</span>
-          <span class="status-badge status-up" id="statusOllama">UP</span>
-        </div>
-        <div class="health-meta" id="metaOllama">Port 11434 • Model: qwen3.5:4b</div>
-      </div>
-
-      <div class="health-card" id="cardGPU">
-        <div class="health-header">
-          <span class="health-name">🎮 RTX 4060 GPU</span>
-          <span class="status-badge status-up" id="statusGPU">BOUND</span>
-        </div>
-        <div class="health-meta" id="metaGPU">VRAM: 4.8 / 8.0 GB (Exclusive)</div>
-      </div>
-    </div>
-
-    <!-- Workflow Execution & DLQ Overview -->
-    <div class="grid-stats">
-      <div class="stat-card">
-        <div class="stat-label">Active Workflows</div>
-        <div class="stat-val" style="color:var(--status-info);" id="statActive">8</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Completed (24h)</div>
-        <div class="stat-val" style="color:var(--status-success);" id="statCompleted">342</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Failed / Retrying</div>
-        <div class="stat-val" style="color:var(--status-warning);" id="statFailed">1</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Dead-Letter Backlog</div>
-        <div class="stat-val" style="color:var(--status-danger);" id="statDLQ">0</div>
-      </div>
-    </div>
-
-    <!-- Active System Alerts Feed -->
-    <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-        <div>
-          <div class="card-title">Operational Alert Events & Incident Lifecycle</div>
-          <div style="font-size:0.85rem; color:var(--text-muted)">State transitions: ACTIVE → ACKNOWLEDGED → RESOLVED</div>
-        </div>
-        <span class="status-badge status-up" id="alertCountBadge">0 Critical Alerts</span>
-      </div><div class="table-responsive"><table class="data-table">
-        <thead>
-          <tr>
-            <th>Severity</th>
-            <th>Component</th>
-            <th>Alert Condition</th>
-            <th>Trigger Value</th>
-            <th>Current Status</th>
-            <th>Timestamp</th>
-            <th>Lifecycle Actions</th>
-          </tr>
-        </thead>
-        <tbody id="alertsTableBody">
-          <tr>
-            <td><span class="status-badge status-warn">WARNING</span></td>
-            <td><strong>SaaS Metering</strong></td>
-            <td>Tokens monthly quota exceeded 80%</td>
-            <td>8,210,000 / 10,000,000</td>
-            <td><span style="font-weight:600; color:var(--status-warning)">ACTIVE</span></td>
-            <td>Just now</td>
-            <td>
-              <button class="btn btn-secondary btn-sm" data-on-click="h4">Acknowledge</button>
-              <button class="btn btn-sm" data-on-click="h5">Resolve</button>
-            </td>
-          </tr>
-          <tr>
-            <td><span class="status-badge status-up">INFO</span></td>
-            <td><strong>Ollama Gateway</strong></td>
-            <td>VRAM exclusive handover completed (9B evicted)</td>
-            <td>0ms residual VRAM</td>
-            <td><span style="font-weight:600; color:var(--status-success)">RESOLVED</span></td>
-            <td>12 mins ago</td>
-            <td><span style="color:var(--text-muted); font-size:0.8rem;">Resolved by System</span></td>
-          </tr>
-        </tbody>
-      </table></div>
-    </div>
-
-    <!-- Distributed Trace Spans Sample -->
-    <div class="card">
-      <div class="card-title">Recent Distributed Trace Spans (OpenTelemetry Context)</div><div class="table-responsive"><table class="data-table">
-        <thead>
-          <tr>
-            <th>Trace ID</th>
-            <th>Root Service Span</th>
-            <th>Duration</th>
-            <th>Status</th>
-            <th>Span Count</th>
-            <th>Correlation Context</th>
-          </tr>
-        </thead>
-        <tbody id="tracesTableBody">
-          <tr><td colspan="6" class="data-state data-state--loading" role="status">Chargement des traces…</td></tr>
-        </tbody>
-      </table></div>
-    </div>
-  </div>
-
-  <script src="js/pages/workflow_reliability_dashboard.js"></script>
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
+        <div class="page-header"><div class="page-title-group"><h1>Fiabilité & alertes</h1><p>Disponibilité des dépendances, alertes et traces récentes.</p></div><div class="page-actions"><button type="button" class="btn btn-outline" id="btnRefresh" data-icon="arrow">Actualiser</button></div></div>
+        <section class="kpi-grid kpi-grid--compact" id="kpis" aria-label="Indicateurs"><p class="data-state" role="status">Chargement…</p></section><section class="card sub-card"><div class="card-header"><h2 class="card-title">Dépendances</h2><span class="card-subtitle" id="checkedAt"></span></div><div class="dep-grid" id="deps"></div></section><section class="card list-card sub-card"><div class="card-header"><h2 class="card-title">Alertes</h2></div>
+          <div class="table-responsive"><table class="data-table responsive-table"><thead><tr><th>Alerte</th><th>Source</th><th>Gravité</th><th>Depuis</th><th>Statut</th><th></th></tr></thead>
+          <tbody id="alertRows"><tr><td colspan="6" class="data-state">Chargement…</td></tr></tbody></table></div></section><section class="card list-card sub-card"><div class="card-header"><h2 class="card-title">Traces récentes</h2></div>
+          <div class="table-responsive"><table class="data-table responsive-table"><thead><tr><th>Opération</th><th>Composant</th><th class="num">Durée</th><th>Statut</th><th>Quand</th></tr></thead>
+          <tbody id="traceRows"><tr><td colspan="5" class="data-state">Chargement…</td></tr></tbody></table></div></section>
       </main>
     </div>
   </div>
-
-
   <script src="js/app_shell.js"></script>
-  
-
+  <script src="js/pages/workflow_reliability_dashboard.js"></script>
 </body>
-<!-- csp-build: migrated -->
 </html>

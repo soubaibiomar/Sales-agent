@@ -5,78 +5,36 @@
   <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Selia — AI Governance, Model Gateway & RAG</title>
+  <title>Selia — Gouvernance IA</title>
   <link rel="stylesheet" href="css/design_system.css">
   <link rel="stylesheet" href="css/pages/ai_governance.css">
-  <script src="js/pages/ai_governance.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
-    <!-- MASTER SIDEBAR -->
     <aside class="sidebar"><div data-app-nav></div></aside>
-
     <div class="main-wrapper">
-      <header class="topbar">
-        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
-        <div class="search-container">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher des clients, devis, commandes, agents...">
-          <span class="search-shortcut">Ctrl + K</span>
-        </div>
-
-        <div class="topbar-actions">
-          <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel"></span>
-          </div>
-
-          <div class="icon-btn-badge" id="notifBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          </div>
-
-          <button class="btn-header-primary" id="btnQuickNew">
-            <span>+</span> Nouveau
-          </button>
-
-          <div class="user-topbar-pill">
-            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;"></div>
-            <div style="display:flex; flex-direction:column; line-height:1.2;">
-              <span style="font-weight:600; font-size:13px; color:#17251F;"></span>
-              <span style="font-size:11px; color:#66756D;"></span>
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
+        <div class="page-header"><div class="page-title-group"><h1>Gouvernance IA</h1><p>Passerelle de modèles, base de connaissances (RAG) et évaluations hors ligne.</p></div><div class="page-actions"><button type="button" class="btn btn-outline" id="btnEval" data-icon="target">Lancer les évaluations</button><button type="button" class="btn btn-primary" id="btnDoc" data-icon="plus">Ajouter un document</button></div></div><section class="kpi-grid kpi-grid--compact" id="kpis" aria-label="Indicateurs"><p class="data-state" role="status">Chargement…</p></section><section class="card sub-card" id="evalCard" hidden><div class="card-header"><h2 class="card-title">Résultat des évaluations</h2><span class="card-subtitle" id="evalWhen"></span></div><div id="evalBody"></div></section><section class="card list-card sub-card"><div class="card-header"><h2 class="card-title">Base de connaissances</h2></div>
+          <div class="table-responsive"><table class="data-table responsive-table"><thead><tr><th>Document</th><th>Source</th><th>Accès</th><th class="num">Segments</th><th>Ajouté</th><th>Statut</th></tr></thead>
+          <tbody id="docRows"><tr><td colspan="6" class="data-state">Chargement…</td></tr></tbody></table></div></section><div class="modal-backdrop" id="docModal" hidden>
+          <form class="modal" id="docForm" novalidate aria-labelledby="docTitle">
+            <h2 id="docTitle">Ajouter un document</h2>
+            <div class="form-grid">
+              <div class="field span-2"><label for="dTitle">Titre *</label><input class="form-control" id="dTitle" required maxlength="255"></div>
+              <div class="field"><label for="dSource">Type de source</label><select class="form-control" id="dSource"><option value="POLICY">Politique</option><option value="FAQ">FAQ</option><option value="PRODUCT_SHEET">Fiche produit</option><option value="PROCEDURE">Procédure</option></select></div>
+              <div class="field"><label for="dAcl">Visible par</label><select class="form-control" id="dAcl"><option value="public">Tout le monde (y compris clients)</option><option value="internal">Équipe interne uniquement</option></select></div>
+              <div class="field span-2"><label for="dContent">Contenu *</label><textarea class="form-control" id="dContent" rows="6" required></textarea></div>
             </div>
-          </div>
+            <p class="form-error" role="alert"></p>
+            <div class="modal-actions"><button type="button" class="btn btn-outline" data-close-modal>Annuler</button><button type="submit" class="btn btn-primary">Indexer</button></div>
+          </form>
         </div>
-      </header>
-
-      <main class="content-wrapper">
-<!-- Health & Budget KPI Ribbon -->
-      <div class="stat-grid">
-        <div class="stat-card">
-          <div class="stat-title">Active GPU Model</div>
-          <div class="stat-value" id="kpiActiveModel">qwen3.5:4b</div>
-          <div class="stat-sub">VRAM Mutual Exclusion: Active</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-title">GPU VRAM Headroom</div>
-          <div class="stat-value" id="kpiVramHeadroom">~6,100 MB</div>
-          <div class="stat-sub">Budget Cap: 7,000 MB</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-title">Prompt Injection Defense</div>
-          <div class="stat-value" id="kpiInjectionDefense">100% Intercept</div>
-          <div class="stat-sub">Multi-dialect: FR, EN, AR, Darija</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-title">Claim Grounding Rate</div>
-          <div class="stat-value" id="kpiClaimGrounding">100% Grounded</div>
-          <div class="stat-sub">Deterministic Commercial Authority
       </main>
     </div>
   </div>
-
-
   <script src="js/app_shell.js"></script>
+  <script src="js/list_page.js"></script>
   <script src="js/pages/ai_governance.js"></script>
-
 </body>
-<!-- csp-build: migrated -->
 </html>

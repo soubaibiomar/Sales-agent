@@ -5,109 +5,46 @@
   <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Selia — Manager Voice Copilot</title>
+  <title>Selia — Copilote vocal</title>
   <link rel="stylesheet" href="css/design_system.css">
   <link rel="stylesheet" href="css/pages/voice_copilot.css">
-  <script src="js/pages/voice_copilot.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
-    <!-- MASTER SIDEBAR -->
     <aside class="sidebar"><div data-app-nav></div></aside>
-
     <div class="main-wrapper">
-      <header class="topbar">
-        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
-        <div class="search-container">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher des clients, devis, commandes, agents...">
-          <span class="search-shortcut">Ctrl + K</span>
-        </div>
-
-        <div class="topbar-actions">
-          <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel"></span>
-          </div>
-
-          <div class="icon-btn-badge" id="notifBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          </div>
-
-          <button class="btn-header-primary" id="btnQuickNew">
-            <span>+</span> Nouveau
-          </button>
-
-          <div class="user-topbar-pill">
-            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;"></div>
-            <div style="display:flex; flex-direction:column; line-height:1.2;">
-              <span style="font-weight:600; font-size:13px; color:#17251F;"></span>
-              <span style="font-size:11px; color:#66756D;"></span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main class="content-wrapper">
-<div class="page-header"><div class="page-title-group"><h1>Copilote vocal manager</h1><p>Questions et commandes de pilotage, avec confirmation MFA pour les actions sensibles.</p></div></div>
-
-    <div class="voice-layout">
-        <div class="card">
-            <div class="manager-banner">
-                <div>
-                    <strong>Session Authentifiée:</strong> Direction Commerciale (Rôle: sales_manager)
-                </div>
-                <div style="font-size: 0.75rem;">
-                    🛡️ Step-Up MFA & Non-Autonomous Authority Actifs
-                </div>
-            </div>
-
-            <!-- Feed -->
-            <div class="feed" id="copilotFeed">
-                <div class="msg copilot">
-                    Bonjour Directeur. Sales AI Copilot est à votre écoute. 
-                    Vous pouvez interroger les indicateurs de ventes, les devis en attente ou demander des aperçus d'actions.
-                </div>
-            </div>
-
-            <!-- Push-to-Talk / Command Input -->
-            <div class="ptt-container">
-                <input type="text" class="ptt-input" id="commandInput" placeholder="Posez une question ou formulez un ordre de gestion (ex: 'Chiffre d'affaires du jour')...">
-                <button class="btn-primary" id="sendBtn">Envoyer</button>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3 style="font-size: 1rem; margin-bottom: 12px;">Requêtes Fréquentes Direction</h3>
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
+        <div class="page-header"><div class="page-title-group"><h1>Copilote vocal</h1><p>Posez vos questions de pilotage ; les actions sensibles exigent une confirmation MFA.</p></div><div class="page-actions"></div></div>
+        <div class="voice-layout">
+          <section class="card voice-main" aria-label="Conversation avec le copilote">
+            <div class="feed-box" id="copilotFeed" aria-live="polite"><div class="msg system">Les réponses s'appuient sur les données de votre organisation. Aucune action sensible n'est exécutée sans confirmation.</div></div>
+            <div class="composer-row"><label class="visually-hidden" for="commandInput">Votre question</label>
+              <input type="text" class="form-control" id="commandInput" placeholder="Ex. : quel est le chiffre d'affaires de la semaine ?">
+              <button type="button" class="btn btn-primary" id="sendBtn" data-icon="arrow">Envoyer</button></div>
+          </section>
+          <aside class="card voice-side" aria-label="Questions rapides">
+            <h2 class="card-title">Questions rapides</h2>
             <div class="quick-queries">
-                <button data-on-click="h2">📊 Ventes & Chiffre d'affaires</button>
-                <button data-on-click="h3">📝 Devis en attente d'approbation</button>
-                <button data-on-click="h4">⚠️ Alertes stock & réapprovisionnement</button>
-                <button data-on-click="h5">🎧 SLA & Tickets de support</button>
-                <button data-on-click="h6">🔒 Test Action Sensible (Step-Up MFA)</button>
+              <button type="button" class="btn btn-outline" data-query="Quel est le chiffre d'affaires de cette semaine ?">Ventes et chiffre d'affaires</button>
+              <button type="button" class="btn btn-outline" data-query="Quels devis attendent une approbation ?">Devis en attente d'approbation</button>
+              <button type="button" class="btn btn-outline" data-query="Quels articles sont en rupture ou en stock bas ?">Alertes de stock</button>
+              <button type="button" class="btn btn-outline" data-query="Quels tickets de support sont urgents ?">Tickets de support urgents</button>
             </div>
-
-            <hr style="border: 0; border-top: 1px solid var(--border-muted); margin: 20px 0;">
-
-            <div id="mfaModal" style="display: none; background: #FEF3C7; border: 1px solid #FCD34D; padding: 16px; border-radius: 8px;">
-                <h4 style="color: #92400E; font-size: 0.875rem; margin-bottom: 8px;">Confirmation Second Facteur (MFA)</h4>
-                <p style="font-size: 0.75rem; color: #78350F; margin-bottom: 12px;">
-                    Cette action dépasse le seuil d'autorisation vocale. Entrez votre code TOTP Google Authenticator.
-                </p>
-                <input type="text" id="mfaInput" placeholder="Code MFA (6 chiffres)" maxlength="6" style="width: 100%; padding: 8px; border: 1px solid #FCD34D; border-radius: 4px; margin-bottom: 8px;">
-                <button class="btn-mfa" id="confirmActionBtn" style="width: 100%;">Valider l'Opération</button>
-            </div>
+          </aside>
         </div>
-    </div>
-
-    <script src="js/pages/voice_copilot.js"></script>
+        <div class="modal-backdrop" id="mfaModal" hidden>
+          <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mfaTitle">
+            <h2 id="mfaTitle">Confirmer l'action sensible</h2>
+            <p class="cell-sub">Saisissez le code de votre application d'authentification pour autoriser cette action.</p>
+            <div class="field"><label for="mfaInput">Code de vérification</label><input class="form-control" id="mfaInput" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></div>
+            <div class="modal-actions"><button type="button" class="btn btn-outline" data-close-modal>Annuler</button><button type="button" class="btn btn-primary" id="confirmActionBtn">Confirmer</button></div>
+          </div>
+        </div>
       </main>
     </div>
   </div>
-
-
   <script src="js/app_shell.js"></script>
-  
-
+  <script src="js/pages/voice_copilot.js"></script>
 </body>
-<!-- csp-build: migrated -->
 </html>

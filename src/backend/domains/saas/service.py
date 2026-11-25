@@ -8,6 +8,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
+from sqlalchemy.exc import IntegrityError
 
 from src.backend.models.entities import (
     TenantSubscription,
@@ -83,8 +84,14 @@ class SaaSAdminService:
                 created_at=now,
                 updated_at=now
             )
-            self.session.add(sub)
-            await self.session.flush()
+            # Concurrent first requests (e.g. two dashboard calls) may both try to create the
+            # row: insert inside a savepoint and re-read on the unique-constraint conflict.
+            try:
+                async with self.session.begin_nested():
+                    self.session.add(sub)
+                    await self.session.flush()
+            except IntegrityError:
+                sub = (await self.session.execute(stmt)).scalar_one()
 
         return sub
 
@@ -115,8 +122,12 @@ class SaaSAdminService:
                 active_users_count=1,
                 last_updated_at=datetime.now(timezone.utc)
             )
-            self.session.add(meter)
-            await self.session.flush()
+            try:
+                async with self.session.begin_nested():
+                    self.session.add(meter)
+                    await self.session.flush()
+            except IntegrityError:
+                meter = (await self.session.execute(stmt)).scalar_one()
 
         return meter
 

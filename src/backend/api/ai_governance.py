@@ -42,7 +42,9 @@ router = APIRouter(prefix="/api/v1/ai", tags=["AI Governance"])
 
 
 @router.get("/health")
-async def get_ai_health():
+async def get_ai_health(
+    ctx: SecurityContext = Depends(require_permission("ai:manage"))
+):
     """Returns Model Gateway health, active models, VRAM headroom, and budgets."""
     return await model_gateway.get_health()
 

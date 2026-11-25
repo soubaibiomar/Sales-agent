@@ -5,132 +5,24 @@
   <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Selia — Integrations & n8n Peripheral Barrier</title>
+  <title>Selia — Intégrations</title>
   <link rel="stylesheet" href="css/design_system.css">
   <link rel="stylesheet" href="css/pages/integrations.css">
-  <script src="js/pages/integrations.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
-    <!-- MASTER SIDEBAR -->
     <aside class="sidebar"><div data-app-nav></div></aside>
-
     <div class="main-wrapper">
-      <header class="topbar">
-        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
-        <div class="search-container">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher des clients, devis, commandes, agents...">
-          <span class="search-shortcut">Ctrl + K</span>
-        </div>
-
-        <div class="topbar-actions">
-          <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel"></span>
-          </div>
-
-          <div class="icon-btn-badge" id="notifBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          </div>
-
-          <button class="btn-header-primary" id="btnQuickNew">
-            <span>+</span> Nouveau
-          </button>
-
-          <div class="user-topbar-pill">
-            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;"></div>
-            <div style="display:flex; flex-direction:column; line-height:1.2;">
-              <span style="font-weight:600; font-size:13px; color:#17251F;"></span>
-              <span style="font-size:11px; color:#66756D;"></span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main class="content-wrapper">
-<!-- Status Cards -->
-      <div class="grid-3">
-        <div class="stat-card">
-          <span class="stat-label">n8n Security Barrier</span>
-          <span class="stat-value" style="color: var(--status-success);">ENFORCED</span>
-          <span style="font-size: 0.75rem; color: var(--status-success);">Commercial mutations strictly blocked (403)</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Transactional Outbox Backlog</span>
-          <span class="stat-value" id="outboxPendingCount">0</span>
-          <span style="font-size: 0.75rem; color: var(--status-info);">Pending reliable event delivery</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Dead-Letter Queue (DLQ)</span>
-          <span class="stat-value" id="dlqCount" style="color: var(--status-danger);">0</span>
-          <span style="font-size: 0.75rem; color: var(--text-muted);">Quarantined events needing manual triage</span>
-        </div>
-      </div>
-
-      <!-- Invariant 7 / ADR-007 Security Barrier Tester -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">🛡️ Peripheral n8n Security Barrier Verification (Invariant 7)</div>
-          <span style="font-size: 0.8rem; color: var(--text-muted);">Verify n8n identity is rejected from executing financial/inventory state changes</span>
-        </div>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-          Under <strong>Invariant 7</strong> and <strong>ADR-007</strong>, n8n is strictly peripheral (notifications, non-critical webhooks).
-          No n8n workflow or service account can ever modify prices, approve discounts, mark orders paid, refund payments, or adjust inventory.
-        </p>
-
-        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-          <button class="btn btn-outline" data-on-click="h2">🚫 Test quotes:approve (Must 403)</button>
-          <button class="btn btn-outline" data-on-click="h3">🚫 Test orders:mark_paid (Must 403)</button>
-          <button class="btn btn-outline" data-on-click="h4">🚫 Test inventory:adjust (Must 403)</button>
-          <button class="btn btn-outline" data-on-click="h5">🚫 Test payments:refund (Must 403)</button>
-          <button class="btn btn-primary" data-on-click="h6">✅ Test leads:enrich_summary (Allowed Peripheral)</button>
-        </div>
-        <div id="barrierResult" style="margin-top: 1rem; padding: 0.75rem; border-radius: 6px; display: none; font-size: 0.85rem;"></div>
-      </div>
-
-      <!-- Transactional Outbox & DLQ Table -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Transactional Outbox & DLQ Events</div>
-          <button class="btn btn-outline" data-on-click="h7">🔄 Refresh</button>
-        </div><div class="table-responsive"><table class="data-table">
-          <thead>
-            <tr>
-              <th>Event ID</th>
-              <th>Topic / Event Type</th>
-              <th>Status</th>
-              <th>Retry Count</th>
-              <th>Created At</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="outboxBody">
-            <tr>
-              <td><code>outbox-ev-401</code></td>
-              <td><code>order.created</code></td>
-              <td><span class="badge badge-success">PUBLISHED</span></td>
-              <td>0</td>
-              <td>2 mins ago</td>
-              <td>—</td>
-            </tr>
-            <tr>
-              <td><code>outbox-ev-402</code></td>
-              <td><code>customer.notification</code></td>
-              <td><span class="badge badge-pending">PENDING</span></td>
-              <td>0</td>
-              <td>Just now</td>
-              <td><button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.75rem;">Dispatch Now</button></td>
-            </tr>
-          </tbody>
-        </table></div>
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
+        <div class="page-header"><div class="page-title-group"><h1>Intégrations</h1><p>Santé de la file sortante (outbox) et des événements en échec définitif.</p></div><div class="page-actions"><button type="button" class="btn btn-outline" id="btnRefresh" data-icon="arrow">Actualiser</button></div></div>
+        <section class="kpi-grid kpi-grid--compact" id="kpis" aria-label="Indicateurs"><p class="data-state" role="status">Chargement…</p></section><section class="card list-card sub-card"><div class="card-header"><h2 class="card-title">Événements en échec définitif (DLQ)</h2></div>
+          <div class="table-responsive"><table class="data-table responsive-table"><thead><tr><th>Événement</th><th>Canal</th><th>Destinataire</th><th class="num">Tentatives</th><th>Dernière erreur</th><th>Créé</th><th></th></tr></thead>
+          <tbody id="dlqRows"><tr><td colspan="7" class="data-state">Chargement…</td></tr></tbody></table></div></section>
       </main>
     </div>
   </div>
-
-
   <script src="js/app_shell.js"></script>
   <script src="js/pages/integrations.js"></script>
-
 </body>
-<!-- csp-build: migrated -->
 </html>

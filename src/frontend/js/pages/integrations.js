@@ -1,76 +1,43 @@
-/* Extracted from integrations.html by scripts/frontend_csp_build.py */
-async function verifyBarrier(action) {
-      const resultDiv = document.getElementById('barrierResult');
-      resultDiv.style.display = 'block';
-      resultDiv.style.background = '#F8FAFC';
-      resultDiv.innerHTML = 'Testing barrier for action: <code>' + action + '</code>...';
+/* Selia — Intégrations: outbox health (GET /api/v1/integrations/status) and the dead-letter
+ * queue with retry. The previous page called /integrations/outbox, which does not exist. */
+(function () {
+  'use strict';
+  const V = window.SalesViews, UI = window.SalesAI;
+  const $ = (id) => document.getElementById(id);
+  const kpi = (icon, tone, label, value, extra) => '<article class="kpi-card"><span class="kpi-icon' + (tone ? ' kpi-icon--' + tone : '') + '">' + UI.icon(icon, 22) +
+    '</span><div class="kpi-body"><span class="kpi-label">' + V.esc(label) + '</span><span class="kpi-number">' + value + '</span>' + (extra ? '<span class="kpi-delta">' + V.esc(extra) + '</span>' : '') + '</div></article>';
 
-      try {
-        const res = await SalesApi.fetch('/api/v1/integrations/n8n/verify-barrier', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',},
-          body: JSON.stringify({ action: action })
-        });
-        const data = await res.json();
-        if (data.allowed) {
-          resultDiv.style.background = '#DCFCE7';
-          resultDiv.style.color = '#16A34A';
-          resultDiv.innerHTML = `✅ <strong>PERMITTED PERIPHERAL ACTION:</strong> Action <code>${SalesViews.esc(action)}</code> was accepted as a non-commercial task.`;
-        } else {
-          resultDiv.style.background = '#FEE2E2';
-          resultDiv.style.color = '#DC2626';
-          resultDiv.innerHTML = `🛡️ <strong>BLOCKED BY SECURITY BARRIER (HTTP 403):</strong> ${SalesViews.esc(data.detail)}`;
-        }
-      } catch (err) {
-        resultDiv.style.background = '#FEE2E2';
-        resultDiv.style.color = '#DC2626';
-        resultDiv.innerHTML = 'Error: ' + err.message;
-      }
-    }
+  async function load() {
+    const [st, dlq] = await Promise.all([V.getJson('/api/v1/integrations/status'), V.getJson('/api/v1/integrations/outbox/dlq')]);
+    if (st.ok) {
+      const s = st.data;
+      $('kpis').innerHTML = kpi('target', s.status === 'HEALTHY' ? '' : 'terra', 'État', V.pill(s.status === 'HEALTHY' ? 'Sain' : 'À surveiller', s.status === 'HEALTHY' ? 'ok' : 'warn')) +
+        kpi('arrow', 'sand', 'En attente d’envoi', V.esc(s.outbox_pending_count)) +
+        kpi('calendar', 'terra', 'Échecs définitifs', V.esc(s.dead_letter_queue_count)) + kpi('grid', '', 'Intégrations actives', V.esc(s.active_integrations_count));
+    } else $('kpis').innerHTML = '<p class="data-state data-state--error" role="alert">' + V.esc(V.errorText(st)) + '</p>';
+    const tbody = $('dlqRows');
+    if (!dlq.ok) { V.rowState(tbody, 7, 'error', V.errorText(dlq)); return; }
+    const rows = V.list(dlq.data);
+    tbody.innerHTML = rows.length ? rows.map(e => '<tr><td data-label=""><code>' + V.esc(e.event_type) + '</code></td>' +
+      '<td data-label="Canal">' + V.esc(e.channel_type || '—') + '</td><td data-label="Destinataire">' + V.esc(e.recipient_identifier ? '…' + String(e.recipient_identifier).slice(-6) : '—') + '</td>' +
+      '<td data-label="Tentatives" class="num">' + V.esc((e.retry_count || 0) + ' / ' + (e.max_retries || 0)) + '</td>' +
+      '<td data-label="Dernière erreur">' + V.esc(e.last_error || '—') + '</td><td data-label="Créé">' + V.esc(V.ago(e.created_at)) + '</td>' +
+      '<td data-label=""><button type="button" class="btn btn-outline btn-sm" data-retry="' + V.esc(e.id) + '">Relancer</button></td></tr>').join('')
+      : '<tr><td colspan="7" class="data-state">Aucun événement en échec. Tout est délivré ou en cours.</td></tr>';
+  }
 
-    async function loadOutbox() {
-      try {
-        const res = await SalesApi.fetch('/api/v1/integrations/outbox', {
-          headers: {}
-        });
-        if (res.ok) {
-          const list = await res.json();
-          const tbody = document.getElementById('outboxBody');
-          if (list.length > 0) {
-            tbody.innerHTML = list.map(item => `
-              <tr>
-                <td><code>${SalesViews.esc(item.id)}</code></td>
-                <td><code>${SalesViews.esc(item.event_type)}</code></td>
-                <td><span class="badge ${SalesViews.esc(item.status === 'PUBLISHED' ? 'badge-success' : (item.status === 'FAILED' ? 'badge-danger' : 'badge-pending'))}">${SalesViews.esc(item.status)}</span></td>
-                <td>${SalesViews.esc(item.retry_count)}</td>
-                <td>${SalesViews.esc(new Date(item.created_at).toLocaleTimeString())}</td>
-                <td>${item.status === 'DEAD_LETTER' || item.status === 'FAILED' ? `<button class="btn btn-outline" data-retry-event="${SalesViews.esc(item.id)}">Retry DLQ</button>` : '—'}</td>
-              </tr>
-            `).join('');
-          }
-        }
-      } catch (e) {
-        console.warn("Could not load outbox dynamically:", e);
-      }
-    }
-
-    async function retryEvent(id) {
-      try {
-        const res = await SalesApi.fetch(`/api/v1/integrations/outbox/${id}/retry`, {
-          method: 'POST',
-          headers: {}
-        });
-        if (res.ok) {
-          alert("Event requeued from DLQ successfully!");
-          loadOutbox();
-        }
-      } catch (err) {
-        alert("Retry failed: " + err.message);
-      }
-    }
-
-document.addEventListener('click', function (e) {
-  var btn = e.target.closest('[data-retry-event]');
-  if (btn) { retryEvent(btn.getAttribute('data-retry-event')); }
-});
+  function init() {
+    $('dlqRows').addEventListener('click', async (e) => {
+      const b = e.target.closest('[data-retry]');
+      if (!b) return;
+      b.disabled = true;
+      const res = await V.getJson('/api/v1/integrations/outbox/dlq/' + encodeURIComponent(b.getAttribute('data-retry')) + '/retry', { method: 'POST' });
+      if (!res.ok) { b.disabled = false; UI.showToast(res.status === 403 ? 'Votre rôle ne permet pas de relancer.' : 'Relance impossible : ' + V.errorText(res)); return; }
+      UI.showToast('Événement remis dans la file d’envoi.');
+      load();
+    });
+    $('btnRefresh').addEventListener('click', load);
+    load();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();

@@ -67,6 +67,46 @@ async def list_agent_catalog(
     return AgentRegistry.list_roles()
 
 
+# Declared before "/{role_id}": otherwise "activity" is matched as a role id (404).
+@router.get("/activity", response_model=List[Dict[str, Any]])
+async def get_agent_activity_logs(
+    limit: int = Query(20, ge=1, le=100),
+    role: Optional[str] = Query(None),
+    ctx: SecurityContext = Depends(require_permission("crm:read")),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Retrieves recent agent execution logs strictly scoped to authenticated tenant."""
+    stmt = (
+        select(AgentExecutionLog)
+        .where(AgentExecutionLog.tenant_id == ctx.tenant_id)
+        .order_by(desc(AgentExecutionLog.created_at))
+        .limit(limit)
+    )
+    if role:
+        stmt = stmt.where(AgentExecutionLog.agent_role == role)
+
+    res = await db.execute(stmt)
+    logs = res.scalars().all()
+    return [
+        {
+            "id": l.id,
+            "agent_role": l.agent_role,
+            "conversation_id": l.conversation_id,
+            "execution_class": l.execution_class,
+            "trace_id": l.trace_id,
+            "input_summary": l.input_summary,
+            "output_summary": l.output_summary,
+            "tools_called": l.tools_called,
+            "model_name": l.model_name,
+            "total_tokens": l.total_tokens,
+            "latency_ms": l.latency_ms,
+            "status": l.status,
+            "created_at": l.created_at.isoformat() if l.created_at else None
+        }
+        for l in logs
+    ]
+
+
 @router.get("/{role_id}", response_model=AgentRoleDefinition)
 async def get_agent_definition(
     role_id: str,
@@ -232,40 +272,3 @@ async def execute_operations_triage(
     )
 
 
-@router.get("/activity", response_model=List[Dict[str, Any]])
-async def get_agent_activity_logs(
-    limit: int = Query(20, ge=1, le=100),
-    role: Optional[str] = Query(None),
-    ctx: SecurityContext = Depends(require_permission("crm:read")),
-    db: AsyncSession = Depends(get_db_session)
-):
-    """Retrieves recent agent execution logs strictly scoped to authenticated tenant."""
-    stmt = (
-        select(AgentExecutionLog)
-        .where(AgentExecutionLog.tenant_id == ctx.tenant_id)
-        .order_by(desc(AgentExecutionLog.created_at))
-        .limit(limit)
-    )
-    if role:
-        stmt = stmt.where(AgentExecutionLog.agent_role == role)
-
-    res = await db.execute(stmt)
-    logs = res.scalars().all()
-    return [
-        {
-            "id": l.id,
-            "agent_role": l.agent_role,
-            "conversation_id": l.conversation_id,
-            "execution_class": l.execution_class,
-            "trace_id": l.trace_id,
-            "input_summary": l.input_summary,
-            "output_summary": l.output_summary,
-            "tools_called": l.tools_called,
-            "model_name": l.model_name,
-            "total_tokens": l.total_tokens,
-            "latency_ms": l.latency_ms,
-            "status": l.status,
-            "created_at": l.created_at.isoformat() if l.created_at else None
-        }
-        for l in logs
-    ]

@@ -1,28 +1,5 @@
-/* Extracted from integrations.html by scripts/frontend_csp_build.py */
-.content { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
-    
-    .panel { background: var(--bg-neutral); border-radius: 8px; border: 1px solid var(--border-muted); padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-muted); padding-bottom: 0.75rem; }
-    .panel-title { font-size: 1rem; font-weight: 700; color: var(--primary); }
-    
-    table { width: 100%; border-collapse: collapse; }
-    th { background: #F8FAFC; padding: 0.75rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); text-align: left; }
-    td { padding: 0.85rem 0.75rem; border-bottom: 1px solid var(--border-muted); font-size: 0.85rem; }
-    tr:hover { background: #F1F5F9; }
-    
-    .badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
-    .badge-success { background: #DCFCE7; color: var(--status-success); }
-    .badge-pending { background: #FEF3C7; color: var(--status-warning); }
-    .badge-danger { background: #FEE2E2; color: var(--status-danger); }
-    .badge-info { background: #DBEAFE; color: var(--status-info); }
-    
-    .btn { padding: 0.45rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
-    .btn-primary { background: var(--primary); color: #fff; }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-outline { background: transparent; border: 1px solid var(--border-muted); color: var(--text-main); }
-    .btn-danger { background: var(--status-danger); color: #fff; }
-    
-    .grid-3 { display: grid; grid-template-columns: minmax(0, 1fr) 1fr 1fr; gap: 1rem; }
-    .stat-card { background: var(--bg-neutral); border: 1px solid var(--border-muted); border-radius: 8px; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.35rem; }
-    .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
-    .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
+/* Selia — Intégrations */
+.sub-card { margin-top: 18px; }
+.dep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 12px; }
+.dep { border: 1px solid var(--s-border); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 6px; background: var(--s-surface); }
+.dep strong { display: flex; justify-content: space-between; align-items: center; gap: 8px; }

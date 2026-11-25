@@ -21,14 +21,15 @@ DEFAULT_ROLE_PERMISSIONS: Dict[str, List[str]] = {
         "conversations:read", "conversations:write", "conversations:handoff",
         "workflows:read", "workflows:manage", "notifications:manage", "integrations:manage",
         # F-34: domain permissions required by the API (previously super_admin only)
-        "crm:read", "crm:write", "inventory:manage", "orders:manage", "procurement:manage",
+        "crm:read", "crm:write", "inventory:manage", "orders:manage", "procurement:manage", "procurement:read",
+        "quotes:create", "saas:manage",  # read/create what admins manage; saas:manage = quota adjustment (MFA)
         "logistics:read", "logistics:manage", "scheduling:read", "scheduling:manage",
         "support:read", "support:manage", "ai:agents", "ai:copilot", "ai:manage", "ai:rag",
         "ai:tools", "voice:copilot"
     ],
     "sales_manager": [
         "users:read", "sites:read", "catalog:read", "catalog:write",
-        "quotes:read", "quotes:write", "quotes:approve", "quotes:discount_override",
+        "quotes:read", "quotes:create", "quotes:write", "quotes:approve", "quotes:discount_override",
         "orders:read", "orders:write", "inventory:read", "copilot:access",
         "audit:read", "conversations:read", "conversations:write", "conversations:handoff",
         "crm:read", "crm:write", "orders:manage", "logistics:read", "scheduling:read",

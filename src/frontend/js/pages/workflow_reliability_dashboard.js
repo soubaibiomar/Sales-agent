@@ -1,130 +1,62 @@
-/* Extracted from workflow_reliability_dashboard.html by scripts/frontend_csp_build.py */
-async function fetchHealthAndAlerts() {
-      try {
-        const healthRes = await SalesApi.fetch('/api/v1/observability/health');
-        if (healthRes.ok) {
-          const health = await healthRes.json();
-          renderHealth(health);
-        }
+/* Selia — Fiabilité & alertes: real dependency checks (/observability/health), alerts with
+ * acknowledge/resolve, and recent traces. */
+(function () {
+  'use strict';
+  const V = window.SalesViews, UI = window.SalesAI;
+  const $ = (id) => document.getElementById(id);
+  const DEP = { database: 'Base de données (PostgreSQL)', ollama: 'Modèles IA (Ollama)' };
+  const SEV = { CRITICAL: ['Critique', 'danger'], HIGH: ['Haute', 'danger'], WARNING: ['Avertissement', 'warn'], MEDIUM: ['Moyenne', 'warn'], INFO: ['Info', 'info'], LOW: ['Basse', 'neutral'] };
+  const AST = { ACTIVE: ['Active', 'danger'], FIRING: ['Active', 'danger'], ACKNOWLEDGED: ['Prise en compte', 'warn'], RESOLVED: ['Résolue', 'ok'] };
+  const kpi = (icon, tone, label, value) => '<article class="kpi-card"><span class="kpi-icon' + (tone ? ' kpi-icon--' + tone : '') + '">' + UI.icon(icon, 22) +
+    '</span><div class="kpi-body"><span class="kpi-label">' + V.esc(label) + '</span><span class="kpi-number">' + value + '</span></div></article>';
 
-        const alertsRes = await SalesApi.fetch('/api/v1/observability/alerts');
-        if (alertsRes.ok) {
-          const alerts = await alertsRes.json();
-          renderAlerts(alerts);
-        }
+  async function load() {
+    const [h, a, t] = await Promise.all([V.getJson('/api/v1/observability/health'), V.getJson('/api/v1/observability/alerts'), V.getJson('/api/v1/observability/traces?limit=20')]);
+    const deps = h.ok ? (h.data.dependencies || {}) : {};
+    const alerts = a.ok ? V.list(a.data, 'alerts') : [];
+    const open = alerts.filter(x => x.status !== 'RESOLVED');
+    $('kpis').innerHTML = kpi('target', h.ok && h.data.status === 'READY' ? '' : 'terra', 'Service', h.ok ? V.pill(h.data.status === 'READY' ? 'Disponible' : 'Dégradé', h.data.status === 'READY' ? 'ok' : 'danger') : '—') +
+      kpi('calendar', 'terra', 'Alertes ouvertes', open.length) + kpi('grid', 'sand', 'Dépendances en panne', Object.values(deps).filter(d => d.status !== 'UP').length) +
+      kpi('chart', '', 'Traces récentes', t.ok ? (t.data.count || 0) : '—');
+    $('checkedAt').textContent = h.ok ? 'Vérifié ' + V.ago(h.data.checked_at).toLowerCase() : '';
+    $('deps').innerHTML = h.ok ? Object.keys(deps).map(k => {
+      const d = deps[k];
+      return '<div class="dep"><strong>' + V.esc(DEP[k] || k) + V.pill(d.status === 'UP' ? 'Opérationnel' : 'Indisponible', d.status === 'UP' ? 'ok' : (d.required ? 'danger' : 'warn')) + '</strong>' +
+        '<span class="cell-sub">Latence ' + V.esc(d.latency_ms) + ' ms' + (d.required ? ' · requis' : ' · optionnel') + (k === 'database' ? (d.rls_enforced ? ' · RLS appliquée' : ' · RLS NON appliquée') : '') + '</span>' +
+        (d.error ? '<span class="cell-sub">Erreur : ' + V.esc(d.error) + '</span>' : '') + '</div>';
+    }).join('') : '<p class="data-state data-state--error" role="alert">' + V.esc(V.errorText(h)) + '</p>';
+    if (!a.ok) V.rowState($('alertRows'), 6, 'error', V.errorText(a));
+    else $('alertRows').innerHTML = alerts.length ? alerts.map(x => {
+      const sev = SEV[String(x.severity).toUpperCase()] || [x.severity, 'neutral'], st = AST[String(x.status).toUpperCase()] || [x.status, 'neutral'];
+      const actions = x.status === 'RESOLVED' ? '' : (x.status !== 'ACKNOWLEDGED' ? '<button type="button" class="btn btn-outline btn-sm" data-ack="' + V.esc(x.id) + '">Prendre en compte</button> ' : '') +
+        '<button type="button" class="btn btn-soft-green btn-sm" data-resolve="' + V.esc(x.id) + '">Résoudre</button>';
+      return '<tr><td data-label=""><strong>' + V.esc(x.title) + '</strong><span class="cell-sub">' + V.esc(x.description || '') + '</span></td>' +
+        '<td data-label="Source">' + V.esc(x.source || '—') + '</td><td data-label="Gravité">' + V.pill(sev[0], sev[1]) + '</td>' +
+        '<td data-label="Depuis">' + V.esc(V.ago(x.created_at)) + '</td><td data-label="Statut">' + V.pill(st[0], st[1]) + '</td><td data-label="">' + actions + '</td></tr>';
+    }).join('') : '<tr><td colspan="6" class="data-state">Aucune alerte.</td></tr>';
+    const traces = t.ok ? V.list(t.data, 'traces') : [];
+    if (!t.ok) V.rowState($('traceRows'), 5, 'error', V.errorText(t));
+    else $('traceRows').innerHTML = traces.length ? traces.map(s => '<tr><td data-label=""><code>' + V.esc(s.operation) + '</code></td>' +
+      '<td data-label="Composant">' + V.esc(s.component) + '</td><td data-label="Durée" class="num">' + V.esc(s.duration_ms) + ' ms</td>' +
+      '<td data-label="Statut">' + V.pill(s.status === 'OK' ? 'OK' : s.status, s.status === 'OK' ? 'ok' : 'danger') + '</td><td data-label="Quand">' + V.esc(V.ago(s.timestamp)) + '</td></tr>').join('')
+      : '<tr><td colspan="5" class="data-state">Aucune trace récente.</td></tr>';
+  }
 
-        const tracesRes = await SalesApi.fetch('/api/v1/observability/traces');
-        if (tracesRes.ok) {
-          const traces = await tracesRes.json();
-          renderTraces(traces);
-        } else {
-          SalesViews.rowState(document.getElementById('tracesTableBody'), 6, 'error', 'Traces indisponibles (' + tracesRes.status + ').');
-        }
-      } catch (err) {
-        console.warn('API error, retaining authoritative display', err);
-      }
-    }
+  async function act(id, verb) {
+    const res = await V.getJson('/api/v1/observability/alerts/' + encodeURIComponent(id) + '/' + verb, { method: 'POST' });
+    if (!res.ok) { UI.showToast('Action impossible : ' + V.errorText(res)); return; }
+    UI.showToast(verb === 'resolve' ? 'Alerte résolue.' : 'Alerte prise en compte.');
+    load();
+  }
 
-    function renderHealth(health) {
-      if (!health || !health.dependencies) return;
-      const deps = health.dependencies;
-      
-      const db = deps.database;
-      if (db) {
-        document.getElementById('statusPostgres').textContent = db.status;
-        document.getElementById('statusPostgres').className = `status-badge ${db.status === 'UP' ? 'status-up' : 'status-down'}`;
-        document.getElementById('metaPostgres').textContent = `Latence : ${SalesViews.esc(db.latency_ms)} ms • RLS ${db.rls_enforced ? 'appliquée' : 'NON appliquée'}`;
-      }
-      // Redis is not used by the platform today (caches/locks are in PostgreSQL); say so.
-      document.getElementById('statusRedis').textContent = 'N/A';
-      document.getElementById('statusRedis').className = 'status-badge';
-      document.getElementById('metaRedis').textContent = 'Non utilisé par la plateforme';
-      if (deps.ollama) {
-        document.getElementById('statusOllama').textContent = deps.ollama.status;
-        document.getElementById('statusOllama').className = `status-badge ${deps.ollama.status === 'UP' ? 'status-up' : 'status-down'}`;
-        document.getElementById('metaOllama').textContent = `Latence : ${SalesViews.esc(deps.ollama.latency_ms)} ms • optionnel`;
-      }
-    }
-
-    function renderAlerts(alerts) {
-      if (!Array.isArray(alerts) || alerts.length === 0) return;
-      const tbody = document.getElementById('alertsTableBody');
-      tbody.innerHTML = '';
-      
-      let criticalCount = 0;
-      alerts.forEach(a => {
-        if (a.severity === 'CRITICAL' && a.status === 'ACTIVE') criticalCount++;
-        const tr = document.createElement('tr');
-        const badgeClass = a.severity === 'CRITICAL' ? 'status-down' : (a.severity === 'WARNING' ? 'status-warn' : 'status-up');
-        tr.innerHTML = `
-          <td><span class="status-badge ${SalesViews.esc(badgeClass)}">${SalesViews.esc(a.severity)}</span></td>
-          <td><strong>${SalesViews.esc(a.component)}</strong></td>
-          <td>${SalesViews.esc(a.condition)}</td>
-          <td>${SalesViews.esc(a.trigger_value || 'Threshold met')}</td>
-          <td><span style="font-weight:600;">${SalesViews.esc(a.status)}</span></td>
-          <td>${SalesViews.esc(new Date(a.created_at || Date.now()).toLocaleTimeString())}</td>
-          <td>
-            ${a.status === 'ACTIVE' ? `
-              <button class="btn btn-secondary btn-sm" data-alert-ack="${SalesViews.esc(a.id)}">Acknowledge</button>
-              <button class="btn btn-sm" data-alert-resolve="${SalesViews.esc(a.id)}">Resolve</button>
-            ` : (a.status === 'ACKNOWLEDGED' ? `
-              <button class="btn btn-sm" data-alert-resolve="${SalesViews.esc(a.id)}">Resolve</button>
-            ` : `<span style="color:var(--text-muted); font-size:0.8rem;">Resolved</span>`)}
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-      document.getElementById('alertCountBadge').textContent = `${criticalCount} Critical Alerts`;
-    }
-
-    function renderTraces(traces) {
-      const tbody = document.getElementById('tracesTableBody');
-      if (!Array.isArray(traces) || traces.length === 0) {
-        SalesViews.rowState(tbody, 6, 'empty', 'Aucune trace récente.');
-        return;
-      }
-      tbody.innerHTML = '';
-      traces.forEach(t => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><code>${SalesViews.esc(t.trace_id)}</code></td>
-          <td><code>${SalesViews.esc(t.root_span)}</code></td>
-          <td>${SalesViews.esc(t.duration_ms)}ms</td>
-          <td><span class="status-badge status-up">${SalesViews.esc(t.status_code || '200 OK')}</span></td>
-          <td>${SalesViews.esc(t.span_count)} spans</td>
-          <td>${SalesViews.esc(t.context_summary || 'tenant-isolated')}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    async function acknowledgeAlert(alertId) {
-      try {
-        await SalesApi.fetch(`/api/v1/observability/alerts/${alertId}/acknowledge`, { method: 'POST' });
-        fetchHealthAndAlerts();
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    async function resolveAlert(alertId) {
-      try {
-        await SalesApi.fetch(`/api/v1/observability/alerts/${alertId}/resolve`, { method: 'POST' });
-        fetchHealthAndAlerts();
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    function triggerDLQReplay() {
-      alert('DLQ Replay triggered: 0 failed tasks to replay. Backlog is clear.');
-    }
-
-    document.addEventListener('DOMContentLoaded', fetchHealthAndAlerts);
-
-document.addEventListener('click', function (e) {
-  var ack = e.target.closest('[data-alert-ack]');
-  if (ack) { acknowledgeAlert(ack.getAttribute('data-alert-ack')); return; }
-  var res = e.target.closest('[data-alert-resolve]');
-  if (res) { resolveAlert(res.getAttribute('data-alert-resolve')); }
-});
+  function init() {
+    $('alertRows').addEventListener('click', (e) => {
+      const ack = e.target.closest('[data-ack]'), res = e.target.closest('[data-resolve]');
+      if (ack) act(ack.getAttribute('data-ack'), 'acknowledge');
+      if (res) act(res.getAttribute('data-resolve'), 'resolve');
+    });
+    $('btnRefresh').addEventListener('click', load);
+    load();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();

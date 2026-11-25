@@ -5,172 +5,23 @@
   <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Selia — AI Operations & Model Observability</title>
+  <title>Selia — Opérations IA</title>
   <link rel="stylesheet" href="css/design_system.css">
   <link rel="stylesheet" href="css/pages/ai_operations_dashboard.css">
-  <script src="js/pages/ai_operations_dashboard.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
-    <!-- MASTER SIDEBAR -->
     <aside class="sidebar"><div data-app-nav></div></aside>
-
     <div class="main-wrapper">
-      <header class="topbar">
-        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
-        <div class="search-container">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher des clients, devis, commandes, agents...">
-          <span class="search-shortcut">Ctrl + K</span>
-        </div>
-
-        <div class="topbar-actions">
-          <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel"></span>
-          </div>
-
-          <div class="icon-btn-badge" id="notifBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          </div>
-
-          <button class="btn-header-primary" id="btnQuickNew">
-            <span>+</span> Nouveau
-          </button>
-
-          <div class="user-topbar-pill">
-            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;"></div>
-            <div style="display:flex; flex-direction:column; line-height:1.2;">
-              <span style="font-weight:600; font-size:13px; color:#17251F;"></span>
-              <span style="font-size:11px; color:#66756D;"></span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main class="content-wrapper">
-<div class="sidebar">
-    <div class="brand-title"><span>🤖</span> Sales AI Platform</div>
-    <div class="brand-subtitle">AI Observability</div>
-    <ul class="nav-list">
-      <li class="nav-item"><a href="index.html">← Back to Console</a></li>
-      <li class="nav-item"><a href="analytics_dashboard.html">Executive Analytics</a></li>
-      <li class="nav-item active"><a href="ai_operations_dashboard.html">AI Operations & Models</a></li>
-      <li class="nav-item"><a href="voice_observability.html">Voice AI Telemetry</a></li>
-      <li class="nav-item"><a href="saas_admin_dashboard.html">SaaS Quotas & Metering</a></li>
-      <li class="nav-item"><a href="workflow_reliability_dashboard.html">Workflow Reliability</a></li>
-    </ul>
-  </div>
-
-  <div class="main-content">
-    <div class="header-bar">
-      <div>
-        <h1 class="page-title">AI Operations & Model Observability</h1>
-        <p class="page-desc">Runtime metrics for the 18-role agent ecosystem, Model Gateway latency, and token economics.</p>
-      </div>
-      <div>
-        <button class="btn" style="background:var(--primary); color:#FFF; padding:0.6rem 1.25rem; border:none; border-radius:6px; cursor:pointer;" data-on-click="h2">🔄 Refresh Telemetry</button>
-      </div>
-    </div>
-
-    <!-- KPI Cards -->
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-label">Total Model Inferences</div>
-        <div class="kpi-value" id="kpiTotalInferences">--</div>
-        <div class="kpi-subtext" id="kpiColdStarts">-- cold starts</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Total Token Burn</div>
-        <div class="kpi-value" id="kpiTotalTokens">--</div>
-        <div class="kpi-subtext" id="kpiTokenSplit">-- prompt / -- comp</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Average TTFT</div>
-        <div class="kpi-value" id="kpiAvgTTFT">-- ms</div>
-        <div class="kpi-subtext" id="kpiP95TTFT">p95: -- ms</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Generation Throughput</div>
-        <div class="kpi-value" id="kpiThroughput">-- tok/s</div>
-        <div class="kpi-subtext">RTX 4060 GPU Resident</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Inference Error Rate</div>
-        <div class="kpi-value" id="kpiErrorRate">0.0%</div>
-        <div class="kpi-subtext" style="color:var(--status-success);">Under 1.0% SLO target</div>
-      </div>
-    </div>
-
-    <!-- Active Agent Roles Grid -->
-    <div class="card">
-      <div class="card-title">18-Role Agent Ecosystem Architecture & Allocations</div>
-      <table class="table-container">
-        <thead>
-          <tr>
-            <th>Role Code</th>
-            <th>Role Name</th>
-            <th>Group</th>
-            <th>Model Tier</th>
-            <th>Token Cap</th>
-            <th>Execution Class</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td><strong>R00</strong></td><td>Inbound Router & Intent Classifier</td><td>Front Door</td><td>PRIMARY_4B</td><td>2,048</td><td>DIRECT_SAFE_READ</td></tr>
-          <tr><td><strong>S00_CONV</strong></td><td>Conversation Supervisor</td><td>Supervision</td><td>PRIMARY_4B</td><td>4,096</td><td>BOUNDED_REASONING_TURN</td></tr>
-          <tr><td><strong>S00_OPS</strong></td><td>Operations Supervisor</td><td>Supervision</td><td>PRIMARY_4B</td><td>4,096</td><td>DURABLE_WORKFLOW</td></tr>
-          <tr><td><strong>A01</strong></td><td>Discovery & Qualification Specialist</td><td>Interactive</td><td>PRIMARY_4B</td><td>4,096</td><td>BOUNDED_REASONING_TURN</td></tr>
-          <tr><td><strong>A02</strong></td><td>Product & Catalog Specialist</td><td>Interactive</td><td>PRIMARY_4B</td><td>4,096</td><td>BOUNDED_REASONING_TURN</td></tr>
-          <tr><td><strong>A03</strong></td><td>Quotation & Pricing Specialist</td><td>Interactive</td><td>PRIMARY_4B</td><td>4,096</td><td>BOUNDED_REASONING_TURN</td></tr>
-          <tr><td><strong>A04</strong></td><td>Order & Checkout Specialist</td><td>Interactive</td><td>PRIMARY_4B</td><td>4,096</td><td>BOUNDED_REASONING_TURN</td></tr>
-          <tr><td><strong>A05</strong></td><td>Appointment & Scheduling Specialist</td><td>Interactive</td><td>PRIMARY_4B</td><td>4,096</td><td>BOUNDED_REASONING_TURN</td></tr>
-          <tr><td><strong>A06</strong></td><td>Negotiation & Terms Specialist</td><td>Interactive</td><td>PRIMARY_4B</td><td>4,096</td><td>BOUNDED_REASONING_TURN</td></tr>
-          <tr><td><strong>A07</strong></td><td>Support & Returns Specialist</td><td>Interactive</td><td>PRIMARY_4B</td><td>4,096</td><td>BOUNDED_REASONING_TURN</td></tr>
-          <tr><td><strong>A08</strong></td><td>Account Management Specialist</td><td>Interactive</td><td>PRIMARY_4B</td><td>4,096</td><td>BOUNDED_REASONING_TURN</td></tr>
-          <tr><td><strong>A09</strong></td><td>Documents & Invoicing Specialist</td><td>Interactive</td><td>PRIMARY_4B</td><td>4,096</td><td>BOUNDED_REASONING_TURN</td></tr>
-          <tr><td><strong>B01</strong></td><td>Outreach & Nurture Agent</td><td>Background</td><td>PRIMARY_4B</td><td>2,048</td><td>DURABLE_WORKFLOW</td></tr>
-          <tr><td><strong>B02</strong></td><td>Lead Research & Enrichment Agent</td><td>Background</td><td>PRIMARY_4B</td><td>4,096</td><td>DURABLE_WORKFLOW</td></tr>
-          <tr><td><strong>B03</strong></td><td>Pipeline Coach & Deal Velocity Agent</td><td>Background</td><td>PRIMARY_4B</td><td>2,048</td><td>DURABLE_WORKFLOW</td></tr>
-          <tr><td><strong>B04</strong></td><td>Pricing & Margin Analyst</td><td>Background</td><td><strong style="color:var(--status-info);">REASONING_9B</strong></td><td>8,192</td><td>DURABLE_WORKFLOW</td></tr>
-          <tr><td><strong>B05</strong></td><td>Knowledge & FAQ Curator Agent</td><td>Background</td><td>PRIMARY_4B</td><td>4,096</td><td>DURABLE_WORKFLOW</td></tr>
-          <tr><td><strong>B06</strong></td><td>Incident Responder Agent</td><td>Background</td><td>PRIMARY_4B</td><td>4,096</td><td>DURABLE_WORKFLOW</td></tr>
-          <tr><td><strong>I01</strong></td><td>Sales Representative Copilot</td><td>Internal Copilot</td><td>PRIMARY_4B</td><td>4,096</td><td>BOUNDED_REASONING_TURN</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Recent Turns Table -->
-    <div class="card">
-      <div class="card-title">Recent Model Execution Turns</div>
-      <table class="table-container">
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Role</th>
-            <th>Model</th>
-            <th>Tokens (In/Out)</th>
-            <th>TTFT</th>
-            <th>Throughput</th>
-            <th>Latency</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="turnsTableBody">
-          <tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Loading recent inference telemetry...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <script src="js/pages/ai_operations_dashboard.js"></script>
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
+        <div class="page-header"><div class="page-title-group"><h1>Opérations IA</h1><p>Mesures réelles des appels aux modèles : latence, débit, jetons et erreurs.</p></div><div class="page-actions"><button type="button" class="btn btn-outline" id="btnRefresh" data-icon="arrow">Actualiser</button></div></div><section class="kpi-grid kpi-grid--compact" id="kpis" aria-label="Indicateurs"><p class="data-state" role="status">Chargement…</p></section><section class="card list-card sub-card"><div class="card-header"><h2 class="card-title">Dernières exécutions</h2></div>
+          <div class="table-responsive"><table class="data-table responsive-table"><thead><tr><th>Agent</th><th>Modèle</th><th class="num">Jetons</th><th class="num">1er jeton</th><th class="num">Durée totale</th><th class="num">Débit</th><th>Démarrage</th></tr></thead>
+          <tbody id="execRows"><tr><td colspan="7" class="data-state">Chargement…</td></tr></tbody></table></div></section>
       </main>
     </div>
   </div>
-
-
   <script src="js/app_shell.js"></script>
-  
-
+  <script src="js/pages/ai_operations_dashboard.js"></script>
 </body>
-<!-- csp-build: migrated -->
 </html>

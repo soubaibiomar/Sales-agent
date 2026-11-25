@@ -5,171 +5,39 @@
   <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Selia — Durable Workflows & Sagas</title>
+  <title>Selia — Workflows</title>
   <link rel="stylesheet" href="css/design_system.css">
   <link rel="stylesheet" href="css/pages/workflows.css">
-  <script src="js/pages/workflows.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
-    <!-- MASTER SIDEBAR -->
     <aside class="sidebar"><div data-app-nav></div></aside>
-
     <div class="main-wrapper">
-      <header class="topbar">
-        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
-        <div class="search-container">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher des clients, devis, commandes, agents...">
-          <span class="search-shortcut">Ctrl + K</span>
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
+        <div class="page-header">
+          <div class="page-title-group"><h1>Workflows</h1><p>Suivez les traitements durables (commandes, paiements, relances) et leurs reprises.</p></div>
+          <div class="page-actions"><button type="button" class="btn btn-outline" id="btnResume" data-icon="arrow">Relancer les workflows bloqués</button></div>
         </div>
+        <section class="kpi-grid kpi-grid--compact" id="kpis" aria-label="Indicateurs"></section><section class="card list-card">
 
-        <div class="topbar-actions">
-          <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel"></span>
+          <div class="list-toolbar">
+            <div class="chip-row" role="group" aria-label="Filtrer" id="chips"></div>
+            <div class="toolbar-right"><label class="search-inline"><span class="visually-hidden">Rechercher</span><input type="search" class="form-control" id="search" placeholder="Rechercher un workflow…"></label><select class="select-pill" id="yearSelect" aria-label="Période"><option value="year" selected>Cette année</option><option value="all">Toutes les dates</option></select></div>
           </div>
-
-          <div class="icon-btn-badge" id="notifBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          </div>
-
-          <button class="btn-header-primary" id="btnQuickNew">
-            <span>+</span> Nouveau
-          </button>
-
-          <div class="user-topbar-pill">
-            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;"></div>
-            <div style="display:flex; flex-direction:column; line-height:1.2;">
-              <span style="font-weight:600; font-size:13px; color:#17251F;"></span>
-              <span style="font-size:11px; color:#66756D;"></span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main class="content-wrapper">
-<!-- Trigger Workflow -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Execute Transactional Saga</div>
-          <span style="font-size: 0.8rem; color: var(--text-muted);">Durable, Idempotent & Fully Compensating</span>
-        </div>
-        <form id="workflowForm" data-on-submit="h2">
-          <div class="grid-2">
-            <div class="form-group">
-              <label for="sagaType">Saga / Workflow Type</label>
-              <select id="sagaType" required>
-                <option value="CHECKOUT_SAGA">CHECKOUT_SAGA (Reserve Stock -> Payment Intent -> Commit)</option>
-                <option value="STOCK_EXPIRY">STOCK_EXPIRY (Scan & Expire Stale Stock Holds)</option>
-                <option value="QUOTE_APPROVAL_ESCALATION">QUOTE_APPROVAL_ESCALATION (Escalate / Auto-expire Quotes)</option>
-                <option value="FULFILLMENT_DISPATCH">FULFILLMENT_DISPATCH (Progress Shipment -> WhatsApp Alert)</option>
-                <option value="RMA_TRIAGE">RMA_TRIAGE (Triage Return -> Restock -> Refund)</option>
-                <option value="DAILY_RECONCILIATION">DAILY_RECONCILIATION (Audit Inventory Ledger Consistency)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="idempotencyKey">Idempotency Key (Optional)</label>
-              <input type="text" id="idempotencyKey" placeholder="auto-generated UUID if blank">
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="payloadJson">Payload (JSON)</label>
-            <textarea id="payloadJson" rows="3" style="font-family: monospace;">{"order_id": "ord-sample-001", "payment_method": "stripe", "simulate_payment_failure": false}</textarea>
-          </div>
-          <button type="submit" class="btn btn-primary">⚡ Dispatch Workflow Execution</button>
-        </form>
-      </div>
-
-      <!-- Executions Table -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Workflow Execution History</div>
-          <span style="font-size: 0.8rem; color: var(--text-muted);">PostgreSQL Durable State Machine</span>
-        </div><div class="table-responsive"><table class="data-table" id="executionsTable">
-          <thead>
-            <tr>
-              <th>Execution ID</th>
-              <th>Workflow Name</th>
-              <th>Status</th>
-              <th>Current Step</th>
-              <th>Retries</th>
-              <th>Started At</th>
-              <th>Completed At</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="executionsBody">
-            <tr>
-              <td><code>wf-exec-88910</code></td>
-              <td><strong>CHECKOUT_SAGA</strong></td>
-              <td><span class="badge badge-success">COMPLETED</span></td>
-              <td>commit_order_and_ledger</td>
-              <td>0</td>
-              <td>Just now</td>
-              <td>Just now</td>
-              <td><button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.75rem;">View Steps</button></td>
-            </tr>
-            <tr>
-              <td><code>wf-exec-88909</code></td>
-              <td><strong>CHECKOUT_SAGA</strong></td>
-              <td><span class="badge badge-compensated">COMPENSATED</span></td>
-              <td>release_reservation</td>
-              <td>1</td>
-              <td>10 mins ago</td>
-              <td>10 mins ago</td>
-              <td><button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.75rem;">View Steps</button></td>
-            </tr>
-          </tbody>
-        </table></div>
-      </div>
-
-      <!-- Automation Rules -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Active Automation Rules</div>
-          <span style="font-size: 0.8rem; color: var(--text-muted);">Event-Driven Sagas & Triggers</span>
-        </div><div class="table-responsive"><table class="data-table">
-          <thead>
-            <tr>
-              <th>Rule Name</th>
-              <th>Trigger Event</th>
-              <th>Target Workflow</th>
-              <th>Enabled</th>
-              <th>Created At</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Auto-expire Quote on SLA Breached</td>
-              <td><code>quote.expired</code></td>
-              <td><code>QUOTE_APPROVAL_ESCALATION</code></td>
-              <td><span class="badge badge-success">ACTIVE</span></td>
-              <td>2026-11-18</td>
-            </tr>
-            <tr>
-              <td>Checkout Fulfillment Saga Trigger</td>
-              <td><code>order.paid</code></td>
-              <td><code>FULFILLMENT_DISPATCH</code></td>
-              <td><span class="badge badge-success">ACTIVE</span></td>
-              <td>2026-11-18</td>
-            </tr>
-            <tr>
-              <td>Hourly Stock Reservation Cleanup</td>
-              <td><code>cron.hourly</code></td>
-              <td><code>STOCK_EXPIRY</code></td>
-              <td><span class="badge badge-success">ACTIVE</span></td>
-              <td>2026-11-18</td>
-            </tr>
-          </tbody>
-        </table></div>
+          <div class="table-responsive"><table class="data-table responsive-table"><thead><tr><th>Workflow</th><th>Étape en cours</th><th class="num">Tentatives</th><th>Démarré</th><th>Terminé</th><th>Statut</th></tr></thead>
+            <tbody id="rows"><tr><td colspan="6" class="data-state" role="status">Chargement…</td></tr></tbody></table></div>
+          <nav class="pager" id="pager" aria-label="Pagination"></nav>
+        </section><section class="card sub-card list-card">
+          <div class="card-header"><h2 class="card-title">Règles d'automatisation</h2></div>
+          <div class="table-responsive"><table class="data-table responsive-table"><thead><tr><th>Règle</th><th>Déclencheur</th><th>Action</th><th>Statut</th></tr></thead>
+            <tbody id="ruleRows"><tr><td colspan="4" class="data-state">Chargement…</td></tr></tbody></table></div>
+        </section>
       </main>
     </div>
   </div>
-
-
   <script src="js/app_shell.js"></script>
+  <script src="js/list_page.js"></script>
   <script src="js/pages/workflows.js"></script>
-
 </body>
-<!-- csp-build: migrated -->
 </html>

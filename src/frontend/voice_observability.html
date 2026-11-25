@@ -5,152 +5,39 @@
   <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Selia — Voice AI & Pipeline Observability</title>
+  <title>Selia — Observabilité vocale</title>
   <link rel="stylesheet" href="css/design_system.css">
   <link rel="stylesheet" href="css/pages/voice_observability.css">
-  <script src="js/pages/voice_observability.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
-    <!-- MASTER SIDEBAR -->
     <aside class="sidebar"><div data-app-nav></div></aside>
-
     <div class="main-wrapper">
-      <header class="topbar">
-        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
-        <div class="search-container">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher des clients, devis, commandes, agents...">
-          <span class="search-shortcut">Ctrl + K</span>
-        </div>
-
-        <div class="topbar-actions">
-          <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel"></span>
-          </div>
-
-          <div class="icon-btn-badge" id="notifBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          </div>
-
-          <button class="btn-header-primary" id="btnQuickNew">
-            <span>+</span> Nouveau
-          </button>
-
-          <div class="user-topbar-pill">
-            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;"></div>
-            <div style="display:flex; flex-direction:column; line-height:1.2;">
-              <span style="font-weight:600; font-size:13px; color:#17251F;"></span>
-              <span style="font-size:11px; color:#66756D;"></span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main class="content-wrapper">
-<div class="sidebar">
-    <div class="brand-title"><span>🎙️</span> Sales AI Platform</div>
-    <div class="brand-subtitle">Voice Observability</div>
-    <ul class="nav-list">
-      <li class="nav-item"><a href="index.html">← Back to Console</a></li>
-      <li class="nav-item"><a href="analytics_dashboard.html">Executive Analytics</a></li>
-      <li class="nav-item"><a href="ai_operations_dashboard.html">AI Operations & Models</a></li>
-      <li class="nav-item active"><a href="voice_observability.html">Voice AI Telemetry</a></li>
-      <li class="nav-item"><a href="saas_admin_dashboard.html">SaaS Quotas & Metering</a></li>
-      <li class="nav-item"><a href="workflow_reliability_dashboard.html">Workflow Reliability</a></li>
-    </ul>
-  </div>
-
-  <div class="main-content">
-    <div class="header-bar">
-      <div>
-        <h1 class="page-title">Voice AI & Audio Pipeline Observability</h1>
-        <p class="page-desc">Stage-by-stage latency profile, VAD & barge-in benchmarks, multilingual accuracy, and hardware telemetry.</p>
-      </div>
-      <div>
-        <button class="btn" style="background:var(--primary); color:#FFF; padding:0.6rem 1.25rem; border:none; border-radius:6px; cursor:pointer;" data-on-click="h2">⚡ Run Benchmark Suite</button>
-      </div>
-    </div>
-
-    <!-- Top KPI Metrics -->
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-label">End-to-End Turn Latency</div>
-        <div class="kpi-value" id="kpiTurnLatency">-- ms</div>
-        <div class="kpi-subtext" style="color:var(--status-success);">Target &lt; 600.0 ms (MEETS SLO)</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Barge-In Abort Latency</div>
-        <div class="kpi-value" id="kpiBargeIn">0.03 ms</div>
-        <div class="kpi-subtext">Target &lt; 200.0 ms (Sub-ms)</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">LID Accuracy (90 Samples)</div>
-        <div class="kpi-value">95.6%</div>
-        <div class="kpi-subtext">5 Matrices + Arabizi</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Code-Switching Detection</div>
-        <div class="kpi-value">100.0%</div>
-        <div class="kpi-subtext">French + Moroccan Darija</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">GPU VRAM Utilization</div>
-        <div class="kpi-value" id="kpiVRAM">-- MB</div>
-        <div class="kpi-subtext">RTX 4060 Laptop (8GB)</div>
-      </div>
-    </div>
-
-    <!-- Latency Pipeline Visual Breakdown (measured, group D benchmark) -->
-    <div class="card">
-      <div class="card-title">
-        <span>Latence mesurée d'un tour vocal complet (médiane 6 859 ms)</span>
-        <span class="status-text-critical">Objectif 600 ms NON atteint</span>
-      </div>
-      <div class="latency-bar-container">
-        <div class="latency-seg" style="width: 24%; background: #2563EB;" title="ASR faster-whisper small, CPU : 1 591 ms">ASR</div>
-        <div class="latency-seg" style="width: 71%; background: #0A3A2A;" title="Réponse qwen3.5:4b (48 jetons) : 4 879 ms">LLM</div>
-        <div class="latency-seg" style="width: 5%; background: #10B981;" title="TTS Piper, CPU : 194 ms">TTS</div>
-      </div>
-      <div class="latency-legend">
-        <span>1. ASR faster-whisper (1 591 ms)</span>
-        <span>2. LLM qwen3.5:4b (4 879 ms)</span>
-        <span>3. TTS Piper (194 ms)</span>
-        <span>Total médian : 6 859 ms</span>
-      </div>
-      <p class="kpi-caption">Mesuré le 2026-11-24 : 6 tours audio→audio (fr, en, ar), i7-13620H, scripts/benchmark_real_voice_turn.py. Ce bloc est statique ; relancez le script pour actualiser.</p>
-    </div>
-
-    <!-- Stage-by-Stage Latency Table -->
-    <div class="card">
-      <div class="card-title">Discrete Component Latency Telemetry (Statistical Profiling)</div>
-      <table class="table-container">
-        <thead>
-          <tr>
-            <th>Component Stage</th>
-            <th>Engine / Implementation</th>
-            <th>Mean Latency</th>
-            <th>p95 Latency</th>
-            <th>Target SLO</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="componentTableBody">
-          <tr><td colspan="6" class="data-state data-state--empty" role="status">Lancez le benchmark pour mesurer les étapes locales (VAD, identification de langue, TTS, interruption).</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <script src="js/pages/voice_observability.js"></script>
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
+        <div class="page-header"><div class="page-title-group"><h1>Observabilité vocale</h1><p>Latence mesurée du pipeline vocal (reconnaissance, modèle, synthèse).</p></div><div class="page-actions"><button type="button" class="btn btn-primary" id="btnBenchmark" data-icon="arrow">Mesurer les étapes locales</button></div></div>
+        <section class="kpi-grid kpi-grid--compact" aria-label="Indicateurs">
+          <article class="kpi-card"><span class="kpi-icon" data-icon="chart"></span><div class="kpi-body"><span class="kpi-label">Tour vocal complet</span><span class="kpi-number" id="kpiTurnLatency">—</span></div></article>
+          <article class="kpi-card"><span class="kpi-icon kpi-icon--terra" data-icon="arrow"></span><div class="kpi-body"><span class="kpi-label">Annulation sur interruption</span><span class="kpi-number" id="kpiBargeIn">—</span></div></article>
+          <article class="kpi-card"><span class="kpi-icon kpi-icon--sand" data-icon="settings"></span><div class="kpi-body"><span class="kpi-label">Mémoire GPU utilisée</span><span class="kpi-number" id="kpiVRAM">—</span></div></article>
+        </section>
+        <section class="card sub-card">
+          <div class="card-header"><h2 class="card-title">Latence mesurée d'un tour vocal complet</h2><span class="status-pill pill-danger">Objectif 600 ms non atteint</span></div>
+          <ul class="hbars-voice">
+            <li><span>Reconnaissance (faster-whisper)</span><span class="bar-track"><span class="bar-fill" style="width:24%"></span></span><strong>1 591 ms</strong></li>
+            <li><span>Réponse du modèle (qwen3.5:4b)</span><span class="bar-track"><span class="bar-fill t1" style="width:71%"></span></span><strong>4 879 ms</strong></li>
+            <li><span>Synthèse vocale (Piper)</span><span class="bar-track"><span class="bar-fill t2" style="width:4%"></span></span><strong>194 ms</strong></li>
+            <li class="total"><span>Total médian</span><span></span><strong>6 859 ms</strong></li>
+          </ul>
+          <p class="kpi-caption">Mesuré le 24/11/2026 : 6 tours audio→audio (fr, en, ar), i7-13620H, scripts/benchmark_real_voice_turn.py. Relancez le script pour actualiser ce bloc.</p>
+        </section>
+        <section class="card list-card sub-card"><div class="card-header"><h2 class="card-title">Étapes locales mesurées à la demande</h2></div>
+          <div class="table-responsive"><table class="data-table responsive-table"><thead><tr><th>Étape</th><th>Implémentation</th><th class="num">Moyenne</th><th class="num">p95</th><th>Objectif</th><th>Mesure</th></tr></thead>
+          <tbody id="componentTableBody"><tr><td colspan="6" class="data-state">Chargement…</td></tr></tbody></table></div></section>
       </main>
     </div>
   </div>
-
-
   <script src="js/app_shell.js"></script>
-  
-
+  <script src="js/pages/voice_observability.js"></script>
 </body>
-<!-- csp-build: migrated -->
 </html>

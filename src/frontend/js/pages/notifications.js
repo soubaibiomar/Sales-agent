@@ -1,91 +1,55 @@
-/* Extracted from notifications.html by scripts/frontend_csp_build.py */
-async function handleSendNotification(e) {
+/* Selia — Notifications: delivery history, templates, manual send and opt-out (STOP). */
+(function () {
+  'use strict';
+  const V = window.SalesViews, L = window.SeliaList;
+  const $ = (id) => document.getElementById(id);
+  const CH = { WHATSAPP: 'WhatsApp', EMAIL: 'E-mail', SMS: 'SMS', VOICE: 'Téléphone', WEBCHAT: 'Web' };
+  const CLS = { TRANSACTIONAL: 'Transactionnel', MARKETING: 'Marketing', SERVICE: 'Service', OTP: 'Code' };
+  const OK = ['SENT', 'DELIVERED', 'SUCCESS'];
+
+  // Show only the end of a recipient identifier (phone/e-mail) in the list.
+  const mask = (v) => { const s = String(v || ''); return s.length > 6 ? '…' + s.slice(-6) : s; };
+
+  function renderTemplates(tpl, ok) {
+    const tbody = $('templateRows');
+    if (!ok) { V.rowState(tbody, 5, 'error', 'Modèles indisponibles.'); return; }
+    tbody.innerHTML = tpl.length ? tpl.map(t => '<tr><td data-label=""><code>' + V.esc(t.template_code) + '</code></td>' +
+      '<td data-label="Canal">' + V.esc(CH[t.channel_type] || t.channel_type) + '</td><td data-label="Type">' + V.esc(CLS[t.message_class] || t.message_class) + '</td>' +
+      '<td data-label="Langue">' + V.esc(t.language) + '</td><td data-label="Statut">' + V.pill(t.is_active ? 'ACTIVE' : 'INACTIVE') + '</td></tr>').join('')
+      : '<tr><td colspan="5" class="data-state">Aucun modèle.</td></tr>';
+  }
+
+  function init() {
+    let templates = [];
+    const list = L.mount({
+      url: '/api/v1/notifications/history', accountsUrl: false, lookups: { tpl: '/api/v1/notifications/templates' },
+      cols: 6, dateField: 'created_at', noun: 'notifications', empty: 'Aucune notification envoyée.',
+      onLoaded: (ctx) => { templates = ctx.tpl; renderTemplates(ctx.tpl, ctx.tplOk); },
+      chips: [['all', 'Toutes', null], ['ok', 'Envoyées', OK], ['fail', 'Échecs', ['FAILED', 'DEAD_LETTER']], ['blocked', 'Bloquées', ['SUPPRESSED', 'OPTED_OUT', 'BLOCKED']]],
+      search: (n) => [n.recipient_identifier, n.subject, n.channel_type].join(' '),
+      kpis: (rows) => L.kpi('chat', '', 'Envoyées', rows.filter(n => OK.indexOf(n.status) !== -1).length) +
+        L.kpi('target', 'terra', 'Échecs', rows.filter(n => ['FAILED', 'DEAD_LETTER'].indexOf(n.status) !== -1).length) +
+        L.kpi('user', 'sand', 'Bloquées (désinscrits)', rows.filter(n => ['SUPPRESSED', 'OPTED_OUT', 'BLOCKED'].indexOf(n.status) !== -1).length) +
+        L.kpi('doc', '', 'Modèles', templates.length),
+      row: (n) => '<tr><td data-label=""><strong>' + V.esc(mask(n.recipient_identifier)) + '</strong></td>' +
+        '<td data-label="Canal">' + V.esc(CH[n.channel_type] || n.channel_type) + '</td><td data-label="Type">' + V.esc(CLS[n.message_class] || n.message_class || '—') + '</td>' +
+        '<td data-label="Sujet">' + V.esc(n.subject || '—') + (n.error_reason ? '<span class="cell-sub">' + V.esc(n.error_reason) + '</span>' : '') + '</td>' +
+        '<td data-label="Date">' + V.esc(V.ago(n.sent_at || n.created_at)) + '</td><td data-label="Statut">' + V.pill(n.status) + '</td></tr>'
+    });
+    $('btnSend').addEventListener('click', () => window.SalesAI.openModal('sendModal'));
+    $('btnOptOut').addEventListener('click', () => window.SalesAI.openModal('optModal'));
+    $('sendModalForm').addEventListener('submit', (e) => {
       e.preventDefault();
-      const recipient = document.getElementById('recipient').value;
-      const channel = document.getElementById('channel').value;
-      const msgClass = document.getElementById('msgClass').value;
-      const templateName = document.getElementById('templateName').value;
-      let variables = {};
-      try {
-        variables = JSON.parse(document.getElementById('templateVariables').value);
-      } catch (err) {
-        alert("Invalid JSON in variables");
-        return;
-      }
-
-      try {
-        const res = await SalesApi.fetch('/api/v1/notifications/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',},
-          body: JSON.stringify({
-            recipient,
-            channel,
-            message_class: msgClass,
-            template_name: templateName,
-            variables
-          })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          alert(`Notification processed! Status: ${data.status}\n${data.error_reason ? 'Reason: ' + data.error_reason : ''}`);
-          loadLogs();
-        } else {
-          alert("Error: " + (data.detail || JSON.stringify(data)));
-        }
-      } catch (err) {
-        alert("Network error: " + err.message);
-      }
-    }
-
-    async function simulateOptOut() {
-      const recipient = document.getElementById('optoutRecipient').value;
-      const text = document.getElementById('optoutText').value;
-      try {
-        const res = await SalesApi.fetch('/api/v1/notifications/opt-out', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',},
-          body: JSON.stringify({
-            recipient,
-            channel: 'WHATSAPP',
-            inbound_message_text: text
-          })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          alert(data.opted_out ? `Opt-out successfully registered via keyword '${data.matched_keyword}'!` : 'No opt-out keyword detected in message.');
-        } else {
-          alert("Error: " + (data.detail || JSON.stringify(data)));
-        }
-      } catch (err) {
-        alert("Network error: " + err.message);
-      }
-    }
-
-    async function loadLogs() {
-      try {
-        const res = await SalesApi.fetch('/api/v1/notifications/history', {
-          headers: {}
-        });
-        if (res.ok) {
-          const list = await res.json();
-          const tbody = document.getElementById('logsBody');
-          if (list.length > 0) {
-            tbody.innerHTML = list.map(item => `
-              <tr>
-                <td><code>${SalesViews.esc(item.id)}</code></td>
-                <td>${SalesViews.esc(item.recipient)}</td>
-                <td><strong>${SalesViews.esc(item.channel)}</strong></td>
-                <td><span class="badge" style="background:#DBEAFE; color:#2563EB;">${SalesViews.esc(item.message_class)}</span></td>
-                <td><span class="badge ${SalesViews.esc(item.status === 'DELIVERED' ? 'badge-delivered' : (item.status === 'CANCELLED' ? 'badge-cancelled' : 'badge-suppressed'))}">${SalesViews.esc(item.status)}</span></td>
-                <td>${SalesViews.esc(item.error_reason || 'Dispatched successfully')}</td>
-                <td>${SalesViews.esc(new Date(item.created_at).toLocaleTimeString())}</td>
-              </tr>
-            `).join('');
-          }
-        }
-      } catch (e) {
-        console.warn("Could not load dynamic logs:", e);
-      }
-    }
+      if (!$('nTo').value.trim() || !$('nContent').value.trim()) { e.target.querySelector('.form-error').textContent = 'Destinataire et message sont obligatoires.'; return; }
+      L.submitForm(e.target, '/api/v1/notifications/send', { recipient_identifier: $('nTo').value.trim(), channel_type: $('nChannel').value,
+        subject: $('nSubject').value.trim() || null, content: $('nContent').value.trim(), message_class: 'TRANSACTIONAL' }, 'Notification envoyée.', () => list.reload());
+    });
+    $('optModalForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!$('oTo').value.trim()) { e.target.querySelector('.form-error').textContent = 'Le destinataire est obligatoire.'; return; }
+      L.submitForm(e.target, '/api/v1/notifications/opt-out', { recipient_identifier: $('oTo').value.trim(), channel_type: $('oChannel').value, directive: 'STOP' },
+        'Destinataire désinscrit : il ne recevra plus de messages sur ce canal.', () => list.reload());
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();

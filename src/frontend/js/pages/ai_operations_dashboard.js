@@ -1,43 +1,28 @@
-/* Extracted from ai_operations_dashboard.html by scripts/frontend_csp_build.py */
-async function fetchAIMetrics() {
-      try {
-        const resp = await SalesApi.fetch("/api/v1/observability/ai-metrics");
-        if (resp.ok) {
-          const m = await resp.json();
-          document.getElementById("kpiTotalInferences").innerText = m.total_inferences;
-          document.getElementById("kpiColdStarts").innerText = `${m.cold_starts_count} cold starts recorded`;
-          document.getElementById("kpiTotalTokens").innerText = (m.total_tokens || 0).toLocaleString();
-          document.getElementById("kpiTokenSplit").innerText = `${(m.total_prompt_tokens||0).toLocaleString()} in / ${(m.total_completion_tokens||0).toLocaleString()} out`;
-          document.getElementById("kpiAvgTTFT").innerText = `${m.avg_ttft_ms} ms`;
-          document.getElementById("kpiP95TTFT").innerText = `p95: ${m.p95_ttft_ms} ms`;
-          document.getElementById("kpiThroughput").innerText = `${m.avg_throughput_tok_s} tok/s`;
-          document.getElementById("kpiErrorRate").innerText = `${m.error_rate_pct}%`;
+/* Selia — Opérations IA: measured model telemetry (/observability/ai-metrics). */
+(function () {
+  'use strict';
+  const V = window.SalesViews, UI = window.SalesAI;
+  const $ = (id) => document.getElementById(id);
+  const kpi = (icon, tone, label, value, extra) => '<article class="kpi-card"><span class="kpi-icon' + (tone ? ' kpi-icon--' + tone : '') + '">' + UI.icon(icon, 22) +
+    '</span><div class="kpi-body"><span class="kpi-label">' + V.esc(label) + '</span><span class="kpi-number">' + value + '</span>' + (extra ? '<span class="kpi-delta">' + V.esc(extra) + '</span>' : '') + '</div></article>';
+  const fmt = (v, unit) => (v == null ? '—' : Number(v).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + (unit ? ' ' + unit : ''));
 
-          renderRecentTurns(m.recent_executions);
-        }
-      } catch (e) {
-        console.error("Failed to load AI metrics:", e);
-      }
-    }
+  async function load() {
+    const res = await V.getJson('/api/v1/observability/ai-metrics');
+    if (!res.ok) { $('kpis').innerHTML = '<p class="data-state data-state--error" role="alert">' + V.esc(V.errorText(res)) + '</p>'; V.rowState($('execRows'), 7, 'error', V.errorText(res)); return; }
+    const m = res.data || {};
+    $('kpis').innerHTML = kpi('sparkle', '', 'Appels au modèle', fmt(m.total_inferences), (m.cold_starts_count || 0) + ' démarrage(s) à froid') +
+      kpi('chart', 'sand', 'Premier jeton (moyenne)', fmt(m.avg_ttft_ms, 'ms')) + kpi('arrow', '', 'Débit moyen', fmt(m.avg_throughput_tok_s, 'jetons/s')) +
+      kpi('target', 'terra', 'Taux d’erreur', fmt(m.error_rate_pct, '%'), fmt(m.total_tokens || 0) + ' jetons au total');
+    const rows = m.recent_executions || [];
+    $('execRows').innerHTML = rows.length ? rows.map(x => '<tr><td data-label=""><strong>' + V.esc(x.agent_role || '—') + '</strong></td>' +
+      '<td data-label="Modèle"><code>' + V.esc(x.model_name) + '</code></td><td data-label="Jetons" class="num">' + V.esc(fmt(x.total_tokens)) + '</td>' +
+      '<td data-label="1er jeton" class="num">' + V.esc(fmt(x.ttft_ms, 'ms')) + '</td><td data-label="Durée totale" class="num">' + V.esc(fmt(x.total_latency_ms, 'ms')) + '</td>' +
+      '<td data-label="Débit" class="num">' + V.esc(fmt(x.throughput_tok_per_s, 'j/s')) + '</td>' +
+      '<td data-label="Démarrage">' + V.pill(x.is_cold_start ? 'À froid' : 'À chaud', x.is_cold_start ? 'warn' : 'ok') + '</td></tr>').join('')
+      : '<tr><td colspan="7" class="data-state">Aucun appel au modèle enregistré depuis le démarrage du service.</td></tr>';
+  }
 
-    function renderRecentTurns(turns) {
-      const tbody = document.getElementById("turnsTableBody");
-      if (!turns || turns.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">No model inference turns recorded yet in this session.</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = turns.map(t => `
-        <tr>
-          <td>${SalesViews.esc(t.timestamp.slice(11, 19))}</td>
-          <td><strong>${SalesViews.esc(t.agent_role)}</strong></td>
-          <td>${SalesViews.esc(t.model_name)}</td>
-          <td>${SalesViews.esc(t.prompt_tokens)} / ${SalesViews.esc(t.completion_tokens)}</td>
-          <td>${SalesViews.esc(t.ttft_ms)} ms</td>
-          <td>${SalesViews.esc(t.throughput_tok_per_s)} tok/s</td>
-          <td>${SalesViews.esc(t.total_latency_ms)} ms</td>
-          <td><span class="${SalesViews.esc(t.status === 'SUCCESS' ? 'badge-ok' : 'badge-err')}">${SalesViews.esc(t.status)}</span></td>
-        </tr>
-      `).join("");
-    }
-
-    window.addEventListener("DOMContentLoaded", fetchAIMetrics);
+  function init() { $('btnRefresh').addEventListener('click', load); load(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();

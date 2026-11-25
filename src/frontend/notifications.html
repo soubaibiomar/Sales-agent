@@ -5,191 +5,53 @@
   <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Selia — Omnichannel Notifications & Opt-Outs</title>
+  <title>Selia — Notifications</title>
   <link rel="stylesheet" href="css/design_system.css">
   <link rel="stylesheet" href="css/pages/notifications.css">
-  <script src="js/pages/notifications.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
-    <!-- MASTER SIDEBAR -->
     <aside class="sidebar"><div data-app-nav></div></aside>
-
     <div class="main-wrapper">
-      <header class="topbar">
-        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
-        <div class="search-container">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher des clients, devis, commandes, agents...">
-          <span class="search-shortcut">Ctrl + K</span>
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
+        <div class="page-header">
+          <div class="page-title-group"><h1>Notifications</h1><p>Messages envoyés aux clients, modèles et désinscriptions.</p></div>
+          <div class="page-actions"><button type="button" class="btn btn-outline" id="btnOptOut" data-icon="user">Désinscrire un destinataire</button><button type="button" class="btn btn-primary" id="btnSend" data-icon="chat">Envoyer une notification</button></div>
         </div>
+        <section class="kpi-grid kpi-grid--compact" id="kpis" aria-label="Indicateurs"></section><section class="card list-card">
 
-        <div class="topbar-actions">
-          <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel"></span>
+          <div class="list-toolbar">
+            <div class="chip-row" role="group" aria-label="Filtrer" id="chips"></div>
+            <div class="toolbar-right"><label class="search-inline"><span class="visually-hidden">Rechercher</span><input type="search" class="form-control" id="search" placeholder="Rechercher un destinataire, un sujet…"></label><select class="select-pill" id="yearSelect" aria-label="Période"><option value="year" selected>Cette année</option><option value="all">Toutes les dates</option></select></div>
           </div>
-
-          <div class="icon-btn-badge" id="notifBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          </div>
-
-          <button class="btn-header-primary" id="btnQuickNew">
-            <span>+</span> Nouveau
-          </button>
-
-          <div class="user-topbar-pill">
-            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;"></div>
-            <div style="display:flex; flex-direction:column; line-height:1.2;">
-              <span style="font-weight:600; font-size:13px; color:#17251F;"></span>
-              <span style="font-size:11px; color:#66756D;"></span>
-            </div>
-          </div>
+          <div class="table-responsive"><table class="data-table responsive-table"><thead><tr><th>Destinataire</th><th>Canal</th><th>Type</th><th>Sujet</th><th>Date</th><th>Statut</th></tr></thead>
+            <tbody id="rows"><tr><td colspan="6" class="data-state" role="status">Chargement…</td></tr></tbody></table></div>
+          <nav class="pager" id="pager" aria-label="Pagination"></nav>
+        </section><section class="card sub-card list-card">
+          <div class="card-header"><h2 class="card-title">Modèles</h2></div>
+          <div class="table-responsive"><table class="data-table responsive-table"><thead><tr><th>Code</th><th>Canal</th><th>Type</th><th>Langue</th><th>Statut</th></tr></thead>
+            <tbody id="templateRows"><tr><td colspan="5" class="data-state">Chargement…</td></tr></tbody></table></div>
+        </section><div class="modal-backdrop" id="sendModal" hidden>
+          <form class="modal" id="sendModalForm" novalidate aria-labelledby="sendModalTitle">
+            <h2 id="sendModalTitle">Envoyer une notification</h2>
+            <div class="form-grid"><div class="field"><label for="nTo">Destinataire *</label><input class="form-control" id="nTo" type="text" required maxlength="255" placeholder="+212… ou e-mail"></div><div class="field"><label for="nChannel">Canal</label><select class="form-control" id="nChannel"><option value="WHATSAPP">WhatsApp</option><option value="EMAIL">E-mail</option><option value="SMS">SMS</option></select></div><div class="field span-2"><label for="nSubject">Sujet</label><input class="form-control" id="nSubject" type="text" maxlength="255"></div><div class="field span-2"><label for="nContent">Message *</label><textarea class="form-control" id="nContent" rows="4" required></textarea></div></div>
+            <p class="form-error" role="alert"></p>
+            <div class="modal-actions"><button type="button" class="btn btn-outline" data-close-modal>Annuler</button><button type="submit" class="btn btn-primary">Envoyer</button></div>
+          </form>
+        </div><div class="modal-backdrop" id="optModal" hidden>
+          <form class="modal" id="optModalForm" novalidate aria-labelledby="optModalTitle">
+            <h2 id="optModalTitle">Désinscrire un destinataire</h2>
+            <div class="form-grid"><div class="field"><label for="oTo">Destinataire *</label><input class="form-control" id="oTo" type="text" required maxlength="255"></div><div class="field"><label for="oChannel">Canal</label><select class="form-control" id="oChannel"><option value="WHATSAPP">WhatsApp</option><option value="EMAIL">E-mail</option><option value="SMS">SMS</option></select></div></div>
+            <p class="form-error" role="alert"></p>
+            <div class="modal-actions"><button type="button" class="btn btn-outline" data-close-modal>Annuler</button><button type="submit" class="btn btn-primary">Désinscrire</button></div>
+          </form>
         </div>
-      </header>
-
-      <main class="content-wrapper">
-<!-- Compliance & Rules Overview -->
-      <div class="grid-3">
-        <div class="stat-card">
-          <span class="stat-label">Quiet Hours Guard</span>
-          <span class="stat-value">21:00 – 09:00</span>
-          <span style="font-size: 0.75rem; color: var(--status-warning);">Marketing suppressed & Sundays locked</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Multi-Script STOP Support</span>
-          <span class="stat-value">4 Languages</span>
-          <span style="font-size: 0.75rem; color: var(--status-success);">STOP, BARAKA, HBS, قف</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Frequency Cap Policy</span>
-          <span class="stat-value">1 / 24 Hours</span>
-          <span style="font-size: 0.75rem; color: var(--text-muted);">Max 1 marketing notification per day</span>
-        </div>
-      </div>
-
-      <!-- Send Notification Form -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Dispatch Notification</div>
-          <span style="font-size: 0.8rem; color: var(--text-muted);">Subject to quiet hours, opt-outs, and transactional priority</span>
-        </div>
-        <form id="notifyForm" data-on-submit="h2">
-          <div class="grid-2">
-            <div class="form-group">
-              <label for="recipient">Recipient (Email or E.164 Phone)</label>
-              <input type="text" id="recipient" value="+212612345678" required>
-            </div>
-            <div class="form-group">
-              <label for="channel">Channel</label>
-              <select id="channel" required>
-                <option value="WHATSAPP">WhatsApp</option>
-                <option value="EMAIL">Email</option>
-                <option value="IN_APP">In-App</option>
-              </select>
-            </div>
-          </div>
-          <div class="grid-2">
-            <div class="form-group">
-              <label for="msgClass">Message Classification</label>
-              <select id="msgClass" required>
-                <option value="TRANSACTIONAL">TRANSACTIONAL (Order/Payment - High Priority)</option>
-                <option value="MARKETING">MARKETING (Offers/Promotions - Governed by Quiet Hours)</option>
-                <option value="SERVICE">SERVICE (Operational Update)</option>
-                <option value="SECURITY">SECURITY (OTPs & Critical Alerts)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="templateName">Template</label>
-              <select id="templateName">
-                <option value="ORDER_CONFIRMED">ORDER_CONFIRMED</option>
-                <option value="QUOTE_APPROVAL_REQUIRED">QUOTE_APPROVAL_REQUIRED</option>
-                <option value="APPOINTMENT_REMINDER">APPOINTMENT_REMINDER</option>
-                <option value="MARKETING_PROMOTION">MARKETING_PROMOTION</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="templateVariables">Variables (JSON)</label>
-            <textarea id="templateVariables" rows="2" style="font-family: monospace;">{"order_id": "ORD-2026-001", "total": "1,450.00 MAD", "delivery_date": "2026-11-20"}</textarea>
-          </div>
-          <button type="submit" class="btn btn-primary">📤 Enqueue / Dispatch Notification</button>
-        </form>
-      </div>
-
-      <!-- Multi-Script Opt-out Tester -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Inbound Opt-Out (STOP) Simulator</div>
-          <span style="font-size: 0.8rem; color: var(--text-muted);">Simulate inbound SMS/WhatsApp customer opt-out</span>
-        </div>
-        <div style="display: flex; gap: 0.75rem; align-items: flex-end;">
-          <div class="form-group" style="flex: 1; margin-bottom: 0;">
-            <label for="optoutRecipient">Customer Phone / Email</label>
-            <input type="text" id="optoutRecipient" value="+212612345678">
-          </div>
-          <div class="form-group" style="flex: 1; margin-bottom: 0;">
-            <label for="optoutText">Inbound Message Body</label>
-            <input type="text" id="optoutText" value="Baraka safi ma tbqach tsaft lia">
-          </div>
-          <button class="btn btn-outline" data-on-click="h3">🚫 Record STOP Opt-Out</button>
-        </div>
-      </div>
-
-      <!-- Delivery Logs Table -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Recent Notification Logs</div>
-          <span style="font-size: 0.8rem; color: var(--text-muted);">Delivery status & compliance outcomes</span>
-        </div><div class="table-responsive"><table class="data-table" id="logsTable">
-          <thead>
-            <tr>
-              <th>Log ID</th>
-              <th>Recipient</th>
-              <th>Channel</th>
-              <th>Class</th>
-              <th>Status</th>
-              <th>Reason / Detail</th>
-              <th>Created At</th>
-            </tr>
-          </thead>
-          <tbody id="logsBody">
-            <tr>
-              <td><code>notif-log-102</code></td>
-              <td>+212612345678</td>
-              <td><strong>WHATSAPP</strong></td>
-              <td><span class="badge" style="background:#DBEAFE; color:#2563EB;">TRANSACTIONAL</span></td>
-              <td><span class="badge badge-delivered">DELIVERED</span></td>
-              <td>Dispatched via WhatsApp Channel</td>
-              <td>1 min ago</td>
-            </tr>
-            <tr>
-              <td><code>notif-log-101</code></td>
-              <td>+212698765432</td>
-              <td><strong>WHATSAPP</strong></td>
-              <td><span class="badge" style="background:#FEF3C7; color:#D97706;">MARKETING</span></td>
-              <td><span class="badge badge-cancelled">CANCELLED</span></td>
-              <td>Quiet hours active (Moroccan local time / Sunday)</td>
-              <td>5 mins ago</td>
-            </tr>
-            <tr>
-              <td><code>notif-log-100</code></td>
-              <td>+212600112233</td>
-              <td><strong>SMS</strong></td>
-              <td><span class="badge" style="background:#FEF3C7; color:#D97706;">MARKETING</span></td>
-              <td><span class="badge badge-suppressed">SUPPRESSED</span></td>
-              <td>Recipient opted out via STOP / Baraka</td>
-              <td>12 mins ago</td>
-            </tr>
-          </tbody>
-        </table></div>
       </main>
     </div>
   </div>
-
-
   <script src="js/app_shell.js"></script>
+  <script src="js/list_page.js"></script>
   <script src="js/pages/notifications.js"></script>
-
 </body>
-<!-- csp-build: migrated -->
 </html>
