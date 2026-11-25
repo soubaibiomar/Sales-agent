@@ -66,10 +66,25 @@
     SHIPPED: ['En cours', 'info'], DELIVERED: ['Livrée', 'ok'], COMPLETED: ['Terminée', 'ok'], CANCELLED: ['Annulée', 'danger'],
     PENDING_PAYMENT: ['Paiement en attente', 'warn'], PAID: ['Payée', 'ok'],
     // appointments
-    REQUESTED: ['Demandé', 'warn'], SCHEDULED: ['À venir', 'warn'], RESCHEDULED: ['Reportée', 'warn'], NO_SHOW: ['Absent', 'danger'],
+    SCHEDULED: ['À venir', 'warn'], RESCHEDULED: ['Reportée', 'warn'], NO_SHOW: ['Absent', 'danger'],
     // opportunities
     DISCOVERY: ['Prospection', 'neutral'], QUALIFICATION: ['Qualification', 'info'], PROPOSAL: ['Proposition', 'warn'],
     NEGOTIATION: ['Négociation', 'warn'], CLOSED_WON: ['Gagnée', 'ok'], CLOSED_LOST: ['Perdue', 'danger'],
+    // logistics
+    CREATED: ['Créée', 'neutral'], PICKING: ['Préparation', 'warn'], PACKED: ['Emballée', 'warn'], IN_TRANSIT: ['En transit', 'info'],
+    OUT_FOR_DELIVERY: ['En livraison', 'info'], FAILED: ['Échec', 'danger'], RETURNED: ['Retournée', 'neutral'],
+    // procurement / returns / payments
+    PARTIALLY_RECEIVED: ['Reçue partiellement', 'warn'], RECEIVED: ['Reçue', 'ok'], AUTHORIZED: ['Autorisé', 'info'], INSPECTED: ['Inspecté', 'info'],
+    RESTOCKED: ['Remis en stock', 'ok'], SUCCEEDED: ['Réussie', 'ok'], SUCCESS: ['Réussie', 'ok'], PROCESSED: ['Traitée', 'ok'],
+    REFUNDED: ['Remboursée', 'info'], PARTIALLY_REFUNDED: ['Remb. partiel', 'info'], REQUIRES_PAYMENT_METHOD: ['Moyen requis', 'warn'],
+    PENDING: ['En attente', 'warn'], REQUESTED: ['Demandé', 'warn'],
+    // invoices (computed) & support
+    OVERDUE: ['En retard', 'danger'], UNPAID: ['À encaisser', 'warn'], IN_PROGRESS: ['En cours', 'info'], RESOLVED: ['Résolu', 'ok'],
+    // workflows & notifications
+    RUNNING: ['En cours', 'info'], COMPENSATED: ['Compensé', 'warn'], COMPENSATING: ['Compensation', 'warn'], QUEUED: ['En file', 'neutral'],
+    SENT: ['Envoyé', 'info'], SUPPRESSED: ['Bloqué', 'neutral'], DEAD_LETTER: ['En échec définitif', 'danger'], RETRYING: ['Nouvel essai', 'warn'],
+    // priorities
+    LOW: ['Basse', 'neutral'], MEDIUM: ['Moyenne', 'info'], HIGH: ['Haute', 'warn'], URGENT: ['Urgente', 'danger'], CRITICAL: ['Critique', 'danger'],
     // generic
     ACTIVE: ['Actif', 'ok'], INACTIVE: ['Inactif', 'neutral'], OPEN: ['Ouverte', 'info'], CLOSED: ['Fermée', 'neutral']
   };

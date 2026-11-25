@@ -1,20 +1,2 @@
-/* Extracted from invoices.html by scripts/frontend_csp_build.py */
-.content { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
-    
-    .panel { background: var(--bg-neutral); border-radius: 8px; border: 1px solid var(--border-muted); padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-muted); padding-bottom: 0.75rem; }
-    .panel-title { font-size: 1rem; font-weight: 700; color: var(--primary); }
-    
-    table { width: 100%; border-collapse: collapse; }
-    th { background: #F8FAFC; padding: 0.75rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); text-align: left; }
-    td { padding: 0.85rem 0.75rem; border-bottom: 1px solid var(--border-muted); font-size: 0.85rem; }
-    tr:hover { background: #F1F5F9; }
-    
-    .badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
-    .badge-paid { background: #DCFCE7; color: var(--status-success); }
-    .badge-issued { background: #DBEAFE; color: var(--status-info); }
-    .badge-cancelled { background: #FEE2E2; color: var(--status-danger); }
-    
-    .btn { padding: 0.45rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
-    .btn-primary { background: var(--primary); color: #fff; }
-    .btn-outline { background: transparent; border: 1px solid var(--border-muted); color: var(--text-main); }
+/* Selia — Factures (list layout in design_system.css) */
+.sub-card { margin-top: 18px; }

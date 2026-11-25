@@ -5,152 +5,48 @@
   <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Selia — Centre d'Approbations & Gouvernance Commerciale</title>
+  <title>Selia — Approbations</title>
   <link rel="stylesheet" href="css/design_system.css">
   <link rel="stylesheet" href="css/pages/approvals.css">
-  <script src="js/pages/approvals.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
-    <!-- MASTER SIDEBAR -->
     <aside class="sidebar"><div data-app-nav></div></aside>
-
-    <!-- MAIN APPLICATION WRAPPER -->
     <div class="main-wrapper">
-      <header class="topbar">
-        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
-        <div class="search-container">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher une demande de validation...">
-          <span class="search-shortcut">Ctrl + K</span>
-        </div>
-
-        <div class="topbar-actions">
-          <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel"></span>
-          </div>
-          <span class="badge badge-warning" style="padding:0.4rem 0.8rem; font-size:12px;">MFA Obligatoire</span>
-        </div>
-      </header>
-
-      <main class="content-wrapper">
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
         <div class="page-header">
-          <div class="page-title-group">
-            <h1>Centre d'Approbation des Ventes & Dérogations</h1>
-            <p>Contrôle déterministe des remises hors barème (>15%) et engagements financiers (≥ 150 000 MAD) avec validation MFA.</p>
-          </div>
-
-          <div style="display:flex; gap:0.5rem;">
-            <button class="btn btn-outline">Historique d'Audit</button>
-            <button class="btn btn-primary" data-on-click="h1">Déléguer Approbation</button>
-          </div>
+          <div class="page-title-group"><h1>Approbations</h1><p>Validez les devis qui dépassent vos seuils de remise ou de marge.</p></div>
         </div>
 
-        <!-- KPI summary -->
-        <div class="kpi-grid kpi-grid--4">
-          <div class="kpi-card" style="padding:1rem;">
-            <span class="kpi-title">En Attente de Décision</span>
-            <div class="kpi-value" style="color:#D97706;">2</div>
-            <span class="badge badge-warning">Action requise</span>
-          </div>
-          <div class="kpi-card" style="padding:1rem;">
-            <span class="kpi-title">Approuvés ce mois</span>
-            <div class="kpi-value" style="color:#16A34A;">48</div>
-            <span class="kpi-trend">↑ 100% avec MFA</span>
-          </div>
-          <div class="kpi-card" style="padding:1rem;">
-            <span class="kpi-title">Rejetés / Négociés</span>
-            <div class="kpi-value" style="color:#DC2626;">6</div>
-            <span class="badge badge-danger">Dépassement seuil marge</span>
-          </div>
-          <div class="kpi-card" style="padding:1rem;">
-            <span class="kpi-title">Délai Moyen d'Approbation</span>
-            <div class="kpi-value">14 min</div>
-            <span class="badge badge-success">SLA < 1h respecté</span>
-          </div>
+        <section class="kpi-grid kpi-grid--compact" id="kpis" aria-label="Indicateurs"></section>
+
+        <section class="approval-list" id="approvalList" aria-live="polite"><p class="data-state" role="status">Chargement des demandes…</p></section>
+
+        <div class="modal-backdrop" id="approveModal" hidden>
+          <form class="modal" id="approveForm" novalidate aria-labelledby="approveTitle">
+            <h2 id="approveTitle">Approuver le devis</h2>
+            <p class="cell-sub" id="approveMeta"></p>
+            <div class="field"><label for="mfaCode">Code de vérification (application d'authentification)</label>
+              <input class="form-control" id="mfaCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></div>
+            <p class="form-error" role="alert"></p>
+            <div class="modal-actions"><button type="button" class="btn btn-outline" data-close-modal>Annuler</button><button type="submit" class="btn btn-primary">Approuver</button></div>
+          </form>
         </div>
 
-        <!-- Pending Approvals List -->
-        <div class="card" style="padding:1.5rem;">
-          <div class="card-header">
-            <span class="card-title">Demandes d'Approbation en Instance</span>
-            <span class="badge badge-warning">2 dérogations actives</span>
-          </div>
-
-          <!-- Item 1 -->
-          <div class="approval-card-item">
-            <div style="display:flex; flex-direction:column; gap:0.4rem;">
-              <div style="font-size:1.05rem; font-weight:700; color:#0A3A2A;">
-                QT-202611-B89E21 — Atlas Logistics Cloud Expansion
-              </div>
-              <div style="font-size:0.85rem; color:#D97706; font-weight:600;">
-                ⚠️ Remise commerciale de 25.00% dépassant le plafond commercial standard (20.00%)
-              </div>
-              <div style="font-size:0.78rem; color:#66756D;">
-                Montant Total : <strong>87 500,00 MAD</strong> | Version : 2 | Empreinte Contrat : <code>#a9b4c2...f71e</code>
-              </div>
-              <div style="font-size:0.75rem; color:#17251F; margin-top:2px;">
-                Demandé par : <strong>Karim Tazi</strong> (Commercial Grands Comptes) • Règle Anti-Auto-Approbation Enforcée
-              </div>
-            </div>
-
-            <div style="display:flex; gap:0.6rem;">
-              <button class="btn btn-outline" style="color:#DC2626; border-color:#FEE2E2;" data-on-click="h2">Rejeter</button>
-              <button class="btn btn-primary" data-on-click="h3">Valider avec MFA</button>
-            </div>
-          </div>
-
-          <!-- Item 2 -->
-          <div class="approval-card-item">
-            <div style="display:flex; flex-direction:column; gap:0.4rem;">
-              <div style="font-size:1.05rem; font-weight:700; color:#0A3A2A;">
-                QT-202611-C10A92 — Maroc Mining Enterprise AI Core
-              </div>
-              <div style="font-size:0.85rem; color:#DC2626; font-weight:600;">
-                ⛔ Marge bénéficiaire de 12.50% inférieure au plancher de rentabilité produit (15.00%)
-              </div>
-              <div style="font-size:0.78rem; color:#66756D;">
-                Montant Total : <strong>169 680,00 MAD</strong> (Seuil Directeur ≥ 150k MAD) | Empreinte : <code>#3e8a1d...c490</code>
-              </div>
-              <div style="font-size:0.75rem; color:#17251F; margin-top:2px;">
-                Demandé par : <strong>Sara Alami</strong> (Ingénieure d'Affaires) • Double Autorisation Requise
-              </div>
-            </div>
-
-            <div style="display:flex; gap:0.6rem;">
-              <button class="btn btn-outline" style="color:#DC2626; border-color:#FEE2E2;" data-on-click="h4">Rejeter</button>
-              <button class="btn btn-primary" data-on-click="h5">Valider avec MFA</button>
-            </div>
-          </div>
+        <div class="modal-backdrop" id="rejectModal" hidden>
+          <form class="modal" id="rejectForm" novalidate aria-labelledby="rejectTitle">
+            <h2 id="rejectTitle">Refuser le devis</h2>
+            <div class="field"><label for="rejectReason">Motif du refus *</label><textarea class="form-control" id="rejectReason" rows="3" required maxlength="500"></textarea></div>
+            <p class="form-error" role="alert"></p>
+            <div class="modal-actions"><button type="button" class="btn btn-outline" data-close-modal>Annuler</button><button type="submit" class="btn btn-accent">Refuser</button></div>
+          </form>
         </div>
       </main>
     </div>
   </div>
-
-  <!-- Step-up MFA Modal -->
-  <div class="modal-overlay" id="mfaModal">
-    <div class="modal-card">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="font-size:1.1rem; font-weight:700; color:#0A3A2A;">Authentification Forte (MFA Step-up)</h3>
-        <button data-on-click="h6" style="background:none; border:none; font-size:18px; cursor:pointer;">✕</button>
-      </div>
-
-      <p style="font-size:0.85rem; color:#66756D;">
-        L'approbation d'une offre commerciale dérogatoire nécessite une validation cryptographique à deux facteurs. Saisissez votre code TOTP authenticator à 6 chiffres.
-      </p>
-
-      <input type="text" id="mfaCode" class="mfa-input-code" maxlength="6" placeholder="000000" />
-
-      <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.75rem;">
-        <button class="btn btn-outline" data-on-click="h7">Annuler</button>
-        <button class="btn btn-primary" data-on-click="h8">Vérifier & Autoriser</button>
-      </div>
-    </div>
-  </div>
-
   <script src="js/app_shell.js"></script>
+  <script src="js/list_page.js"></script>
   <script src="js/pages/approvals.js"></script>
-  <script src="js/pages/approvals.live.js"></script>
 </body>
-<!-- csp-build: migrated -->
 </html>

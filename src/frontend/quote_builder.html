@@ -5,449 +5,91 @@
   <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Selia — Devis & Offres Commerciales</title>
+  <title>Selia — Nouveau devis</title>
   <link rel="stylesheet" href="css/design_system.css">
   <link rel="stylesheet" href="css/pages/quote_builder.css">
-  <script src="js/pages/quote_builder.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
-    <!-- 1. LEFT SIDEBAR (Identical Master Shell) -->
     <aside class="sidebar"><div data-app-nav></div></aside>
-
-    <!-- 2. MAIN APPLICATION WRAPPER -->
     <div class="main-wrapper">
-      <!-- TOPBAR HEADER -->
-      <header class="topbar">
-        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
-        
-        <div class="search-container">
-          <span class="search-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          </span>
-          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher des clients, produits, devis, commandes...">
-          <span class="search-shortcut">Ctrl + K</span>
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
+        <div class="page-header">
+          <div class="page-title-group"><h1>Nouveau devis</h1><p>Sélectionnez un client et des articles : les montants sont calculés par le serveur.</p></div>
+          <div class="page-actions"><a class="btn btn-outline" href="quotes.html">Tous les devis</a></div>
         </div>
 
-        <div class="topbar-actions">
-          <div class="date-filter-pill">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-            <span>01 Jan 2026 – 31 Dec 2026</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        <section class="kpi-grid kpi-grid--compact" aria-label="Indicateurs devis">
+          <article class="kpi-card"><span class="kpi-icon" data-icon="doc"></span><div class="kpi-body"><span class="kpi-label">Total devis</span><span class="kpi-number" id="kpiQuotesTotal">—</span></div></article>
+          <article class="kpi-card"><span class="kpi-icon" data-icon="target"></span><div class="kpi-body"><span class="kpi-label">Approuvés</span><span class="kpi-number" id="kpiQuotesApproved">—</span></div></article>
+          <article class="kpi-card"><span class="kpi-icon kpi-icon--terra" data-icon="calendar"></span><div class="kpi-body"><span class="kpi-label">En attente d'approbation</span><span class="kpi-number" id="kpiQuotesPending">—</span></div></article>
+          <article class="kpi-card"><span class="kpi-icon" data-icon="cart"></span><div class="kpi-body"><span class="kpi-label">Acceptés</span><span class="kpi-number" id="kpiQuotesAccepted">—</span></div></article>
+          <article class="kpi-card"><span class="kpi-icon kpi-icon--sand" data-icon="chart"></span><div class="kpi-body"><span class="kpi-label">Valeur des devis</span><span class="kpi-number" id="kpiQuotesValue">—</span></div></article>
+        </section>
+
+        <div class="qb-grid">
+          <div class="qb-side">
+            <section class="card">
+              <div class="card-header"><h2 class="card-title">Client</h2><a class="link-accent" href="clients.html#nouveau">+ Nouveau</a></div>
+              <input type="search" class="form-control" id="qbCustomerSearch" placeholder="Rechercher un client…" aria-label="Rechercher un client">
+              <div class="table-responsive qb-pick"><table class="data-table"><thead><tr><th></th><th>Client</th><th>Secteur</th></tr></thead>
+                <tbody id="qbCustomerBody"><tr><td colspan="3" class="data-state" role="status">Chargement des clients…</td></tr></tbody></table></div>
+            </section>
+            <section class="card">
+              <div class="card-header"><h2 class="card-title">Catalogue</h2><a class="link-accent" href="catalog.html">Gérer</a></div>
+              <input type="search" class="form-control" id="qbProductSearch" placeholder="Rechercher un produit ou un SKU…" aria-label="Rechercher un produit">
+              <div class="table-responsive qb-pick"><table class="data-table"><thead><tr><th>SKU</th><th>Article</th><th class="num">Prix</th><th></th></tr></thead>
+                <tbody id="qbProductBody"><tr><td colspan="4" class="data-state" role="status">Chargement du catalogue…</td></tr></tbody></table></div>
+            </section>
           </div>
 
-          <div class="icon-btn-badge" id="notifBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          </div>
-
-          <button class="btn-header-primary" id="btnQuickNew">
-            <span>+</span> Nouveau Devis
-          </button>
-        </div>
-      </header>
-
-      <!-- 3. CONTENT WRAPPER (REFERENCE C) -->
-      <main class="content-wrapper">
-        <!-- Title & Subtitle -->
-        <div class="page-header" style="margin-bottom:0.25rem;">
-          <div class="page-title-group">
-            <h1>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-              Devis & Commandes
-            </h1>
-            <p>Créez, chiffrez, faites approuver et suivez vos propositions commerciales en temps réel.</p>
-          </div>
-        </div>
-
-        <!-- 5 Top Metric Cards -->
-        <div class="kpi-grid kpi-grid--5">
-          <!-- 1 -->
-          <div class="kpi-card" style="padding:1rem 1.15rem;">
-            <div class="kpi-top">
-              <span class="kpi-title">Total Devis</span>
-              <div class="kpi-icon-box" style="width:30px; height:30px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
-              </div>
+          <section class="card qb-editor" aria-label="Éditeur de devis">
+            <div class="card-header"><h2 class="card-title">Éditeur de devis</h2>
+              <div class="chip-row"><span class="status-pill pill-neutral" id="qbQuoteNumber">Nouveau devis</span><span class="badge badge-warning" id="qbQuoteStatus">Brouillon</span></div></div>
+            <div class="qb-customer" id="qbCustomerBanner"></div>
+            <div class="form-grid qb-controls">
+              <div class="field"><label for="qbValidity">Validité</label><select class="form-control" id="qbValidity"><option value="30" selected>30 jours</option><option value="15">15 jours</option><option value="60">60 jours</option></select></div>
+              <div class="field"><label for="qbTerms">Conditions de paiement</label><select class="form-control" id="qbTerms"><option value="NET_30" selected>30 jours</option><option value="DUE_ON_RECEIPT">Paiement comptant</option><option value="DEPOSIT_30_70">30 % acompte, 70 % livraison</option></select></div>
             </div>
-            <div class="kpi-value-row">
-              <span class="kpi-value" style="font-size:1.45rem;" id="kpiQuotesTotal">—</span>
+            <h3 class="qb-items-title" id="qbItemsCount">Articles du devis (0)</h3>
+            <div class="table-responsive"><table class="data-table"><thead><tr><th>#</th><th>Article</th><th>Qté</th><th class="num">Prix unitaire</th><th>Remise %</th><th class="num">Total HT</th><th></th></tr></thead>
+              <tbody id="qbItemsBody"><tr><td colspan="7" class="data-state">Aucun article. Ajoutez-en depuis le catalogue.</td></tr></tbody></table></div>
+            <p class="kpi-caption qb-totals-note" id="qbTotalsNote">Les montants sont calculés par le serveur (prix catalogue, remises autorisées, TVA).</p>
+            <div class="qb-totals">
+              <div><span>Sous-total HT</span><strong id="qbSubtotal">—</strong></div>
+              <div><span>Remise accordée</span><strong id="qbDiscount" class="qb-discount">—</strong></div>
+              <div><span>TVA</span><strong id="qbTax">—</strong></div>
+              <div class="grand"><span>Total TTC</span><span id="qbTotal">—</span></div>
             </div>
-          </div>
-
-          <!-- 2 -->
-          <div class="kpi-card" style="padding:1rem 1.15rem;">
-            <div class="kpi-top">
-              <span class="kpi-title">Approuvés</span>
-              <div class="kpi-icon-box" style="width:30px; height:30px; background:#DCFCE7; color:#16A34A;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              </div>
+            <div class="qb-actions">
+              <button type="button" class="btn btn-outline" id="qbSave">Enregistrer et chiffrer</button>
+              <button type="button" class="btn btn-soft-green" id="qbIssue" disabled>Émettre le devis</button>
+              <button type="button" class="btn btn-primary" id="qbSend" disabled>Envoyer au client</button>
             </div>
-            <div class="kpi-value-row">
-              <span class="kpi-value" style="font-size:1.45rem;" id="kpiQuotesApproved">—</span>
-              <span class="badge badge-success">72.9%</span>
+            <div class="qb-link" id="qbLinkBox" hidden>
+              <label for="qbLink">Lien d'acceptation à transmettre au client</label>
+              <div class="qb-link-row"><input class="form-control" id="qbLink" readonly><button type="button" class="btn btn-outline" id="qbCopy">Copier</button></div>
             </div>
-          </div>
-
-          <!-- 3 -->
-          <div class="kpi-card" style="padding:1rem 1.15rem;">
-            <div class="kpi-top">
-              <span class="kpi-title">En attente approbation</span>
-              <div class="kpi-icon-box" style="width:30px; height:30px; background:#FEF3C7; color:#D97706;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-              </div>
-            </div>
-            <div class="kpi-value-row">
-              <span class="kpi-value" style="font-size:1.45rem;" id="kpiQuotesPending">—</span>
-              <span class="badge badge-warning">11.2%</span>
-            </div>
-          </div>
-
-          <!-- 4 -->
-          <div class="kpi-card" style="padding:1rem 1.15rem;">
-            <div class="kpi-top">
-              <span class="kpi-title">Acceptés</span>
-              <div class="kpi-icon-box" style="width:30px; height:30px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-              </div>
-            </div>
-            <div class="kpi-value-row">
-              <span class="kpi-value" style="font-size:1.45rem;" id="kpiQuotesAccepted">—</span>
-            </div>
-          </div>
-
-          <!-- 5 -->
-          <div class="kpi-card" style="padding:1rem 1.15rem;">
-            <div class="kpi-top">
-              <span class="kpi-title">Valeur Devis (MAD)</span>
-              <div class="kpi-icon-box" style="width:30px; height:30px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-              </div>
-            </div>
-            <div class="kpi-value-row">
-              <span class="kpi-value" style="font-size:1.35rem; color:#0A3A2A;" id="kpiQuotesValue">—</span>
-            </div>
-          </div>
+          </section>
         </div>
 
-        <!-- Sub-Navigation Tabs Bar -->
-        <div class="sub-tabs-bar">
-          <button class="tab-btn active">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
-            Devis
-          </button>
-          <button class="tab-btn" data-on-click="h1">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-            Commandes
-          </button>
-          <button class="tab-btn" data-on-click="h2">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-            Approbations
-          </button>
-          <button class="tab-btn" data-on-click="h3">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline></svg>
-            Conversion
-          </button>
-          <button class="tab-btn" data-on-click="h4">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-            Analytics
-          </button>
-        </div>
-
-        <!-- 3-COLUMN BUILDER WORKSPACE (REFERENCE C) -->
-        <div class="quotation-builder-grid">
-          <!-- COLUMN 1: Select Customer & Product Catalog -->
-          <div class="col-selection">
-            <!-- 1. Select Customer -->
-            <div class="card" style="padding:1rem;">
-              <div class="card-header" style="margin-bottom:0.75rem;">
-                <span class="card-title" style="font-size:0.95rem;">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
-                  Sélectionner un Client
-                </span>
-                <button class="btn btn-outline" style="font-size:11px; padding:0.2rem 0.5rem;">+ Nouveau</button>
-              </div>
-
-              <input type="text" class="form-control" id="qbCustomerSearch" placeholder="Rechercher client..." style="margin-bottom:0.75rem; font-size:12px;">
-
-              <div class="table-responsive">
-                <table class="data-table" style="font-size:12px;">
-                  <thead>
-                    <tr>
-                      <th style="width:24px;">#</th>
-                      <th>Client</th>
-                      <th>Secteur</th>
-                    </tr>
-                  </thead>
-                  <tbody id="qbCustomerBody"><tr><td colspan="3" class="data-state data-state--loading" role="status">Chargement des clients…</td></tr></tbody>
-                </table>
-              </div>
+        <div class="modal-backdrop" id="sendModal" hidden>
+          <form class="modal" id="sendForm" novalidate aria-labelledby="sendTitle">
+            <h2 id="sendTitle">Envoyer le devis</h2>
+            <div class="form-grid">
+              <div class="field"><label for="sChannel">Canal</label><select class="form-control" id="sChannel"><option value="EMAIL">E-mail</option><option value="WHATSAPP">WhatsApp</option><option value="SMS">SMS</option></select></div>
+              <div class="field"><label for="sRecipient">Destinataire *</label><input class="form-control" id="sRecipient" required maxlength="255" placeholder="client@exemple.ma ou +212…"></div>
             </div>
-
-            <!-- 2. Product Catalog Selector -->
-            <div class="card" style="padding:1rem;">
-              <div class="card-header" style="margin-bottom:0.75rem;">
-                <span class="card-title" style="font-size:0.95rem;">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
-                  Catalogue Produits
-                </span>
-                <span title="Filtrer" style="cursor:pointer; color:#66756D;">🔍</span>
-              </div>
-
-              <input type="text" class="form-control" id="qbProductSearch" placeholder="Rechercher produit ou SKU..." style="margin-bottom:0.75rem; font-size:12px;">
-
-              <div class="table-responsive">
-                <table class="data-table" style="font-size:12px;">
-                  <thead>
-                    <tr>
-                      <th>SKU</th>
-                      <th>Article</th>
-                      <th>Prix</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody id="qbProductBody"><tr><td colspan="4" class="data-state data-state--loading" role="status">Chargement du catalogue…</td></tr></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- COLUMN 2: Build Quotation Editor -->
-          <div class="col-editor">
-            <div class="card">
-              <!-- Header with Quote Ref and Status -->
-              <div class="card-header">
-                <div class="card-title">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
-                  Éditeur de Devis
-                </div>
-                <div style="display:flex; align-items:center; gap:0.5rem;">
-                  <span class="badge badge-neutral" id="qbQuoteNumber" style="font-size:12px; font-weight:700;">Nouveau devis</span>
-                  <span class="badge badge-warning" id="qbQuoteStatus">Brouillon</span>
-                </div>
-              </div>
-
-              <!-- Selected Customer Info Banner -->
-              <div class="customer-info-banner">
-                <div style="width:40px; height:40px; border-radius:8px; background:#10B981; color:#FFFFFF; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path></svg>
-                </div>
-                <div style="flex:1; display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; font-size:12px;">
-                  <div id="qbCustomerBanner"><strong style="font-size:14px; color:#17251F;">Aucun client sélectionné</strong><div style="color:#4A5A52;">Choisissez un client dans la liste.</div></div>
-                </div>
-              </div>
-
-              <!-- Controls Row: Type, Validity, Currency, Terms -->
-              <div class="form-row-grid-4" style="margin-top:1.25rem;">
-                <div>
-                  <label style="font-size:11px; font-weight:600; color:#66756D; display:block; margin-bottom:4px;">Type d'Offre</label>
-                  <select class="form-control" style="font-size:12px;">
-                    <option selected>Offre Commerciale</option>
-                    <option>Appel d'Offres</option>
-                    <option>Renouvellement</option>
-                  </select>
-                </div>
-                <div>
-                  <label style="font-size:11px; font-weight:600; color:#66756D; display:block; margin-bottom:4px;">Validité</label>
-                  <select class="form-control" id="qbValidity" style="font-size:12px;"><option value="30" selected>30 jours</option><option value="15">15 jours</option><option value="60">60 jours</option></select>
-                </div>
-                <div>
-                  <label style="font-size:11px; font-weight:600; color:#66756D; display:block; margin-bottom:4px;">Devise</label>
-                  <input type="text" class="form-control" value="MAD" readonly style="font-size:12px; font-weight:700; background:#F8FAF9;">
-                </div>
-                <div>
-                  <label style="font-size:11px; font-weight:600; color:#66756D; display:block; margin-bottom:4px;">Conditions de Paiement</label>
-                  <select class="form-control" id="qbTerms" style="font-size:12px;"><option value="NET_30" selected>30 jours</option><option value="DUE_ON_RECEIPT">Paiement comptant</option><option value="DEPOSIT_30_70">30% acompte, 70% livraison</option></select>
-                </div>
-              </div>
-
-              <!-- Quote Items Table -->
-              <div style="margin-top:1.5rem;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
-                  <strong style="font-size:13px; color:#17251F;" id="qbItemsCount">Articles du devis (0)</strong>
-                  <span style="font-size:12px; color:#4A5A52;">Ajoutez des articles depuis le catalogue.</span>
-                </div>
-
-                <div class="table-responsive">
-                  <table class="data-table">
-                    <thead>
-                      <tr>
-                        <th style="width:24px;">#</th>
-                        <th>Article / Description</th>
-                        <th style="width:60px;">Qté</th>
-                        <th>Prix Unitaire (MAD)</th>
-                        <th style="width:80px;">Remise</th>
-                        <th>Total HT (MAD)</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody id="qbItemsBody"><tr><td colspan="7" class="data-state data-state--empty" role="status">Aucun article.</td></tr></tbody>
-                  </table>
-                </div>
-              </div>
-
-              <!-- Totals and Calculations -->
-              <p class="kpi-caption qb-totals-note" id="qbTotalsNote">Les montants sont calculés par le serveur (prix catalogue, remises autorisées, TVA).</p>
-              <div class="totals-summary-box">
-                <div style="display:flex; align-items:center; gap:0.5rem; font-size:12px; color:#66756D; cursor:pointer;">
-                  <span>📝</span> <u>Ajouter Note / Conditions Générales de Vente</u>
-                </div>
-
-                <div class="totals-numbers">
-                  <div class="total-line">
-                    <span>Sous-total HT :</span>
-                    <strong style="color:#17251F;" id="qbSubtotal">—</strong>
-                  </div>
-                  <div class="total-line">
-                    <span>Remise commerciale accordée :</span>
-                    <span style="color:#DC2626; font-weight:600;" id="qbDiscount">—</span>
-                  </div>
-                  <div class="total-line">
-                    <span>TVA :</span>
-                    <strong style="color:#17251F;" id="qbTax">—</strong>
-                  </div>
-                  <div class="total-line grand-total">
-                    <span>Total (TTC) :</span>
-                    <span id="qbTotal">—</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Action Bar -->
-              <div class="builder-actions-bar">
-                <div style="display:flex; gap:0.5rem;">
-                  <button class="btn btn-outline" id="qbSave" style="font-size:12px;">💾 Enregistrer et chiffrer</button>
-                </div>
-
-                <div style="display:flex; gap:0.5rem;">
-                  <button class="btn btn-soft-green" id="qbIssue" style="font-size:13px;" disabled>
-                    <span>↗</span> Émettre le devis
-                  </button>
-                  <button class="btn btn-primary" style="font-size:13px;" data-on-click="h6">
-                    <span>🛒</span> Créer la Commande
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- COLUMN 3: AI Assistant & Approval Tracker -->
-          <div class="col-assistant">
-            <!-- 1. AI Sales Assistant Recommendations -->
-            <div class="card" style="padding:1.15rem;">
-              <div class="card-header" style="margin-bottom:0.75rem;">
-                <span class="card-title" style="font-size:0.95rem;">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                  Assistant IA Commercial
-                </span>
-                <span class="badge badge-success" style="font-size:9px;">IA Active</span>
-              </div>
-
-              <!-- Subtabs: Recommendations & Insights -->
-              <div style="display:flex; border-bottom:1px solid #E4EBE6; gap:1rem; margin-bottom:0.85rem; font-size:12px;">
-                <span style="font-weight:700; color:#0A3A2A; border-bottom:2px solid #10B981; padding-bottom:4px; cursor:pointer;">Recommandations</span>
-                <span style="color:#66756D; padding-bottom:4px; cursor:pointer;">Analyses</span>
-              </div>
-
-              <!-- Recommendation 1 -->
-              <div style="background:#F8FAF9; border:1px solid #E4EBE6; border-radius:8px; padding:0.75rem; margin-bottom:0.65rem;">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                  <div style="display:flex; gap:0.5rem;">
-                    <span style="color:#10B981;">📊</span>
-                    <div>
-                      <strong style="font-size:12px; color:#17251F;">Remise Recommandée</strong>
-                      <div style="font-size:11px; color:#66756D; margin-top:2px;">Une remise globale de 5–8% maintient 24% de marge et maximise le taux de signature.</div>
-                    </div>
-                  </div>
-                  <button class="btn btn-outline" style="font-size:10px; padding:2px 8px;">Appliquer</button>
-                </div>
-              </div>
-
-              <!-- Recommendation 2 -->
-              <div style="background:#F8FAF9; border:1px solid #E4EBE6; border-radius:8px; padding:0.75rem; margin-bottom:0.65rem;">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                  <div style="display:flex; gap:0.5rem;">
-                    <span style="color:#2563EB;">📦</span>
-                    <div>
-                      <strong style="font-size:12px; color:#17251F;">Opportunité Cross-Sell</strong>
-                      <div style="font-size:11px; color:#66756D; margin-top:2px;">Ajouter « Clavier Mécanique » (+720 MAD) — commandé dans 78% des offres PC.</div>
-                    </div>
-                  </div>
-                  <button class="btn btn-outline" style="font-size:10px; padding:2px 8px;">Ajouter</button>
-                </div>
-              </div>
-
-              <!-- Recommendation 3 -->
-              <div style="background:#F8FAF9; border:1px solid #E4EBE6; border-radius:8px; padding:0.75rem;">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                  <div style="display:flex; gap:0.5rem;">
-                    <span style="color:#16A34A;">🛡️</span>
-                    <div>
-                      <strong style="font-size:12px; color:#17251F;">Conditions Optimisées</strong>
-                      <div style="font-size:11px; color:#66756D; margin-top:2px;">Recommander 30% d'acompte pour sécuriser l'engagement de ce profil client.</div>
-                    </div>
-                  </div>
-                  <button class="btn btn-outline" style="font-size:10px; padding:2px 8px;">Appliquer</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- 2. Approval Workflow Tracker (3-Stage) -->
-            <div class="card" style="padding:1.15rem;">
-              <div class="card-header" style="margin-bottom:1rem;">
-                <span class="card-title" style="font-size:0.95rem;">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-                  Workflow d'Approbation
-                </span>
-              </div>
-
-              <div class="approval-timeline">
-                <div class="timeline-line"></div>
-
-                <!-- Step 1 (Done) -->
-                <div class="timeline-step">
-                  <div class="step-marker done">✓</div>
-                  <div style="font-size:12px; line-height:1.3;">
-                    <strong style="color:#17251F;">Créé par vous</strong>
-                    <div style="font-size:10px; color:#66756D;">18 Nov 2026, 10:24</div>
-                  </div>
-                </div>
-
-                <!-- Step 2 (In Progress) -->
-                <div class="timeline-step">
-                  <div class="step-marker active">⏱</div>
-                  <div style="font-size:12px; line-height:1.3; flex:1;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                      <strong style="color:#D97706;">En validation Manager</strong>
-                      <span class="badge badge-warning" style="font-size:9px;">En cours</span>
-                    </div>
-                    <div style="font-size:11px; color:#66756D;">Manager Commercial (Seuil > 50k MAD)</div>
-                  </div>
-                </div>
-
-                <!-- Step 3 (Pending Final) -->
-                <div class="timeline-step">
-                  <div class="step-marker">3</div>
-                  <div style="font-size:12px; line-height:1.3;">
-                    <strong style="color:#66756D;">Validation Finale (≥ 150 000 MAD)</strong>
-                    <div style="font-size:11px; color:#94A39B;">Directeur des Ventes</div>
-                  </div>
-                </div>
-              </div>
-
-              <div style="margin-top:1.25rem; text-align:center;">
-                <a href="approvals.html" style="font-size:12px; color:#10B981; font-weight:600; text-decoration:none;">
-                  Voir le détail de l'approbation ↗
-                </a>
-              </div>
-            </div>
-          </div>
+            <p class="form-error" role="alert"></p>
+            <div class="modal-actions"><button type="button" class="btn btn-outline" data-close-modal>Annuler</button><button type="submit" class="btn btn-primary">Générer le lien</button></div>
+          </form>
         </div>
       </main>
     </div>
   </div>
-  <script src="js/pages/quote_builder.js"></script>
-
   <script src="js/app_shell.js"></script>
+  <script src="js/list_page.js"></script>
+  <script src="js/pages/quote_builder.js"></script>
 </body>
-<!-- csp-build: migrated -->
 </html>

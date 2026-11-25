@@ -5,96 +5,42 @@
   <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Selia — Logistics & Fulfillment</title>
+  <title>Selia — Logistique</title>
   <link rel="stylesheet" href="css/design_system.css">
   <link rel="stylesheet" href="css/pages/logistics.css">
-  <script src="js/pages/logistics.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
-    <!-- MASTER SIDEBAR -->
     <aside class="sidebar"><div data-app-nav></div></aside>
-
     <div class="main-wrapper">
-      <header class="topbar">
-        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
-        <div class="search-container">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher des clients, devis, commandes, agents...">
-          <span class="search-shortcut">Ctrl + K</span>
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
+        <div class="page-header">
+          <div class="page-title-group"><h1>Logistique</h1><p>Suivez la préparation et la livraison de vos commandes.</p></div>
+          <div class="page-actions"></div>
         </div>
-
-        <div class="topbar-actions">
-          <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel"></span>
-          </div>
-
-          <div class="icon-btn-badge" id="notifBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          </div>
-
-          <button class="btn-header-primary" id="btnQuickNew">
-            <span>+</span> Nouveau
-          </button>
-
-          <div class="user-topbar-pill">
-            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;"></div>
-            <div style="display:flex; flex-direction:column; line-height:1.2;">
-              <span style="font-weight:600; font-size:13px; color:#17251F;"></span>
-              <span style="font-size:11px; color:#66756D;"></span>
+        <section class="kpi-grid kpi-grid--compact" id="kpis" aria-label="Indicateurs"></section>
+        <section class="card list-card">
+          <div class="list-toolbar">
+            <div class="chip-row" role="group" aria-label="Filtrer" id="chips"></div>
+            <div class="toolbar-right">
+              <label class="search-inline"><span class="visually-hidden">Rechercher</span><input type="search" class="form-control" id="search" placeholder="Rechercher une expédition, un suivi…"></label>
+              <select class="select-pill" id="yearSelect" aria-label="Période"><option value="year" selected>Cette année</option><option value="all">Toutes les dates</option></select>
             </div>
           </div>
-        </div>
-      </header>
-
-      <main class="content-wrapper">
-<div class="alert-banner">
-        <span>🛡️</span>
-        <strong>Monotonic State Invariant:</strong> Shipment status transitions are strictly monotonic. Late or reordered carrier webhooks cannot regress terminal states (<code>DELIVERED</code> cannot be rewritten to <code>IN_TRANSIT</code>).
-      </div>
-
-      <!-- Shipment Tracking Stepper -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Active Shipment Lifecycle (SHP-20261118-0001)</div>
-          <span class="badge badge-transit">IN_TRANSIT</span>
-        </div>
-        <div class="stepper">
-          <div class="step-item step-active">
-            <div class="step-circle">✓</div>
-            <div class="step-label">Created</div>
+          <div class="table-responsive">
+            <table class="data-table responsive-table">
+              <thead><tr><th>N° expédition</th><th>Commande</th><th>Transporteur</th><th>Suivi</th><th>Livraison estimée</th><th>Statut</th></tr></thead>
+              <tbody id="rows"><tr><td colspan="6" class="data-state" role="status">Chargement…</td></tr></tbody>
+            </table>
           </div>
-          <div class="step-item step-active">
-            <div class="step-circle">✓</div>
-            <div class="step-label">Picking</div>
-          </div>
-          <div class="step-item step-active">
-            <div class="step-circle">✓</div>
-            <div class="step-label">Packed</div>
-          </div>
-          <div class="step-item step-active">
-            <div class="step-circle">✓</div>
-            <div class="step-label">Shipped</div>
-          </div>
-          <div class="step-item step-active">
-            <div class="step-circle">5</div>
-            <div class="step-label">In Transit</div>
-          </div>
-          <div class="step-item">
-            <div class="step-circle">6</div>
-            <div class="step-label">Out for Delivery</div>
-          </div>
-          <div class="step-item">
-            <div class="step-circle">7</div>
-            <div class="step-label">Delivered
+          <nav class="pager" id="pager" aria-label="Pagination"></nav>
+        </section>
       </main>
     </div>
   </div>
-
-
   <script src="js/app_shell.js"></script>
+  <script src="js/list_page.js"></script>
   <script src="js/pages/logistics.js"></script>
-
 </body>
-<!-- csp-build: migrated -->
 </html>

@@ -5,164 +5,52 @@
   <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Selia — Catalogue Produits & Grilles Tarifaires</title>
+  <title>Selia — Catalogue produits</title>
   <link rel="stylesheet" href="css/design_system.css">
-  <script src="js/pages/catalog.handlers.js" defer></script>
+  <link rel="stylesheet" href="css/pages/catalog.css">
 </head>
 <body>
   <div class="app-container">
-    <!-- MASTER SIDEBAR -->
     <aside class="sidebar"><div data-app-nav></div></aside>
-
-    <!-- MAIN APPLICATION WRAPPER -->
     <div class="main-wrapper">
-      <header class="topbar">
-        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
-        <div class="search-container">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher par référence SKU, désignation, catégorie...">
-          <span class="search-shortcut">Ctrl + K</span>
-        </div>
-
-        <div class="topbar-actions">
-          <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel"></span>
-          </div>
-          <button class="btn-header-primary" data-on-click="h1">+ Nouveau Produit</button>
-        </div>
-      </header>
-
-      <main class="content-wrapper">
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
         <div class="page-header">
-          <div class="page-title-group">
-            <h1>Catalogue Produits & Grilles Tarifaires</h1>
-            <p>Gestion centrale des articles, tarifs multi-devises, taux de TVA (20%) et seuils de marge autorisés.</p>
-          </div>
-
-          <div style="display:flex; gap:0.5rem;">
-            <button class="btn btn-outline">📥 Exporter CSV</button>
-            <button class="btn btn-primary">+ Ajouter Article</button>
-          </div>
+          <div class="page-title-group"><h1>Catalogue produits</h1><p>Gérez vos produits, prix et taux de TVA.</p></div>
+          <div class="page-actions"><button type="button" class="btn btn-primary" id="btnNew" data-icon="plus">Nouveau produit</button></div>
         </div>
+        <section class="kpi-grid kpi-grid--compact" id="kpis" aria-label="Indicateurs"></section>
+        <section class="card list-card">
+          <div class="list-toolbar">
+            <div class="chip-row" role="group" aria-label="Filtrer" id="chips"></div>
+            <div class="toolbar-right">
+              <label class="search-inline"><span class="visually-hidden">Rechercher</span><input type="search" class="form-control" id="search" placeholder="Rechercher un produit, un SKU…"></label>
 
-        <!-- KPI summary -->
-        <div class="kpi-grid kpi-grid--4">
-          <div class="kpi-card" style="padding:1rem;">
-            <span class="kpi-title">Articles au Catalogue</span>
-            <div class="kpi-value">148</div>
-            <span class="badge badge-success">100% Actifs</span>
-          </div>
-          <div class="kpi-card" style="padding:1rem;">
-            <span class="kpi-title">Valeur Stock Catalogue</span>
-            <div class="kpi-value" style="font-size:1.35rem; color:#0A3A2A;">3 420 800 MAD</div>
-            <span class="kpi-trend">↑ +8.2%</span>
-          </div>
-          <div class="kpi-card" style="padding:1rem;">
-            <span class="kpi-title">Marge Brute Moyenne</span>
-            <div class="kpi-value" style="color:#16A34A;">31.5%</div>
-            <span class="badge badge-success">Conforme aux règles</span>
-          </div>
-          <div class="kpi-card" style="padding:1rem;">
-            <span class="kpi-title">Articles en Alerte Stock</span>
-            <div class="kpi-value" style="color:#D97706;">3</div>
-            <span class="badge badge-warning">Réapprovisionnement</span>
-          </div>
-        </div>
-
-        <!-- Product Table Card -->
-        <div class="card" style="padding:1.25rem 1.5rem;">
-          <div class="card-header">
-            <span class="card-title">Liste des Références Officielles</span>
-            <div style="display:flex; gap:0.5rem;">
-              <select class="form-control" style="width:140px; font-size:12px;">
-                <option>Toutes Catégories</option>
-                <option>Hardware & IT</option>
-                <option>Services Cloud / IA</option>
-                <option>Abonnements SIP</option>
-              </select>
             </div>
           </div>
-
           <div class="table-responsive">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>SKU</th>
-                  <th>Désignation Article</th>
-                  <th>Type / UOM</th>
-                  <th>Prix de Base (HT)</th>
-                  <th>Coût Revient</th>
-                  <th>TVA (Maroc)</th>
-                  <th>Marge Plancher</th>
-                  <th>Stock Actuel</th>
-                  <th>Statut</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><code>PR-001</code></td>
-                  <td><strong>Laptop Pro 15"</strong><div style="font-size:11px; color:#66756D;">i7 • 16GB • 512GB SSD</div></td>
-                  <td>UNITAIRE</td>
-                  <td><strong>12 500,00 MAD</strong></td>
-                  <td>9 200,00 MAD</td>
-                  <td>20.00%</td>
-                  <td>15.00%</td>
-                  <td><span class="badge badge-success">34 unités</span></td>
-                  <td><span class="badge badge-success">ACTIF</span></td>
-                </tr>
-                <tr>
-                  <td><code>PR-002</code></td>
-                  <td><strong>Écran 27" 4K</strong><div style="font-size:11px; color:#66756D;">IPS • HDR • USB-C</div></td>
-                  <td>UNITAIRE</td>
-                  <td><strong>3 200,00 MAD</strong></td>
-                  <td>2 100,00 MAD</td>
-                  <td>20.00%</td>
-                  <td>18.00%</td>
-                  <td><span class="badge badge-success">56 unités</span></td>
-                  <td><span class="badge badge-success">ACTIF</span></td>
-                </tr>
-                <tr>
-                  <td><code>PR-003</code></td>
-                  <td><strong>Station Dock USB-C</strong><div style="font-size:11px; color:#66756D;">Multi-ports • 4K • 100W PD</div></td>
-                  <td>UNITAIRE</td>
-                  <td><strong>950,00 MAD</strong></td>
-                  <td>580,00 MAD</td>
-                  <td>20.00%</td>
-                  <td>20.00%</td>
-                  <td><span class="badge badge-success">128 unités</span></td>
-                  <td><span class="badge badge-success">ACTIF</span></td>
-                </tr>
-                <tr>
-                  <td><code>SRV-AI-4B</code></td>
-                  <td><strong>Cœur Agent IA Dédié (Qwen 3.5 4B)</strong><div style="font-size:11px; color:#66756D;">GPU RTX 4060 Local • Déterministe</div></td>
-                  <td>SERVICE / MOIS</td>
-                  <td><strong>3 500,00 MAD</strong></td>
-                  <td>1 800,00 MAD</td>
-                  <td>20.00%</td>
-                  <td>25.00%</td>
-                  <td><span class="badge badge-info">Illimité</span></td>
-                  <td><span class="badge badge-success">ACTIF</span></td>
-                </tr>
-                <tr>
-                  <td><code>LIC-VOICE-SIP</code></td>
-                  <td><strong>Ligne Vocale Omnicanal SIP/WebRTC</strong><div style="font-size:11px; color:#66756D;">Darija / Arabe / Français / Anglais</div></td>
-                  <td>ABONNEMENT / LIGNE</td>
-                  <td><strong>1 200,00 MAD</strong></td>
-                  <td>450,00 MAD</td>
-                  <td>20.00%</td>
-                  <td>15.00%</td>
-                  <td><span class="badge badge-info">20 Canaux</span></td>
-                  <td><span class="badge badge-success">ACTIF</span></td>
-                </tr>
-              </tbody>
+            <table class="data-table responsive-table">
+              <thead><tr><th>SKU</th><th>Produit</th><th>Catégorie</th><th class="num">Prix HT (MAD)</th><th>TVA</th><th>Statut</th></tr></thead>
+              <tbody id="rows"><tr><td colspan="6" class="data-state" role="status">Chargement…</td></tr></tbody>
             </table>
           </div>
+          <nav class="pager" id="pager" aria-label="Pagination"></nav>
+        </section>
+
+
+        <div class="modal-backdrop" id="newModal" hidden>
+          <form class="modal" id="newModalForm" novalidate aria-labelledby="newModalTitle">
+            <h2 id="newModalTitle">Nouveau produit</h2>
+            <div class="form-grid"><div class="field"><label for="pSku">SKU *</label><input class="form-control" id="pSku" type="text" maxlength="100" required></div><div class="field"><label for="pName">Nom *</label><input class="form-control" id="pName" type="text" maxlength="255" required></div><div class="field"><label for="pCategory">Catégorie</label><input class="form-control" id="pCategory" type="text" ></div><div class="field"><label for="pUom">Unité</label><select class="form-control" id="pUom"><option value="UNIT">Unité</option><option value="KG">Kilogramme</option><option value="HOUR">Heure</option><option value="M2">m²</option></select></div><div class="field"><label for="pPrice">Prix HT (MAD) *</label><input class="form-control" id="pPrice" type="number" min="0" step="0.01" required></div><div class="field"><label for="pCost">Coût (MAD)</label><input class="form-control" id="pCost" type="number" min="0" step="0.01"></div><div class="field"><label for="pTax">TVA (%)</label><input class="form-control" id="pTax" type="number" min="0" max="100" step="0.01" value="20"></div><div class="field"><label for="pType">Type</label><select class="form-control" id="pType"><option value="PHYSICAL">Produit</option><option value="SERVICE">Service</option></select></div><div class="field span-2"><label for="pDesc">Description</label><textarea class="form-control" id="pDesc" rows="2"></textarea></div></div>
+            <p class="form-error" role="alert"></p>
+            <div class="modal-actions"><button type="button" class="btn btn-outline" data-close-modal>Annuler</button><button type="submit" class="btn btn-primary">Créer le produit</button></div>
+          </form>
         </div>
       </main>
     </div>
   </div>
-
   <script src="js/app_shell.js"></script>
+  <script src="js/list_page.js"></script>
+  <script src="js/pages/catalog.js"></script>
 </body>
-<!-- csp-build: migrated -->
 </html>

@@ -5,178 +5,54 @@
   <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Selia — Procurement & Multi-Warehouse</title>
+  <title>Selia — Achats & fournisseurs</title>
   <link rel="stylesheet" href="css/design_system.css">
   <link rel="stylesheet" href="css/pages/procurement.css">
-  <script src="js/pages/procurement.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
-    <!-- MASTER SIDEBAR -->
     <aside class="sidebar"><div data-app-nav></div></aside>
-
     <div class="main-wrapper">
-      <header class="topbar">
-        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
-        <div class="search-container">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher des clients, devis, commandes, agents...">
-          <span class="search-shortcut">Ctrl + K</span>
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
+        <div class="page-header">
+          <div class="page-title-group"><h1>Achats & fournisseurs</h1><p>Pilotez vos bons de commande et vos fournisseurs.</p></div>
+          <div class="page-actions"><button type="button" class="btn btn-primary" id="btnNew" data-icon="plus">Nouveau fournisseur</button></div>
         </div>
-
-        <div class="topbar-actions">
-          <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel"></span>
-          </div>
-
-          <div class="icon-btn-badge" id="notifBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          </div>
-
-          <button class="btn-header-primary" id="btnQuickNew">
-            <span>+</span> Nouveau
-          </button>
-
-          <div class="user-topbar-pill">
-            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;"></div>
-            <div style="display:flex; flex-direction:column; line-height:1.2;">
-              <span style="font-weight:600; font-size:13px; color:#17251F;"></span>
-              <span style="font-size:11px; color:#66756D;"></span>
+        <section class="kpi-grid kpi-grid--compact" id="kpis" aria-label="Indicateurs"></section>
+        <section class="card list-card">
+          <div class="list-toolbar">
+            <div class="chip-row" role="group" aria-label="Filtrer" id="chips"></div>
+            <div class="toolbar-right">
+              <label class="search-inline"><span class="visually-hidden">Rechercher</span><input type="search" class="form-control" id="search" placeholder="Rechercher un bon, un fournisseur…"></label>
+              <select class="select-pill" id="yearSelect" aria-label="Période"><option value="year" selected>Cette année</option><option value="all">Toutes les dates</option></select>
             </div>
           </div>
+          <div class="table-responsive">
+            <table class="data-table responsive-table">
+              <thead><tr><th>N° bon</th><th>Fournisseur</th><th class="num">Montant (MAD)</th><th>Créé le</th><th>Livraison prévue</th><th>Statut</th></tr></thead>
+              <tbody id="rows"><tr><td colspan="6" class="data-state" role="status">Chargement…</td></tr></tbody>
+            </table>
+          </div>
+          <nav class="pager" id="pager" aria-label="Pagination"></nav>
+        </section>
+        <section class="card sub-card list-card"><div class="card-header"><h2 class="card-title">Fournisseurs</h2></div>
+          <div class="table-responsive"><table class="data-table responsive-table"><thead><tr><th>Fournisseur</th><th>Contact</th><th>E-mail</th><th>Téléphone</th><th>Conditions</th></tr></thead>
+          <tbody id="supplierRows"><tr><td colspan="5" class="data-state">Chargement…</td></tr></tbody></table></div></section>
+
+        <div class="modal-backdrop" id="newModal" hidden>
+          <form class="modal" id="newModalForm" novalidate aria-labelledby="newModalTitle">
+            <h2 id="newModalTitle">Nouveau fournisseur</h2>
+            <div class="form-grid"><div class="field"><label for="sCode">Code *</label><input class="form-control" id="sCode" type="text" maxlength="64" required></div><div class="field"><label for="sName">Raison sociale *</label><input class="form-control" id="sName" type="text" maxlength="255" required></div><div class="field"><label for="sContact">Contact</label><input class="form-control" id="sContact" type="text" ></div><div class="field"><label for="sPhone">Téléphone</label><input class="form-control" id="sPhone" type="tel" ></div><div class="field span-2"><label for="sEmail">E-mail</label><input class="form-control" id="sEmail" type="email" ></div><div class="field"><label for="sTerms">Conditions de paiement</label><select class="form-control" id="sTerms"><option value="NET_30">30 jours</option><option value="NET_60">60 jours</option><option value="DUE_ON_RECEIPT">À réception</option></select></div></div>
+            <p class="form-error" role="alert"></p>
+            <div class="modal-actions"><button type="button" class="btn btn-outline" data-close-modal>Annuler</button><button type="submit" class="btn btn-primary">Créer le fournisseur</button></div>
+          </form>
         </div>
-      </header>
-
-      <main class="content-wrapper">
-<div class="alert-banner alert-info">
-        <span>🛡️</span>
-        <strong>Invariant Guard:</strong> Over-receipt is strictly rejected by deterministic database validation. Inter-warehouse movements require ledger-backed <code>TRANSFER_OUT</code> / <code>TRANSFER_IN</code> parity.
-      </div>
-
-      <div class="tabs">
-        <button class="tab-btn active" data-on-click="h2">Purchase Orders</button>
-        <button class="tab-btn" data-on-click="h3">Suppliers Registry</button>
-        <button class="tab-btn" data-on-click="h4">Stock Transfers</button>
-      </div>
-
-      <!-- Purchase Orders Tab -->
-      <div id="tab-pos" class="card">
-        <div class="card-header">
-          <div class="card-title">Purchase Orders & Goods Receipt</div>
-          <button class="btn btn-primary" data-on-click="h5">+ New Purchase Order</button>
-        </div><div class="table-responsive"><table class="data-table">
-          <thead>
-            <tr>
-              <th>PO Number</th>
-              <th>Supplier</th>
-              <th>Warehouse</th>
-              <th>Status</th>
-              <th>Total (MAD)</th>
-              <th>Expected Date</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="poTableBody">
-            <tr>
-              <td><strong>PO-20261118-0001</strong></td>
-              <td>TechDistro Maroc S.A.R.L.</td>
-              <td>Casablanca Central Hub</td>
-              <td><span class="badge badge-issued">ISSUED</span></td>
-              <td>45,000.00</td>
-              <td>2026-11-25</td>
-              <td>
-                <button class="btn btn-outline" data-on-click="h6">📥 Goods Receipt</button>
-              </td>
-            </tr>
-            <tr>
-              <td><strong>PO-20261118-0002</strong></td>
-              <td>Atlas Components SARL</td>
-              <td>Tangier Free Zone Hub</td>
-              <td><span class="badge badge-approved">APPROVED</span></td>
-              <td>12,500.00</td>
-              <td>2026-11-30</td>
-              <td>
-                <button class="btn btn-outline">🚀 Issue PO</button>
-              </td>
-            </tr>
-          </tbody>
-        </table></div>
-      </div>
-
-      <!-- Suppliers Tab -->
-      <div id="tab-suppliers" class="card" style="display:none;">
-        <div class="card-header">
-          <div class="card-title">Suppliers Registry & Catalogs</div>
-          <button class="btn btn-primary">+ Add Supplier</button>
-        </div><div class="table-responsive"><table class="data-table">
-          <thead>
-            <tr>
-              <th>Code</th>
-              <th>Supplier Name</th>
-              <th>Contact</th>
-              <th>Payment Terms</th>
-              <th>Currency</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>SUP-TDM</strong></td>
-              <td>TechDistro Maroc S.A.R.L.</td>
-              <td>Ahmed Alami (ahmed@techdistro.ma)</td>
-              <td>NET_30</td>
-              <td>MAD</td>
-              <td><span class="badge badge-approved">ACTIVE</span></td>
-            </tr>
-            <tr>
-              <td><strong>SUP-ATLAS</strong></td>
-              <td>Atlas Components SARL</td>
-              <td>Fatima Zahra (f.zahra@atlascomp.ma)</td>
-              <td>NET_60</td>
-              <td>MAD</td>
-              <td><span class="badge badge-approved">ACTIVE</span></td>
-            </tr>
-          </tbody>
-        </table></div>
-      </div>
-
-      <!-- Transfers Tab -->
-      <div id="tab-transfers" class="card" style="display:none;">
-        <div class="card-header">
-          <div class="card-title">Inter-Warehouse Stock Transfers</div>
-          <button class="btn btn-primary">+ New Transfer Request</button>
-        </div><div class="table-responsive"><table class="data-table">
-          <thead>
-            <tr>
-              <th>Transfer Number</th>
-              <th>Origin Warehouse</th>
-              <th>Destination Warehouse</th>
-              <th>Status</th>
-              <th>Items</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>TRF-20261118-0001</strong></td>
-              <td>Casablanca Central Hub</td>
-              <td>Rabat Retail Depot</td>
-              <td><span class="badge badge-issued">IN_TRANSIT</span></td>
-              <td>2 SKUs (150 units)</td>
-              <td>
-                <button class="btn btn-outline" data-on-click="h7">📥 Receive Transfer</button>
-              </td>
-            </tr>
-          </tbody>
-        </table></div>
       </main>
     </div>
   </div>
-
-
   <script src="js/app_shell.js"></script>
+  <script src="js/list_page.js"></script>
   <script src="js/pages/procurement.js"></script>
-
 </body>
-<!-- csp-build: migrated -->
 </html>

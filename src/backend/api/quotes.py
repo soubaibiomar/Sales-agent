@@ -253,6 +253,50 @@ async def _load_quote_from_link(db: AsyncSession, quote_id: str, token: str) -> 
     return quote
 
 
+@router.get("/{quote_id}/public")
+async def customer_view_quote(
+    quote_id: str,
+    token: str = Query(..., min_length=10, max_length=4096),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """
+    Public, read-only view of a sent quote through its signed link (Selia quote page).
+    Same verification as accept/reject: the token is bound to tenant, quote and version.
+    Only customer-facing fields are returned (no costs, margins or approval notes).
+    """
+    quote = await _load_quote_from_link(db, quote_id, token)
+    items = (await db.execute(
+        select(QuoteItem).where(QuoteItem.quote_id == quote.id, QuoteItem.tenant_id == quote.tenant_id)
+        .order_by(QuoteItem.created_at.asc())
+    )).scalars().all()
+    from src.backend.models.entities import Tenant, Account
+    tenant = (await db.execute(select(Tenant).where(Tenant.id == quote.tenant_id))).scalars().first()
+    account = None
+    if quote.account_id:
+        account = (await db.execute(select(Account).where(Account.id == quote.account_id,
+                                                          Account.tenant_id == quote.tenant_id))).scalars().first()
+    return {
+        "quote_number": quote.quote_number,
+        "status": quote.status,
+        "currency": quote.currency,
+        "seller_name": tenant.name if tenant else None,
+        "customer_name": account.name if account else None,
+        "subtotal_cents": quote.subtotal_cents,
+        "discount_total_cents": quote.discount_total_cents,
+        "tax_total_cents": quote.tax_total_cents,
+        "grand_total_cents": quote.grand_total_cents,
+        "payment_terms": quote.payment_terms,
+        "valid_until": quote.valid_until.isoformat() if quote.valid_until else None,
+        "issued_at": quote.issued_at.isoformat() if quote.issued_at else None,
+        "accepted_at": quote.accepted_at.isoformat() if quote.accepted_at else None,
+        "items": [{
+            "name": i.name_snapshot, "sku": i.sku_snapshot, "quantity": i.quantity, "uom": i.uom_snapshot,
+            "unit_price_cents": i.unit_price_cents, "discount_percent": str(i.discount_percent),
+            "subtotal_cents": i.subtotal_cents, "tax_rate_percent": str(i.tax_rate_percent), "total_cents": i.total_cents
+        } for i in items],
+    }
+
+
 @router.post("/{quote_id}/accept")
 async def customer_accept_quote(
     quote_id: str,

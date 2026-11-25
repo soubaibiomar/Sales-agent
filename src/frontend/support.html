@@ -5,162 +5,54 @@
   <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Selia — Customer Support & Returns</title>
+  <title>Selia — Support & SAV</title>
   <link rel="stylesheet" href="css/design_system.css">
   <link rel="stylesheet" href="css/pages/support.css">
-  <script src="js/pages/support.handlers.js" defer></script>
 </head>
 <body>
   <div class="app-container">
-    <!-- MASTER SIDEBAR -->
     <aside class="sidebar"><div data-app-nav></div></aside>
-
     <div class="main-wrapper">
-      <header class="topbar">
-        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
-        <div class="search-container">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher des clients, devis, commandes, agents...">
-          <span class="search-shortcut">Ctrl + K</span>
+      <header class="topbar"></header>
+      <main class="content-wrapper" id="main">
+        <div class="page-header">
+          <div class="page-title-group"><h1>Support & SAV</h1><p>Traitez les demandes clients et les retours.</p></div>
+          <div class="page-actions"><button type="button" class="btn btn-primary" id="btnNew" data-icon="plus">Nouveau ticket</button></div>
         </div>
-
-        <div class="topbar-actions">
-          <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel"></span>
-          </div>
-
-          <div class="icon-btn-badge" id="notifBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          </div>
-
-          <button class="btn-header-primary" id="btnQuickNew">
-            <span>+</span> Nouveau
-          </button>
-
-          <div class="user-topbar-pill">
-            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;"></div>
-            <div style="display:flex; flex-direction:column; line-height:1.2;">
-              <span style="font-weight:600; font-size:13px; color:#17251F;"></span>
-              <span style="font-size:11px; color:#66756D;"></span>
+        <section class="kpi-grid kpi-grid--compact" id="kpis" aria-label="Indicateurs"></section>
+        <section class="card list-card">
+          <div class="list-toolbar">
+            <div class="chip-row" role="group" aria-label="Filtrer" id="chips"></div>
+            <div class="toolbar-right">
+              <label class="search-inline"><span class="visually-hidden">Rechercher</span><input type="search" class="form-control" id="search" placeholder="Rechercher un ticket, un client…"></label>
+              <select class="select-pill" id="yearSelect" aria-label="Période"><option value="year" selected>Cette année</option><option value="all">Toutes les dates</option></select>
             </div>
           </div>
+          <div class="table-responsive">
+            <table class="data-table responsive-table">
+              <thead><tr><th>N° ticket</th><th>Sujet</th><th>Client</th><th>Priorité</th><th>Créé le</th><th>Statut</th></tr></thead>
+              <tbody id="rows"><tr><td colspan="6" class="data-state" role="status">Chargement…</td></tr></tbody>
+            </table>
+          </div>
+          <nav class="pager" id="pager" aria-label="Pagination"></nav>
+        </section>
+        <section class="card sub-card list-card"><div class="card-header"><h2 class="card-title">Retours (RMA)</h2></div>
+          <div class="table-responsive"><table class="data-table responsive-table"><thead><tr><th>N° retour</th><th>Motif</th><th>Action demandée</th><th class="num">Remboursement (MAD)</th><th>Statut</th></tr></thead>
+          <tbody id="rmaRows"><tr><td colspan="5" class="data-state">Chargement…</td></tr></tbody></table></div></section>
+
+        <div class="modal-backdrop" id="newModal" hidden>
+          <form class="modal" id="newModalForm" novalidate aria-labelledby="newModalTitle">
+            <h2 id="newModalTitle">Nouveau ticket</h2>
+            <div class="form-grid"><div class="field span-2"><label for="tSubject">Sujet *</label><input class="form-control" id="tSubject" type="text" maxlength="255" required></div><div class="field"><label for="tAccount">Client</label><select class="form-control" id="tAccount"><option value="">Sans client</option></select></div><div class="field"><label for="tPriority">Priorité</label><select class="form-control" id="tPriority"><option value="MEDIUM">Moyenne</option><option value="LOW">Basse</option><option value="HIGH">Haute</option><option value="URGENT">Urgente</option></select></div><div class="field span-2"><label for="tCategory">Catégorie</label><select class="form-control" id="tCategory"><option value="GENERAL">Général</option><option value="DELIVERY">Livraison</option><option value="BILLING">Facturation</option><option value="PRODUCT">Produit</option><option value="WARRANTY">Garantie</option></select></div><div class="field span-2"><label for="tDesc">Description *</label><textarea class="form-control" id="tDesc" rows="3" required></textarea></div></div>
+            <p class="form-error" role="alert"></p>
+            <div class="modal-actions"><button type="button" class="btn btn-outline" data-close-modal>Annuler</button><button type="submit" class="btn btn-primary">Créer le ticket</button></div>
+          </form>
         </div>
-      </header>
-
-      <main class="content-wrapper">
-<div class="alert-banner">
-        <span>🛡️</span>
-        <strong>Return Policy Invariant:</strong> Stock restoration and refund release strictly require a verified return inspection. Inspection outcome <code>RESTOCK</code> increments inventory, while <code>QUARANTINE</code> and <code>SCRAP</code> do not add available balance.
-      </div>
-
-      <div class="tabs">
-        <button class="tab-btn active" data-on-click="h2">Support Tickets</button>
-        <button class="tab-btn" data-on-click="h3">Return Authorizations (RMA)</button>
-        <button class="tab-btn" data-on-click="h4">Warranty Claims</button>
-      </div>
-
-      <!-- Tickets Tab -->
-      <div id="tab-tickets" class="card">
-        <div class="card-header">
-          <div class="card-title">Active Support Tickets</div>
-          <button class="btn btn-primary" data-on-click="h5">+ New Ticket</button>
-        </div><div class="table-responsive"><table class="data-table">
-          <thead>
-            <tr>
-              <th>Ticket #</th>
-              <th>Subject</th>
-              <th>Category</th>
-              <th>Priority</th>
-              <th>Status</th>
-              <th>Created</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>TCK-20261118-0001</strong></td>
-              <td>Damaged package received on delivery</td>
-              <td>DAMAGED_GOODS</td>
-              <td><span style="color:var(--status-danger); font-weight:700;">HIGH</span></td>
-              <td><span class="badge badge-open">OPEN</span></td>
-              <td>2 hours ago</td>
-              <td>
-                <button class="btn btn-outline" data-on-click="h6">💬 Messages</button>
-              </td>
-            </tr>
-          </tbody>
-        </table></div>
-      </div>
-
-      <!-- RMAs Tab -->
-      <div id="tab-rmas" class="card" style="display:none;">
-        <div class="card-header">
-          <div class="card-title">Return Merchandise Authorizations (RMA)</div>
-          <button class="btn btn-primary">+ Request RMA</button>
-        </div><div class="table-responsive"><table class="data-table">
-          <thead>
-            <tr>
-              <th>RMA #</th>
-              <th>Order Ref</th>
-              <th>Requested Action</th>
-              <th>Status</th>
-              <th>Inspection Outcome</th>
-              <th>Refund Amount</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>RMA-20261118-0001</strong></td>
-              <td>ORD-20261118-0012</td>
-              <td>REFUND</td>
-              <td><span class="badge badge-open">RECEIVED</span></td>
-              <td>Pending Inspection</td>
-              <td>—</td>
-              <td>
-                <button class="btn btn-primary" data-on-click="h7">🔍 Inspect & Settle</button>
-              </td>
-            </tr>
-          </tbody>
-        </table></div>
-      </div>
-
-      <!-- Warranties Tab -->
-      <div id="tab-warranties" class="card" style="display:none;">
-        <div class="card-header">
-          <div class="card-title">Hardware Warranty Claims</div>
-        </div><div class="table-responsive"><table class="data-table">
-          <thead>
-            <tr>
-              <th>Claim #</th>
-              <th>SKU</th>
-              <th>Valid Until</th>
-              <th>Reason</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>WAR-20261118-0001</strong></td>
-              <td>LAPTOP-PRO-16</td>
-              <td>2027-11-18</td>
-              <td>Defective power connector</td>
-              <td><span class="badge badge-resolved">VALIDATED</span></td>
-              <td>
-                <button class="btn btn-outline">Review</button>
-              </td>
-            </tr>
-          </tbody>
-        </table></div>
       </main>
     </div>
   </div>
-
-
   <script src="js/app_shell.js"></script>
+  <script src="js/list_page.js"></script>
   <script src="js/pages/support.js"></script>
-
 </body>
-<!-- csp-build: migrated -->
 </html>

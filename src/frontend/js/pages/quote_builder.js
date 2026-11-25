@@ -126,6 +126,7 @@
     $('qbQuoteNumber').textContent = quote ? quote.quote_number : 'Nouveau devis';
     // The server allows issuing PRICED quotes (or APPROVED ones when approval was required).
     $('qbIssue').disabled = !(priced && (quote.status === 'APPROVED' || (quote.status === 'PRICED' && !quote.requires_approval)));
+    $('qbSend').disabled = !(quote && (quote.status === 'ISSUED' || quote.status === 'SENT'));
   }
 
   function markDirty() {
@@ -222,6 +223,19 @@
     $('qbSave').addEventListener('click', save);
     $('qbIssue').addEventListener('click', issue);
 
+    $('qbSend').addEventListener('click', function () { window.SalesAI.openModal('sendModal'); });
+    $('sendForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var to = $('sRecipient').value.trim();
+      if (!to) { e.target.querySelector('.form-error').textContent = 'Le destinataire est obligatoire.'; return; }
+      window.SeliaList.submitForm(e.target, '/api/v1/quotes/' + encodeURIComponent(quote.id) + '/send',
+        { recipient_identifier: to, channel_type: $('sChannel').value }, 'Lien d’acceptation généré.', function (d) {
+          quote.status = d.quote_status || 'SENT';
+          $('qbLink').value = location.origin + location.pathname.replace(/[^/]+$/, '') + String(d.acceptance_path || '').replace(/^\//, '');
+          $('qbLinkBox').hidden = false; renderTotals(); loadKpis();
+        });
+    });
+    $('qbCopy').addEventListener('click', function () { $('qbLink').select(); if (navigator.clipboard) { navigator.clipboard.writeText($('qbLink').value); } toast('Lien copié.'); });
     renderBanner(); renderLines(); renderTotals(); loadKpis();
 
     V.getJson('/api/v1/crm/accounts?limit=200&is_active=true').then(function (res) {

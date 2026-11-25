@@ -1,22 +1,2 @@
-/* Extracted from checkout.html by scripts/frontend_csp_build.py */
-.content { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; max-width: 900px; margin: 0 auto; width: 100%; }
-    
-    .panel { background: var(--bg-neutral); border-radius: 8px; border: 1px solid var(--border-muted); padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .panel-title { font-size: 1.05rem; font-weight: 700; color: var(--primary); margin-bottom: 1rem; border-bottom: 1px solid var(--border-muted); padding-bottom: 0.5rem; }
-    
-    .timer-banner { background: #FEF3C7; border: 1px solid #FCD34D; color: #92400E; padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.875rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
-    .timer-count { font-weight: 700; font-size: 1rem; font-family: monospace; }
-    
-    .form-group { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; }
-    .form-label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
-    .form-control { padding: 0.6rem 0.85rem; border: 1px solid var(--border-muted); border-radius: 6px; font-size: 0.875rem; }
-    
-    .btn { padding: 0.65rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; border: none; }
-    .btn-primary { background: var(--primary); color: #fff; width: 100%; }
-    .btn-primary:hover { background: var(--primary-hover); }
-    
-    .breakdown-card { background: #F8FAFC; border: 1px solid var(--border-muted); border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem; }
-    .breakdown-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.5rem; }
-    .breakdown-total { font-size: 1.1rem; font-weight: 700; color: var(--primary); border-top: 1px solid var(--border-muted); padding-top: 0.5rem; margin-top: 0.5rem; }
-    
-    .sandbox-notice { font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 1rem; }
+/* Selia — Paiements (list layout in design_system.css) */
+.sub-card { margin-top: 18px; }

@@ -1,7 +1,7 @@
 """Generate a Selia application page with the standard, CSP-clean skeleton.
 
 Usage (from the repository root):
-    python scripts/selia_page.py <page> "<Title>" <body_fragment.html> [--charts]
+    python scripts/selia_page.py <page> "<Title>" <body_fragment.html> [--charts] [--list]
 
 The fragment is placed inside <main class="content-wrapper">. The page loads, in order:
 api_client.js (auth guard) -> data_views.js -> design_system.css + css/pages/<page>.css,
@@ -34,21 +34,22 @@ TEMPLATE = """<!DOCTYPE html>
     </div>
   </div>
 {charts}  <script src="js/app_shell.js"></script>
-  <script src="js/pages/{page}.js"></script>
+{extra}  <script src="js/pages/{page}.js"></script>
 </body>
 </html>
 """
 
 
-def build(page: str, title: str, body: str, charts: bool) -> Path:
+def build(page: str, title: str, body: str, charts: bool, list_page: bool = False) -> Path:
     out = ROOT / f"{page}.html"
     body = "\n".join(("        " + line) if line.strip() else "" for line in body.strip("\n").splitlines())
     out.write_text(TEMPLATE.format(page=page, title=title, body=body,
-                                   charts='  <script src="js/charts.js"></script>\n' if charts else ""),
+                                   charts='  <script src="js/charts.js"></script>\n' if charts else "",
+                                   extra='  <script src="js/list_page.js"></script>\n' if list_page else ""),
                    encoding="utf-8")
     return out
 
 
 if __name__ == "__main__":
     page, title, fragment = sys.argv[1], sys.argv[2], Path(sys.argv[3])
-    print(build(page, title, fragment.read_text(encoding="utf-8"), "--charts" in sys.argv))
+    print(build(page, title, fragment.read_text(encoding="utf-8"), "--charts" in sys.argv, "--list" in sys.argv))

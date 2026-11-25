@@ -5,128 +5,24 @@
   <script src="js/data_views.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
   <title>Selia — Consultation du devis</title>
   <link rel="stylesheet" href="css/design_system.css">
   <link rel="stylesheet" href="css/pages/quote_view.css">
-  <script src="js/pages/quote_view.handlers.js" defer></script>
 </head>
-<body>
-  <div class="app-container">
-    <!-- MASTER SIDEBAR -->
-    <aside class="sidebar"><div data-app-nav></div></aside>
-
-    <div class="main-wrapper">
-      <header class="topbar">
-        <button class="mobile-menu-btn" id="mobileMenuToggle">☰</button>
-        <div class="search-container">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="globalSearchInput" placeholder="Rechercher des clients, devis, commandes, agents...">
-          <span class="search-shortcut">Ctrl + K</span>
-        </div>
-
-        <div class="topbar-actions">
-          <div class="tenant-selector-pill" id="tenantSelectorPill">
-            <span>🏢</span> <span id="currentTenantLabel"></span>
-          </div>
-
-          <div class="icon-btn-badge" id="notifBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          </div>
-
-          <button class="btn-header-primary" id="btnQuickNew">
-            <span>+</span> Nouveau
-          </button>
-
-          <div class="user-topbar-pill">
-            <div class="user-avatar" style="width:34px; height:34px; background:#082C22; color:#FFFFFF; border:2px solid #10B981;"></div>
-            <div style="display:flex; flex-direction:column; line-height:1.2;">
-              <span style="font-weight:600; font-size:13px; color:#17251F;"></span>
-              <span style="font-size:11px; color:#66756D;"></span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main class="content-wrapper">
-<div class="quote-container">
-    <div class="quote-header">
-      <div>
-        <div class="company-brand">SALES AI PLATFORM</div>
-        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Casablanca Nearshore, Morocco</div>
-      </div>
-      <div class="doc-title">
-        <h2>FORMAL PRO-FORMA QUOTATION</h2>
-        <div class="doc-number">Quote #: QT-202611-BMCE89</div>
-        <div style="margin-top:0.35rem;"><span class="badge-status badge-issued">ISSUED &amp; VALID</span></div>
-      </div>
-    </div>
-
-    <div class="party-details">
-      <div>
-        <div class="party-title">Issued To:</div>
-        <div style="font-weight: 700;">BMCE Bank of Africa</div>
-        <div>Attn: Direction des Systemes d'Information</div>
-        <div>Boulevard Hassan II, Casablanca</div>
-        <div>Email: dsi-achats@bmce.ma</div>
-      </div>
-      <div>
-        <div class="party-title">Terms &amp; Validity:</div>
-        <div><strong>Valid Until:</strong> 30 Days from Issuance</div>
-        <div><strong>Payment Terms:</strong> NET 30 Days</div>
-        <div><strong>Currency:</strong> MAD (Moroccan Dirham)</div>
-      </div>
-    </div><div class="table-responsive"><table class="data-table">
-      <thead>
-        <tr>
-          <th>Item / SKU</th>
-          <th>Description</th>
-          <th style="text-align: center;">Qty</th>
-          <th style="text-align: right;">Unit Price</th>
-          <th style="text-align: right;">Total Net</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><strong>SRV-AI-4B</strong></td>
-          <td>Dedicated AI Agent Core (Dual-Mode Autonomous)</td>
-          <td style="text-align: center;">2</td>
-          <td style="text-align: right;">MAD 3,500.00</td>
-          <td style="text-align: right;">MAD 7,000.00</td>
-        </tr>
-        <tr>
-          <td><strong>LIC-VOICE-SIP</strong></td>
-          <td>Telephony SIP / WebRTC Audio Streaming Line</td>
-          <td style="text-align: center;">4</td>
-          <td style="text-align: right;">MAD 1,200.00</td>
-          <td style="text-align: right;">MAD 4,800.00</td>
-        </tr>
-      </tbody>
-    </table></div>
-
-    <div class="totals-area">
-      <div class="tot-row"><span>Subtotal:</span><span>MAD 11,800.00</span></div>
-      <div class="tot-row"><span>Discounts:</span><span>MAD 0.00</span></div>
-      <div class="tot-row"><span>TVA (20.00%):</span><span>MAD 2,360.00</span></div>
-      <div class="tot-row grand"><span>Total TTC:</span><span>MAD 14,160.00</span></div>
-    </div>
-
-    <div class="hash-footer">
-      <strong>Cryptographic Document Verification Fingerprint:</strong><br/>
-      SHA-256: d8f1a23e9812bcfe3450912faabb091823746192837461928374619283746192
-    </div>
-
-    <div class="action-bar">
-      <button class="btn-reject" data-on-click="h2">Decline Quotation</button>
-      <button class="btn-accept" data-on-click="h3">Accept Quotation &amp; Proceed</button>
-    </div>
-  </div>
-      </main>
-    </div>
-  </div>
-
-
-  <script src="js/app_shell.js"></script>
-
+<body class="public-body">
+  <header class="public-head">
+    <span class="selia-logo"><svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><path d="M25 9.5C22.5 6 17.5 5 13 6.2 8.8 7.3 7.3 10.6 9 13c1.4 2 4.6 2.6 8 3" fill="none" stroke="#D0673A" stroke-width="5.2" stroke-linecap="round"/><path d="M15 16c3.4.4 7 1.6 7.6 4.4.6 2.9-2.8 5.4-8 5.6-3.6.2-6.6-.8-8.2-2.4" fill="none" stroke="#5F7A2E" stroke-width="5.2" stroke-linecap="round"/></svg><span class="selia-wordmark">Selia</span></span>
+  </header>
+  <main class="public-main" id="main">
+    <section class="card quote-doc" id="quoteDoc" aria-live="polite"><p class="data-state" role="status">Chargement du devis…</p></section>
+    <section class="card quote-actions" id="quoteActions" hidden>
+      <h2 class="card-title">Votre décision</h2>
+      <div class="field"><label for="qNote">Message ou nom du signataire (optionnel)</label><input class="form-control" id="qNote" maxlength="255" autocomplete="name"></div>
+      <p class="form-error" id="qError" role="alert"></p>
+      <div class="modal-actions"><button type="button" class="btn btn-outline" id="qReject">Refuser le devis</button><button type="button" class="btn btn-primary" id="qAccept">Accepter le devis</button></div>
+    </section>
+  </main>
+  <script src="js/pages/quote_view.js"></script>
 </body>
-<!-- csp-build: migrated -->
 </html>
